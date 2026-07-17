@@ -1,0 +1,14 @@
+T1 failing-first proof captured before product edits
+Command (bash, repository root):
+for path in android/gradlew.bat backend/app/main.py scripts/scan_secrets.ps1; do
+  if test -e "$path"; then echo "UNEXPECTED_PRESENT $path"; else echo "EXPECTED_ABSENT $path"; fi
+done
+test ! -e android/gradlew.bat && test ! -e backend/app/main.py && test ! -e scripts/scan_secrets.ps1
+
+Observed:
+EXPECTED_ABSENT android/gradlew.bat
+EXPECTED_ABSENT backend/app/main.py
+EXPECTED_ABSENT scripts/scan_secrets.ps1
+exit_code=0
+
+Interpretation: the planned T1 scaffold behavior is absent, so the scaffold acceptance check is RED.

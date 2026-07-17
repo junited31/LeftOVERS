@@ -1,0 +1,67 @@
+{
+  "evidence_version": 1,
+  "task": "T1 backend FastAPI scaffold",
+  "captured_at_utc": "2026-07-17T21:15:08Z",
+  "redaction": {
+    "secrets_present": false,
+    "ephemeral_values_replaced": [
+      "port",
+      "temporary file paths"
+    ]
+  },
+  "server": {
+    "command": "cd backend && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port <ephemeral-port>",
+    "host": "127.0.0.1",
+    "port": "<ephemeral-port>",
+    "startup": "application startup complete"
+  },
+  "probes": [
+    {
+      "name": "health_first",
+      "command": "timeout 5s curl -sS -X GET -D <temp-headers> -o <temp-body> -w '%{http_code}' http://127.0.0.1:<ephemeral-port>/health",
+      "curl_exit_code": 0,
+      "status": 200,
+      "content_type": "application/json",
+      "body": {
+        "status": "ok"
+      }
+    },
+    {
+      "name": "wrong_method",
+      "command": "timeout 5s curl -sS -X POST -D <temp-headers> -o <temp-body> -w '%{http_code}' http://127.0.0.1:<ephemeral-port>/health",
+      "curl_exit_code": 0,
+      "status": 405,
+      "content_type": "application/json",
+      "body": {
+        "detail": "Method Not Allowed"
+      }
+    },
+    {
+      "name": "wrong_path",
+      "command": "timeout 5s curl -sS -X GET -D <temp-headers> -o <temp-body> -w '%{http_code}' http://127.0.0.1:<ephemeral-port>/not-a-route",
+      "curl_exit_code": 0,
+      "status": 404,
+      "content_type": "application/json",
+      "body": {
+        "detail": "Not Found"
+      }
+    },
+    {
+      "name": "health_repeat",
+      "command": "timeout 5s curl -sS -X GET -D <temp-headers> -o <temp-body> -w '%{http_code}' http://127.0.0.1:<ephemeral-port>/health",
+      "curl_exit_code": 0,
+      "status": 200,
+      "content_type": "application/json",
+      "body": {
+        "status": "ok"
+      }
+    }
+  ],
+  "cleanup": {
+    "signal": "SIGTERM",
+    "application_shutdown": "complete",
+    "server_pid_after_wait": "gone",
+    "port_rebind_exit_code": 0,
+    "temporary_artifacts_removed": true
+  }
+}

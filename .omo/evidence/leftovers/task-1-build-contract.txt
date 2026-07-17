@@ -1,0 +1,33 @@
+T1 canonical release APK build contract
+Date: 2026-07-18 Asia/Seoul
+
+APK inspected
+-------------
+android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+Artifact identity
+-----------------
+size=18083903 bytes
+sha256=9d1e496c0f2a1d3476d9616caa558b47deb3c93a89066083693cb9c15826aa18
+
+Command (repository root; the QEMU prefix is required because this verification host is aarch64 and Android's aapt binary is x86-64)
+----------------------------------------------------------------------------------------------------------------------------------------
+/tmp/opencode/qemu-static/qemu-x86_64-static -L /tmp/opencode/amd64-sysroot android/.gradle/android-sdk/build-tools/35.0.0/aapt dump badging android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+Relevant badging output
+-----------------------
+package: name='com.junited31.leftovers' versionCode='1' versionName='1.0' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'29'
+targetSdkVersion:'35'
+application-label:'LeftOVERS'
+launchable-activity: name='com.junited31.leftovers.MainActivity'  label='' icon=''
+
+Assertions
+----------
+PASS package == com.junited31.leftovers
+PASS compileSdk == 35
+PASS minSdk == 29
+PASS targetSdk == 35
+PASS launchable activity == com.junited31.leftovers.MainActivity
+
+This canonical receipt is derived from the release APK, not the debug APK.

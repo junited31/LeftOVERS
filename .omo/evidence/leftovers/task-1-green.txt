@@ -1,0 +1,29 @@
+T1 canonical GREEN / blocker receipt
+Date: 2026-07-18 Asia/Seoul
+
+Passed local gates
+------------------
+PASS Linux/aarch64 clean Android build: :app:assembleDebug, :app:lintDebug, and :app:assembleRelease completed successfully with the documented host-only AAPT2 adapter.
+PASS deterministic repeat Android debug assembly completed successfully.
+PASS post-cleanup Android release assembly completed successfully: BUILD SUCCESSFUL in 25s; 47 actionable tasks, 1 executed and 46 up-to-date.
+PASS Android lintDebug reported no issues.
+PASS fresh release APK badging: package com.junited31.leftovers, compileSdk 35, minSdk 29, targetSdk 35, and launchable com.junited31.leftovers.MainActivity.
+PASS exact no-index whitespace checks emitted no errors for android/.gitignore, android/settings.gradle.kts, android/build.gradle.kts, and android/gradle.properties; each command returned the expected no-index difference exit code 1.
+PASS backend local verification recorded in task-1-backend-verification.txt.
+PASS scanner static source, ignore-contract, fixture-harness source/contract inspection, cleanup, and path-only shape checks recorded in task-1-scanner-static.txt.
+PASS canonical RED receipt remains preserved at .omo/evidence/leftovers/task-1-red.txt.
+
+Blocked or unavailable gates (not claimed as passed)
+----------------------------------------------------
+BLOCKED scanner runtime and isolated scanner fixtures: neither powershell nor pwsh is installed on this Linux host. The PowerShell fixture harness remains available for a PowerShell-equipped integrator/environment.
+BLOCKED Windows-only execution: android/gradlew.bat is present, but no Windows or PowerShell environment is available; backend/.venv/Scripts/python.exe is also unavailable on this Linux host. No Windows-only Android or backend command was run.
+BLOCKED Android device install/start/UI assertion: adb found no attached device or emulator. No task-1-home.xml was created or claimed.
+
+Evidence routing
+----------------
+Release APK contract: .omo/evidence/leftovers/task-1-build-contract.txt
+Android local build details: .omo/evidence/leftovers/task-1-android-verification.txt
+Android device blocker: .omo/evidence/leftovers/task-1-android-qa-blocker.txt
+Scanner static details and PowerShell blocker: .omo/evidence/leftovers/task-1-scanner-static.txt
+Backend local verification: .omo/evidence/leftovers/task-1-backend-verification.txt
+Preserved RED receipt: .omo/evidence/leftovers/task-1-red.txt

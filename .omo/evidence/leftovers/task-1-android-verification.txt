@@ -1,0 +1,41 @@
+T1 Android local verification
+
+Host:
+Linux aarch64
+Java 17.0.19 (Eclipse Adoptium)
+
+Wrapper contract:
+./gradlew --version
+Gradle 8.10.2
+android/gradlew is executable
+android/gradlew.bat exists and is a DOS batch file with CRLF line endings
+android/gradle/wrapper/gradle-wrapper.properties resolves gradle-8.10.2-bin.zip
+
+Fresh clean verification command (android/ working directory):
+JAVA_HOME=/srv/workspace/watch_pet/.gradle/bootstrap/temurin-17 ANDROID_HOME=/srv/workspace/leftovers-impl/android/.gradle/android-sdk timeout --signal=TERM 600s ./gradlew clean :app:assembleDebug :app:lintDebug :app:assembleRelease -Pandroid.aapt2FromMavenOverride=/tmp/opencode/aapt2 --no-daemon
+
+Result:
+BUILD SUCCESSFUL in 1m 38s
+93 actionable tasks: 92 executed, 1 up-to-date
+exit_code=0
+lint-results-debug.txt: No issues found.
+
+The aapt2 override is a host-only execution adapter: AGP's AAPT2 distribution is x86-64 while this runner is aarch64. It is not persisted in project configuration.
+
+Deterministic repeat command (android/ working directory):
+JAVA_HOME=/srv/workspace/watch_pet/.gradle/bootstrap/temurin-17 ANDROID_HOME=/srv/workspace/leftovers-impl/android/.gradle/android-sdk timeout --signal=TERM 180s ./gradlew :app:assembleDebug -Pandroid.aapt2FromMavenOverride=/tmp/opencode/aapt2 --no-daemon
+
+Repeat result:
+BUILD SUCCESSFUL in 20s
+35 actionable tasks: 35 up-to-date
+exit_code=0
+
+Fresh artifacts from the clean run:
+debug_apk mtime=2026-07-18 01:43:07.423254993 +0900 size=22306081
+debug_apk sha256=8c6b226adc76894af892245f3d27240606347e5f25cf7045f9a4bbbaaa071bc5
+release_apk mtime=2026-07-18 01:43:39.373536768 +0900 size=18083903
+release_apk sha256=9d1e496c0f2a1d3476d9616caa558b47deb3c93a89066083693cb9c15826aa18
+
+Windows contract:
+android/gradlew.bat is present. No Windows-only command was run or claimed as passing on this Linux host.
+

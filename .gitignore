@@ -1,0 +1,40 @@
+# Local configuration and secrets
+local.properties
+secrets/
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+*service-account*.json
+*service_account*.json
+*serviceAccount*.json
+*serviceaccount*.json
+firebase-adminsdk-*.json
+application_default_credentials.json
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Android and Gradle outputs
+android/.gradle/
+android/**/build/
+*.apk
+*.aab
+
+# Editor and operating-system files
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -1,0 +1,85 @@
+T1 canonical secret scanner static verification
+Date: 2026-07-18 Asia/Seoul
+
+Runtime blocker
+---------------
+command -v powershell
+exit_code=1
+
+command -v pwsh
+exit_code=1
+
+timeout 30s powershell -NoProfile -File scripts/scan_secrets.ps1
+output: timeout: failed to run command 'powershell': No such file or directory
+exit_code=127
+
+No alternate-language scanner was created and no global dependency was installed.
+Canonical runtime QA remains for the PowerShell-equipped integrator/environment.
+
+Static source checks
+--------------------
+PASS: scanner contains the exact enumeration command:
+  git ls-files --cached --others --exclude-standard
+PASS: OpenAI rule is assembled from fragments and implements the required negative lookbehind and 20-character minimum.
+PASS: Google rule is assembled from fragments and requires the standard 35 characters after the AIza prefix.
+PASS: only android/app/google-services.json bypasses the Google rule.
+PASS: that path remains subject to the OpenAI and PEM rules.
+PASS: PEM private-key headers cover generic and tokenized forms, including RSA, EC, DSA, OPENSSH, ENCRYPTED, and PGP block headers.
+PASS: files are read as bytes, empty files are skipped, and ASCII shape matching cannot fail on malformed text or binary bytes.
+PASS: findings print only category and path, never matching file content.
+
+Ignore-contract checks
+----------------------
+git check-ignore --no-index returned 0 (ignored) for:
+  local.properties
+  android/local.properties
+  secrets/runtime.txt
+  release.jks
+  release.keystore
+  .env
+  .env.local
+  credentials/service-account-prod.json
+  backend/.venv/pyvenv.cfg
+  backend/__pycache__/main.cpython-312.pyc
+  android/app/build/outputs/app.apk
+
+git check-ignore --no-index returned 1 (visible) for:
+  .env.example
+  android/app/google-services.json
+  .omo/evidence/leftovers/task-1-red.txt
+  README.md
+  scripts/scan_secrets.ps1
+
+git diff --check -- README.md LICENSE .gitignore scripts/scan_secrets.ps1
+exit_code=0
+
+Fixture and cleanup contract
+----------------------------
+.omo/evidence/leftovers/task-1-scanner-fixtures.ps1 is a runnable, isolated fixture harness for a PowerShell-equipped environment. It uses a disposable Git repository under the system temp directory and proves:
+  1. literal task-1-red.txt language, the allowed Firebase config, an empty file, and malformed binary input exit 0;
+  2. an assembled synthetic OpenAI-shaped value exits nonzero with its category/path;
+  3. an assembled synthetic Google-shaped value outside the allowed path exits nonzero with its category/path;
+  4. an assembled synthetic PEM header exits nonzero with its category/path;
+  5. the scanner exits 0 again after fixture removal.
+
+The harness removes a stale same-name temp directory before running, deletes each failing fixture immediately after its assertion, removes the isolated repository in finally, and verifies the temp path is absent. Synthetic values are assembled at runtime so this evidence does not poison the canonical repository scan.
+
+Current static cleanup inspection:
+  find . -type f (task-1-scanner fixture-name predicates)
+  output: no temporary fixture files
+
+Fresh path-only shape inspection (matching contents were never printed):
+  OpenAI-shaped paths: none, rg exit_code=1
+  Google-shaped paths outside the allowed Firebase path: none, rg exit_code=1
+  PEM private-key-header paths: none, rg exit_code=1
+
+Untracked-file whitespace inspection used git diff --no-index --check against /dev/null. All owned files emitted no whitespace errors; exit_code=1 is the expected no-index result because each file differs from /dev/null.
+
+Pre-existing RED receipt preservation:
+  .omo/evidence/leftovers/task-1-red.txt
+  bytes=609
+  sha256=addfd577984e9b35ba9ea8ee54508a6f0a478b2094a8ac31d37e9845522589d2
+
+Stale isolated temp root check:
+  test ! -e ${TMPDIR:-/tmp}/leftovers-task-1-scanner-fixtures
+  exit_code=0

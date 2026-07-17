@@ -1,0 +1,22 @@
+T1 Android APK build contract
+
+APK inspected:
+android/app/build/outputs/apk/debug/app-debug.apk
+
+Command (repository root; the QEMU prefix is required because this verification host is aarch64 and Android's aapt binary is x86-64):
+/tmp/opencode/qemu-static/qemu-x86_64-static -L /tmp/opencode/amd64-sysroot android/.gradle/android-sdk/build-tools/35.0.0/aapt dump badging android/app/build/outputs/apk/debug/app-debug.apk
+
+Relevant badging output:
+package: name='com.junited31.leftovers' versionCode='1' versionName='1.0' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'29'
+targetSdkVersion:'35'
+application-label:'LeftOVERS'
+launchable-activity: name='com.junited31.leftovers.MainActivity'  label='' icon=''
+
+Assertions:
+PASS package == com.junited31.leftovers
+PASS compileSdk == 35
+PASS minSdk == 29
+PASS targetSdk == 35
+PASS launchable activity == com.junited31.leftovers.MainActivity
+

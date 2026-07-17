@@ -1,0 +1,15 @@
+T1 Android manual QA blocker
+
+Device discovery command (repository root):
+QEMU_LD_PREFIX=/tmp/opencode/amd64-sysroot timeout --signal=TERM 30s android/.gradle/android-sdk/platform-tools/adb devices -l
+
+Observed:
+List of devices attached
+(no devices listed)
+exit_code=0
+
+Blocker:
+No Android device or emulator is attached to this host. Therefore the required install/start command and UIAutomator assertion could not be run:
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.junited31.leftovers/.MainActivity
+
+No task-1-android-home.xml was created because there was no device UI to capture.

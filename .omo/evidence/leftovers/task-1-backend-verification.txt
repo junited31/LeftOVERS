@@ -1,0 +1,58 @@
+T1 backend verification
+Captured UTC: 2026-07-17T21:15:08Z
+Workspace: /srv/workspace/leftovers-impl
+Host: Linux, Python 3.12.3
+
+REQUIREMENTS / APPROVED T1 PINS
+- backend/requirements.txt declares exactly the approved T1 baseline pins:
+  fastapi==0.139.2
+  pydantic==2.13.4
+  pytest==9.1.1
+  uvicorn==0.51.0
+- Command: cd backend && .venv/bin/python -c 'from importlib.metadata import version; expected={"fastapi":"0.139.2","pydantic":"2.13.4","pytest":"9.1.1","uvicorn":"0.51.0"}; actual={name:version(name) for name in expected}; print(actual); assert actual == expected'
+  Exit: 0
+  Output: {'fastapi': '0.139.2', 'pydantic': '2.13.4', 'pytest': '9.1.1', 'uvicorn': '0.51.0'}
+
+UNIT / ASGI VERIFICATION
+- Command: cd backend && timeout 30s .venv/bin/python -m pytest -q tests
+  Exit: 0
+  Result: 1 passed in 0.31s
+- Command: cd backend && timeout 10s .venv/bin/python -c "from app.main import app; assert app.title == 'LeftOVERS API'"
+  Exit: 0
+- Smallest deterministic repeat:
+  Command: cd backend && timeout 30s .venv/bin/python -m pytest -q tests/test_health.py
+  Exit: 0
+  Result: 1 passed in 0.30s
+
+LIVE HTTP SURFACE
+- Launch command: cd backend && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port <ephemeral-port>
+- Actual full probe run used ephemeral localhost port 40013.
+- GET /health: curl exit 0; HTTP 200; content-type application/json; body {"status":"ok"}.
+- POST /health: curl exit 0; HTTP 405; content-type application/json; body {"detail":"Method Not Allowed"}.
+- GET /not-a-route: curl exit 0; HTTP 404; content-type application/json; body {"detail":"Not Found"}.
+- Repeated GET /health: curl exit 0; HTTP 200; content-type application/json; body {"status":"ok"}.
+- A separate fresh uvicorn launch on ephemeral port 33417 repeated GET /health with curl exit 0, HTTP 200, and identical body {"status":"ok"}.
+
+BACKEND CLEANUP RECEIPT
+- Final live server PID: 3194586.
+- Command: kill -TERM 3194586; wait 3194586
+- Shell wait exit: 143 (SIGTERM); uvicorn log independently recorded orderly application shutdown and "Finished server process [3194586]".
+- kill -0 after wait: PID gone.
+- Port-free proof: .venv/bin/python socket bind to the released 127.0.0.1:33417 endpoint exited 0.
+- Temporary response, header, and uvicorn-log artifacts: removed.
+- No backend server or occupied QA port was left behind.
+
+WINDOWS CONTRACT
+- Command: cd backend && test ! -e .venv/Scripts/python.exe
+  Exit: 0
+- backend/.venv/Scripts/python.exe is unavailable on this Linux host and was not claimed as passed.
+- Linux verification used only backend/.venv/bin/python.
+
+CWD DIAGNOSTIC / RESIDUAL RISK
+- Non-canonical repository-root diagnostic: timeout 30s backend/.venv/bin/python -m pytest -q backend/tests exited 2 because `app` is not importable from the repository root.
+- Non-canonical repository-root import diagnostic: timeout 10s backend/.venv/bin/python -c "from app.main import app; assert app.title == 'LeftOVERS API'" exited 1 for the same reason.
+- The approved T1 acceptance contract explicitly changes into backend/ before importing, and that canonical contract passes. Root-level documentation currently describes a repository-root test command, so that documentation should be aligned separately; README.md is outside this worker's backend-only write scope.
+
+RESULT
+- PASS for the approved T1 backend acceptance contract on Linux.
+- No backend source or requirement fix was necessary.
