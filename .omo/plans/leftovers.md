@@ -11,7 +11,7 @@
 **Risk:** High - the deadline requires a native app, deployed multimodal AI service, real-device proof, public APK, and complete contest submission in one coordinated build.
 **Decisions to sanity-check:** Keep pantry units strict instead of converting them automatically; keep sign-in invisible and local data unsynced; use fixed equipment choices; ship Android only; apply fixed daily AI quotas with no judge bypass.
 
-Your next move: complete the required dual high-accuracy review, then start implementation from the approved result. Full execution detail follows below.
+Your next move: start implementation from this dual-reviewed approved plan. Full execution detail follows below.
 
 ---
 
