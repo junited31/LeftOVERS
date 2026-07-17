@@ -2,7 +2,8 @@
 slug: leftovers
 status: approved
 intent: clear
-pending-action: validate and commit .omo/plans/leftovers.md
+review_required: true
+pending-action: commit and push reviewed .omo plan updates
 approach: Android local-first app with a minimal authenticated FastAPI GPT-5.6 proxy
 ---
 
@@ -45,6 +46,9 @@ approach: Android local-first app with a minimal authenticated FastAPI GPT-5.6 p
 - Known-good backend baseline: `D:/workspace/develop/meal-health-ai-app/backend/requirements.txt:1` demonstrates FastAPI + Pydantic v2 + Firebase Admin + pytest on this machine.
 - Current PyPI resolution on 2026-07-18: openai 2.46.0, fastapi 0.139.2, uvicorn 0.51.0, pydantic 2.13.4, pydantic-settings 2.14.2, firebase-admin 7.5.0, pytest 9.1.1.
 - Firebase CLI is installed and authenticated; accessible projects were observed, but the plan must create/use an isolated LeftOVERS project rather than mutate an unrelated existing app by default.
+- Android build-tools `35.0.0` and its `aapt.exe` are installed on the current host, not only SDK platform 35.
+- Official Cloud Run quickstart requires billing to be enabled before deployment; `gcloud billing projects describe PROJECT_ID` exposes the project billing status.
+- Official Firebase documentation says Firebase service API keys are public identifiers, `google-services.json` contains the Android `current_key`, and checked-in Firebase config is acceptable when the key is restricted to the Android application. For this Auth-only client, the documented API-key allowlist is exactly `identitytoolkit.googleapis.com` and `securetoken.googleapis.com`.
 
 ## Decisions (with rationale)
 - Use one repository with `android/` and `backend/`; this is the smallest layout that keeps the native client and secret-holding API independently testable.
@@ -63,11 +67,14 @@ approach: Android local-first app with a minimal authenticated FastAPI GPT-5.6 p
 - Recipe fingerprints are SHA-256 of normalized `cuisine|primaryTechnique|sorted ingredient names`; normalization lowercases, trims, collapses whitespace, and applies Unicode NFKC. Ranking first hard-filters equipment and active 30-day `recommendAgain=false` fingerprints, validates exactly three unique normalized titles/fingerprints with at least two cuisines and two techniques, then scores `0.45 coverage + 0.25 expiry + 0.20 preference + 0.10 novelty`; ties resolve by coverage, expiry, then normalized title ascending.
 - Coverage is the fraction of distinct non-staple pantry items used. Expiry is the fraction of total expiry weight captured by used items (`1.0` <=3 days, `0.5` <=7 days, `0.1` later/no date). For each cuisine or technique tag in the newest 20 logs, let `signal = clamp((rating-3)/2 + (recommendAgain ? 0.5 : -1.0), -1, 1)` and `tagScore = (sum(signal)+matchCount)/(2*matchCount)`; an unseen tag scores `0.5`, and a candidate preference is the mean of its cuisine and technique tag scores. Novelty is `1 - max Jaccard` between the candidate normalized ingredient-name set and those from the latest five meal logs; no history yields novelty `1.0`. Cooldowns use UTC instants and expire exactly at 30*24 hours.
 - Backend limits: recipe JSON <=256 KiB, advice multipart <=8 MiB, Android photo longest edge <=1280px JPEG quality 80, 20 recipe generations/UID/UTC day, 50 advice calls/UID/UTC day, global caps 2,000/5,000 respectively, and no judge bypass. Firestore transactions increment per-UID and global counters atomically. Document IDs use HMAC-SHA256(uid, `QUOTA_HASH_KEY`); 429 includes `Retry-After` to next UTC midnight.
+- Keep one global Firestore counter document per route/day for the demo; do not add sharded counters unless the concurrency test measures transaction contention. This is sufficient at the planned traffic ceiling and avoids a speculative subsystem.
 - Backend reads advice uploads in bounded chunks, closes `UploadFile` in `finally`, never writes application-owned photo files, and redacts bodies/tokens from logs. Android deletes step-photo cache files in `finally` after success, typed failure, or cancellation and sweeps cache files older than 24 hours at startup. Debug reset deletes retained final photos and Room/DataStore state; release has no reset receiver or seed entry point.
 - Offline contract: pantry, equipment, recipe snapshots, active-session steps, and history remain available. Generate/advice actions show typed retryable errors and never mutate local state; no background retry or automatic photo re-upload occurs. Completion is one local transaction and works offline.
-- Model reliability: preflight performs one text Structured Outputs call and one synthetic PNG image-input call against exact alias `gpt-5.6`. Each production request gets one model attempt plus at most one retry only for schema/diversity validation failure; transport/auth/quota errors are never retried automatically.
-- Cloud identity is isolated: Firebase/GCP project ID `leftovers-019f706b`, Android app package `com.junited31.leftovers`, Cloud Run service `leftovers-api`, region `asia-northeast3`. Runtime secrets are `OPENAI_API_KEY` and `QUOTA_HASH_KEY`; Firebase Admin uses the Cloud Run service account through Application Default Credentials. Only `google-services.json` may be committed, while service-account files and secret values must remain ignored.
-- Judge delivery uses a public GitHub release `v0.1.0-demo` with the debug APK so the documented ADB-only seed/reset receiver is available; the release APK is built only to prove production boundaries and contains no receiver. Delivery also includes a deployed `/health` and authenticated smoke path, an English README/testing/privacy guide, a public <3-minute YouTube demo URL, and the actual current Codex `/feedback` session ID. Placeholders block the submission-readiness task.
+- Model reliability: preflight performs one text Structured Outputs call and one synthetic PNG image-input call against exact alias `gpt-5.6`. Each production request gets one model attempt plus at most two retries only for schema/diversity validation failure; transport/auth/quota errors are never retried automatically. Do not add a partial-recipe fallback because the product contract is exactly three validated choices.
+- Per-UID quotas provide installation-level fairness only because anonymous authentication can be reset by reinstalling the app; the global caps are the actual spend boundary. Do not describe anonymous UID limits as a strong anti-abuse control, and do not add account, device-fingerprinting, or IP-tracking scope.
+- Use one canonical `scripts/scan_secrets.ps1` gate over paths from `git ls-files --cached --others --exclude-standard`. Its .NET regex matches actual OpenAI-key shapes with `(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{20,}`, long `AIza...` values, and PEM headers; it excludes only `android/app/google-services.json` from the `AIza` check so evidence names such as `task-1-red.txt` cannot self-match. The Firebase config remains subject to project/package checks and live Android/API restriction verification.
+- Cloud identity is isolated: Firebase/GCP project ID `leftovers-019f706b`, Android app package `com.junited31.leftovers`, Cloud Run service `leftovers-api`, region `asia-northeast3`. Runtime secrets are `OPENAI_API_KEY` and `QUOTA_HASH_KEY`; Firebase Admin uses the Cloud Run service account through Application Default Credentials. Only `google-services.json` may be committed, while service-account files and secret values must remain ignored. Before any API enablement or deployment, the bootstrap script must verify `billingEnabled: true` with `gcloud billing projects describe`; it fails with an exact caller-supplied billing-link command rather than selecting or charging an account automatically. The Firebase Android key is restricted to package `com.junited31.leftovers` plus the demo APK signing-certificate SHA-1 from Gradle `signingReport`, and its API allowlist is exactly `identitytoolkit.googleapis.com` and `securetoken.googleapis.com`; extras fail verification.
+- Judge delivery uses a public GitHub release `v0.1.0-demo` with the debug APK so the documented ADB-only seed/reset receiver is available; the release APK is built only to prove production boundaries and contains no receiver. Delivery also includes a deployed `/health` and authenticated smoke path, an English README/testing/privacy guide, a public <3-minute YouTube demo URL, the actual current Codex `/feedback` session ID, and a completed Apps for Your Life Devpost entry. Final Devpost submission occurs only after the verifier passes and an action-time confirmation; completion requires both dashboard `Submitted` state and an anonymously reachable `https://openai.devpost.com/software/<slug>` page. Placeholders block the submission-readiness task.
 
 ## Scope IN
 - Android onboarding/equipment selection, pantry CRUD, expiry date and quantity/unit editing.
@@ -77,7 +84,7 @@ approach: Android local-first app with a minimal authenticated FastAPI GPT-5.6 p
 - Preference-aware reranking and exact-recipe cooldown based on local meal logs.
 - History timeline, history detail, retained final photo, and recipe/adjustment display.
 - Minimal authenticated FastAPI proxy, ephemeral image handling, quota counters, Docker/Cloud Run deployment, and Firebase anonymous auth.
-- English README/submission checklist, sample data, APK/release instructions, Codex collaboration notes, and the actual `/feedback` session ID.
+- English README/submission checklist, sample data, APK/release instructions, Codex collaboration notes, the actual `/feedback` session ID, and the populated/submitted public Devpost entry.
 
 ## Scope OUT (Must NOT have)
 - No iOS, web app, tablet-specific layout, social/community sharing, shopping list, nutrition/health tracking, receipt scanning, barcode scanning, voice control, or smart-appliance control.
@@ -92,6 +99,20 @@ approach: Android local-first app with a minimal authenticated FastAPI GPT-5.6 p
 status: approved
 approved-by: user
 approved-at: 2026-07-18T00:05:00+09:00
-pending-action: validate and commit .omo/plans/leftovers.md
+pending-action: commit and push reviewed .omo plan updates
 <!-- When exploration is exhausted and unknowns are answered, set status: awaiting-approval. -->
 <!-- That durable record is the loop guard: on a later turn read it and resume at the gate instead of re-running exploration. -->
+
+## High-accuracy review receipts
+- Round 1 native Momus session `/root/momus_leftovers_round1`: `BLOCKED`. It found that bare `Test-Path` could exit zero on a missing tool and that the Firebase key restriction lacked an exact API allowlist.
+- Round 1 independent Codex CLI command: isolated disposable workspace and `CODEX_HOME`, `codex exec --ephemeral -m gpt-5.6-sol -c model_reasoning_effort="xhigh"`. Result: no verdict because the Git Bash MCP transport timed out at 300 seconds; this is not counted as approval.
+- Round 1 fix summary: the aapt check now throws on absence and has a failing-path assertion; the Firebase Android restriction is fixed to package `com.junited31.leftovers`, the demo signing SHA-1, and exact services `identitytoolkit.googleapis.com` plus `securetoken.googleapis.com`, rejecting extras. Both reviewers must run fresh on this revision.
+- Round 2 native Momus session `/root/momus_leftovers_round2`: `BLOCKED`. It found that the public privacy disclosure omitted equipment context even though the request sends it.
+- Round 2 independent Codex CLI command: isolated disposable workspace and `CODEX_HOME`, `codex exec --ephemeral -m gpt-5.6-sol -c model_reasoning_effort="xhigh"`. Result: no verdict because the selected model returned capacity errors after reading the plan; this is not counted as approval.
+- Round 2 fix summary: TL;DR, T12 documentation scope, and the submission verifier now all require explicit disclosure of transient pantry, equipment, preference, and cooking-photo processing with `store=false`. Both reviewers must run fresh on this revision.
+- Round 3 native Momus session `/root/momus_leftovers_round3`: `OKAY` on the then-current revision after one capacity retry.
+- Round 3 independent Codex CLI command: isolated disposable workspace and `CODEX_HOME`, `codex exec --ephemeral -m gpt-5.6-sol -c model_reasoning_effort="xhigh"`. Result: `BLOCKED` because T12 produced submission materials but did not create, populate, submit, or verify the actual Devpost entry.
+- Round 3 fix summary: T12 now fills the Apps for Your Life Devpost form only after its verifier passes, requires action-time confirmation for final submission, and proves both dashboard `Submitted` state and an anonymously reachable public Devpost software URL. Because the plan changed after Momus approval, both reviewers must run fresh on this revision.
+- Round 4 native Momus session `/root/momus_leftovers_round4`: `OKAY` on the final revision after capacity-only retries.
+- Round 4 independent Codex CLI command: disposable isolated workspace and isolated `CODEX_HOME`, `codex exec --ephemeral -m gpt-5.6-sol -c model_reasoning_effort="xhigh"`; no approval/sandbox bypass flags. Result: `OKAY`.
+- Round 4 result: dual high-accuracy review complete with unconditional approval from both reviewers; no further plan changes were required.
