@@ -1,0 +1,37 @@
+T1 Windows release APK build contract
+Captured: 2026-07-18T09:17:28.2253306+09:00
+Reviewed SHA: 7f6286b09307e668713f16597fdb86b1230a18b7
+
+Build command (android/):
+$env:ANDROID_HOME=Join-Path $env:LOCALAPPDATA 'Android\Sdk'; .\gradlew.bat clean :app:assembleDebug :app:lintDebug :app:assembleRelease --no-daemon
+
+Result:
+BUILD SUCCESSFUL in 44s
+93 actionable tasks: 92 executed, 1 up-to-date
+exit_code=0
+lintDebug: 0 errors, 1 OldTargetApi warning because targetSdk 35 is intentionally pinned by T1
+
+Inspected APK:
+android/app/build/outputs/apk/release/app-release-unsigned.apk
+size=18083903 bytes
+sha256=9d1e496c0f2a1d3476d9616caa558b47deb3c93a89066083693cb9c15826aa18
+
+Command:
+C:\Users\ljhlj\AppData\Local\Android\Sdk\build-tools\35.0.0\aapt.exe dump badging android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+Relevant output:
+package: name='com.junited31.leftovers' versionCode='1' versionName='1.0' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+sdkVersion:'29'
+targetSdkVersion:'35'
+application-label:'LeftOVERS'
+launchable-activity: name='com.junited31.leftovers.MainActivity' label='' icon=''
+
+Assertions:
+PASS package == com.junited31.leftovers
+PASS compileSdk == 35
+PASS minSdk == 29
+PASS targetSdk == 35
+PASS launchable activity == com.junited31.leftovers.MainActivity
+
+Freshness cross-check:
+The release APK hash exactly matches the prior committed release contract at this SHA.

@@ -1,0 +1,119 @@
+{
+  "review_type": "DoneClaimReview+AdversarialVerify",
+  "task": "T1",
+  "tier": "HEAVY",
+  "captured_at": "2026-07-18T09:17:28.2253306+09:00",
+  "reviewed_sha": "7f6286b09307e668713f16597fdb86b1230a18b7",
+  "verdict": "confirmed",
+  "confidence": 0.97,
+  "done_claim_review": {
+    "status": "confirmed",
+    "acceptance_met": true,
+    "manual_qa_met": true,
+    "scope_reviewed": [
+      ".omo/plans/leftovers.md (full file, including T1 acceptance and QA)",
+      "full T1 commit name-status/content; all 32 added paths and wrapper jar hash",
+      "scripts/scan_secrets.ps1",
+      ".omo/evidence/leftovers/task-1-scanner-fixtures.ps1",
+      "Android and backend skeleton",
+      "all prior task-1 evidence and .omo/start-work/ledger.jsonl"
+    ]
+  },
+  "preflight": {
+    "command": "git rev-parse HEAD; git status --short",
+    "result": "HEAD exact; only pre-existing untracked .omo/boulder.json",
+    "head": "7f6286b09307e668713f16597fdb86b1230a18b7"
+  },
+  "commands": [
+    {
+      "name": "aapt_35_precondition",
+      "command": "$sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\\Sdk' }; $aapt = Join-Path $sdk 'build-tools\\35.0.0\\aapt.exe'; Test-Path $aapt; & $aapt version",
+      "exit_code": 0,
+      "result": "Android Asset Packaging Tool v0.2-11948202"
+    },
+    {
+      "name": "nonexistent_android_home",
+      "command": "powershell -NoProfile with ANDROID_HOME set to a unique nonexistent temp path, then the exact T1 aapt assertion",
+      "exit_code": 1,
+      "result": "Android build-tools 35.0.0 aapt.exe missing; nonexistent path remained absent"
+    },
+    {
+      "name": "gradle_unset_environment_diagnostic",
+      "command": ".\\gradlew.bat clean :app:assembleDebug :app:lintDebug :app:assembleRelease --no-daemon",
+      "exit_code": 1,
+      "result": "SDK location not found because ANDROID_HOME was unset; no project defect inferred"
+    },
+    {
+      "name": "android_clean_build",
+      "command": "$env:ANDROID_HOME=Join-Path $env:LOCALAPPDATA 'Android\\Sdk'; .\\gradlew.bat clean :app:assembleDebug :app:lintDebug :app:assembleRelease --no-daemon",
+      "working_directory": "android",
+      "exit_code": 0,
+      "result": "BUILD SUCCESSFUL in 44s; 93 actionable tasks: 92 executed, 1 up-to-date; lint 0 errors and 1 OldTargetApi warning for the required targetSdk 35"
+    },
+    {
+      "name": "release_badging",
+      "command": "aapt.exe dump badging android/app/build/outputs/apk/release/app-release-unsigned.apk with scripted assertions",
+      "exit_code": 0,
+      "result": "package com.junited31.leftovers; compileSdk 35; minSdk 29; targetSdk 35; launchable MainActivity; sha256 9d1e496c0f2a1d3476d9616caa558b47deb3c93a89066083693cb9c15826aa18"
+    },
+    {
+      "name": "backend_fresh_shell",
+      "command": "create disposable backend/.venv; install backend/requirements.txt; powershell -NoProfile from backend runs .venv/Scripts/python.exe import assertion and pytest -q tests; repeat import in a second fresh shell",
+      "exit_code": 0,
+      "result": "pins exact; app.title LeftOVERS API; 1 passed in 0.13s; repeat import exit 0; disposable venv removed"
+    },
+    {
+      "name": "canonical_secret_scan",
+      "command": "powershell -NoProfile -File scripts/scan_secrets.ps1",
+      "exit_code": 0,
+      "result": "Secret scan passed (35 files inspected), repeated after scanner fixtures"
+    },
+    {
+      "name": "scanner_fixture_harness_direct",
+      "command": "powershell -NoProfile -File .omo/evidence/leftovers/task-1-scanner-fixtures.ps1",
+      "exit_code": 1,
+      "result": "PowerShell 5 turns the expected child scanner stderr under ErrorActionPreference=Stop into a terminating NativeCommandError after the first clean case"
+    },
+    {
+      "name": "scanner_fixture_harness_wrapped",
+      "command": "run the existing harness with a native-process wrapper that preserves child exit codes and returns stderr as ordinary captured text",
+      "exit_code": 0,
+      "result": "clean task-1-red/allowed Firebase/malformed input passed; OpenAI, Google-outside-allowed-path, and PEM shapes each rejected; post-clean scan passed; fixture root removed"
+    },
+    {
+      "name": "manual_android_qa",
+      "command": "adb devices -l; adb install -r app-debug.apk; adb shell am start -n com.junited31.leftovers/.MainActivity; adb shell uiautomator dump /sdcard/task-1-home.xml; adb pull",
+      "exit_code": 0,
+      "result": "authorized SM_F711N R5CR91DXA8R; install Success; activity started; XML 2482 bytes sha256 c480902443da97f3cf47b0b1bdff1ea7148744c5f255f3046db357789f309878; XML contains LeftOVERS"
+    }
+  ],
+  "adversarial_verify": {
+    "malformed_input": "pass: nonexistent ANDROID_HOME failed; malformed bytes and exact scanner shape fixtures behaved correctly",
+    "cancel_resume": "not applicable: no command was intentionally interrupted",
+    "stale_state": "pass: exact SHA confirmed before testing; clean Android rebuild reproduced the prior release APK hash",
+    "dirty_worktree": "pass with declared exceptions: preflight had only Boulder; final new files are allowed task-1-windows-verify evidence",
+    "hung_or_long_commands": "pass: bounded no-daemon Gradle build completed in 44s and stopped its single-use daemon",
+    "flaky_tests": "pass: backend import succeeded in two fresh shells and pytest passed",
+    "misleading_success_output": "pass for acceptance: APK fields, lint body, package badging, device identity, and pulled XML body were inspected; prior no-issues lint wording is not reproduced on this SDK",
+    "repeated_interruptions": "not applicable: no command was interrupted",
+    "prompt_injection": "not applicable: no untrusted LLM instruction boundary"
+  },
+  "artifacts": [
+    ".omo/evidence/leftovers/task-1-windows-verify-home.xml",
+    ".omo/evidence/leftovers/task-1-windows-verify-build-contract.txt",
+    ".omo/evidence/leftovers/task-1-windows-verify-review.json"
+  ],
+  "cleanup": [
+    "remote /sdcard/task-1-home.xml removed; subsequent ls exited 1 with no such file",
+    "LeftOVERS activity force-stopped",
+    "adb server was absent before discovery, started by this run, then killed; no adb process remained",
+    "scanner fixture repositories/files and wrapper logs removed; no leftovers-task-1 temp entries remained",
+    "disposable backend/.venv removed",
+    "no LeftOVERS-impl adb/java/python/uvicorn process remained"
+  ],
+  "risks": [
+    "The committed scanner harness is not directly runnable under Windows PowerShell 5 as claimed; its fixture logic passes when child stderr is captured without ErrorActionPreference termination. This does not invalidate the canonical scanner acceptance behavior but should be repaired before relying on the harness as a one-command receipt.",
+    "Current SDK lint emits one OldTargetApi warning because T1 intentionally pins targetSdk 35; T1 requires target 35 and lint exits 0 with zero errors.",
+    "The first Gradle attempt without ANDROID_HOME failed; the verified SDK fallback applies to the aapt precondition, while Gradle needed the SDK path exported in this worktree because no local.properties is committed."
+  ]
+}
