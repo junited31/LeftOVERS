@@ -1,0 +1,34 @@
+Task 2 RED - behavior-first Android data tests
+Date: 2026-07-18 Asia/Seoul
+
+Command (repository root, Windows-correct):
+$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest' --tests '*LeftoversDatabaseTest'
+
+Result: EXPECTED FAIL (exit 1)
+Failing task: :app:compileDebugUnitTestKotlin
+Failure reason: the behavior-first tests compile against the requested real Room seam, but T2 production types do not exist yet.
+
+Behavior classes present before the run:
+- over-use rejects and fully rolls back two pantry rows plus meal-log insertion
+- unit mismatch rejects and fully rolls back two pantry rows plus meal-log insertion
+- stale source/current row version rejects and fully rolls back
+- duplicate inventory IDs reject before mutation
+- unknown inventory IDs reject before mutation
+- successful completion persists exact quantities and one immutable meal snapshot after DB close/reopen
+- malformed quantity input rejects more than three decimals, non-decimal syntax, overflow, and noncanonical units
+
+Representative compiler evidence:
+CompleteCookSessionTest.kt:16:36 Unresolved reference 'LeftoversDatabase'.
+CompleteCookSessionTest.kt:43:22 Unresolved reference 'CompletionResult'.
+CompleteCookSessionTest.kt:37:17 Unresolved reference 'ActualPantryUse'.
+CompleteCookSessionTest.kt:120:18 Unresolved reference 'pantryDao'.
+LeftoversDatabaseTest.kt:44:31 Unresolved reference 'inventoryCompletionDao'.
+LeftoversDatabaseTest.kt:69:22 Unresolved reference 'PantryUnit'.
+LeftoversDatabaseTest.kt:70:29 Unresolved reference 'QuantityParser'.
+
+BUILD FAILED in 3s
+26 actionable tasks: 2 executed, 24 up-to-date
+
+This is a genuine RED at the requested production boundary: tests cannot compile because the canonical Room database, entities, parsing rules, completion transaction, and typed outcomes they exercise are absent.

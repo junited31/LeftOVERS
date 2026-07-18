@@ -1,0 +1,28 @@
+Task 2 unchanged-code characterization
+Date: 2026-07-18 Asia/Seoul
+Repository HEAD before T2 production changes: d94d81f
+
+Command:
+$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+android/gradlew.bat -p android :app:assembleDebug
+
+Result: PASS (exit 0)
+BUILD SUCCESSFUL in 6s
+35 actionable tasks: 35 up-to-date
+
+Command:
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb shell am force-stop com.junited31.leftovers
+adb shell am start -W -n com.junited31.leftovers/.MainActivity
+adb shell dumpsys activity activities
+
+Result: PASS
+Device: R5CR91DXA8R / SM_F711N
+Install: Success
+Status: ok
+LaunchState: COLD
+Activity: com.junited31.leftovers/.MainActivity
+topResumedActivity: com.junited31.leftovers/.MainActivity
+
+Characterization: the existing T1 Android app builds, installs, and preserves the required package/activity contract com.junited31.leftovers/.MainActivity before any T2 production change.

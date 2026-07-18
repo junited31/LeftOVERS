@@ -1,0 +1,65 @@
+Task 2 GREEN - canonical Android data layer
+Date: 2026-07-18 Asia/Seoul
+
+Automated verification command (repository root, Windows-correct):
+$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest' --tests '*LeftoversDatabaseTest' :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --rerun-tasks
+
+Result: PASS (exit 0)
+BUILD SUCCESSFUL in 8s
+64 actionable tasks: 64 executed
+Parsed unit XML totals: tests=7 failures=0 errors=0 skipped=0
+- CompleteCookSessionTest: tests=5 failures=0 errors=0 skipped=0
+- LeftoversDatabaseTest: tests=2 failures=0 errors=0 skipped=0
+
+Secret verification command:
+powershell -NoProfile -File scripts/scan_secrets.ps1
+
+Result: PASS (exit 0)
+Secret scan passed (72 files inspected after final evidence creation).
+
+Manual real-device QA command, run four times total (three stress runs plus one fresh post-refactor run):
+android/gradlew.bat -p android :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.data.InventoryCompletionInstrumentedTest"
+
+Device: authorized SM_F711N (XML device label SM-F711N - 15)
+Run 1: PASS, BUILD SUCCESSFUL in 22s, 2 focused tests
+Run 2: PASS, BUILD SUCCESSFUL in 9s, 2 focused tests
+Run 3: PASS, BUILD SUCCESSFUL in 9s, 2 focused tests
+Fresh post-refactor run: PASS, BUILD SUCCESSFUL in 10s, 2 focused tests
+
+Parsed focused connected-test XML:
+name=com.junited31.leftovers.data.InventoryCompletionInstrumentedTest
+tests=2 failures=0 errors=0 skipped=0
+completionPersistsExactQuantitiesAndOneImmutableLogAcrossReopen=PASS
+exactlyOneConcurrentCompletionWinsAgainstOneRowVersion=PASS
+XML SHA-256=D3B4921847D286582331157E1DD291338760920AC4E2F77040347B9BEC10AFB8
+Copied exact result: .omo/evidence/leftovers/task-2-inventory-transaction.xml
+
+Observable behavior proved:
+- two pantry rows are completed atomically and retain exact remaining Long milli-units
+- a row reduced to zero remains present
+- database close/reopen retains exact inventory and exactly one immutable meal-log snapshot
+- two concurrent completions against one row version produce exactly one Success and one StaleInventory
+- the concurrency assertion runs three iterations per focused invocation and the focused invocation passed repeatedly
+- every over-use, unit mismatch, stale version, duplicate ID, and unknown ID attempt leaves all pantry rows and meal-log count unchanged
+
+Adversarial matrix (all 9 classes):
+1. malformed_input: PASS - parser rejects more than three decimals, non-decimal syntax, overflow, and noncanonical units; signed Long milli-units round-trip.
+2. prompt_injection: N/A - T2 has no prompt, model, network, or untrusted instruction surface.
+3. cancel_resume: N/A - completion is one local Room transaction with no resumable or cancelable external work.
+4. stale_state: PASS - source/current row versions reject stale completion; file DB close/reopen proves persistence.
+5. dirty_worktree: PASS - concurrent backend/T3 paths were recorded and excluded; only explicit T2 paths are staged.
+6. hung_or_long_commands: PASS - Gradle/device commands used bounded waits and all returned; daemon cleanup recorded below.
+7. flaky_tests: PASS - focused device class ran repeatedly, while its concurrency test performs three deterministic iterations per invocation.
+8. misleading_success_output: PASS - PASS is derived from unit and connected-test XML totals plus DB assertions, not Gradle console text alone.
+9. repeated_interruptions: N/A - no intentional interruption occurred.
+
+Cleanup receipt:
+- focused instrumentation tearDown deleted its file database after each test
+- connected test runner left no com.junited31.leftovers or com.junited31.leftovers.test package installed; no app data remained to clear
+- force-stop/clear were attempted before confirming packages absent
+- android/gradlew.bat -p android --stop: 1 Gradle daemon stopped
+- adb server started during this run was stopped with adb kill-server
+- remaining Gradle daemon, AndroidJUnitRunner, and adb processes: none
+- debug journal removed; no temporary debugger source changes or files remain
