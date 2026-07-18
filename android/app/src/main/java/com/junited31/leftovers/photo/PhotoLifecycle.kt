@@ -21,45 +21,42 @@ object PhotoContracts {
 class PhotoLifecycle(private val context: Context) {
     private val cacheDirectory = File(context.cacheDir, CACHE_DIRECTORY).apply { mkdirs() }
 
-    class ManagedPhoto internal constructor(
+    class ManagedPhoto private constructor(
         internal val file: File,
         private val cacheDirectory: File,
     ) {
         internal fun delete() {
             val ownedDirectory = cacheDirectory.canonicalFile
             val candidate = file.canonicalFile
-            if (candidate.parentFile == ownedDirectory && candidate.name.startsWith(CACHE_PREFIX)) {
+            if (
+                candidate.isFile &&
+                candidate.parentFile == ownedDirectory &&
+                candidate.name.startsWith(CACHE_PREFIX)
+            ) {
                 candidate.delete()
             }
         }
-    }
 
-    fun createCacheFile(): File = File.createTempFile(CACHE_PREFIX, ".jpg", cacheDirectory)
-
-    fun createManagedPhoto(): ManagedPhoto = ManagedPhoto(createCacheFile(), cacheDirectory)
-
-    fun manage(file: File): ManagedPhoto? {
-        val candidate = file.canonicalFile
-        return if (
-            candidate.parentFile == cacheDirectory.canonicalFile &&
-            candidate.name.startsWith(CACHE_PREFIX)
-        ) {
-            ManagedPhoto(candidate, cacheDirectory)
-        } else {
-            null
+        internal companion object {
+            fun create(lifecycle: PhotoLifecycle): ManagedPhoto = ManagedPhoto(
+                File.createTempFile(CACHE_PREFIX, ".jpg", lifecycle.cacheDirectory),
+                lifecycle.cacheDirectory,
+            )
         }
     }
 
-    fun fileProviderUri(file: File): Uri = FileProvider.getUriForFile(
+    fun createManagedPhoto(): ManagedPhoto = ManagedPhoto.create(this)
+
+    fun fileProviderUri(photo: ManagedPhoto): Uri = FileProvider.getUriForFile(
         context,
         "${context.packageName}.fileprovider",
-        file,
+        photo.file,
     )
 
-    fun compressCamera(file: File): ManagedPhoto = try {
-        compress(Uri.fromFile(file))
+    fun compressCamera(photo: ManagedPhoto): ManagedPhoto = try {
+        compress(Uri.fromFile(photo.file))
     } finally {
-        file.delete()
+        photo.delete()
     }
 
     fun compress(source: Uri): ManagedPhoto {
@@ -100,7 +97,7 @@ class PhotoLifecycle(private val context: Context) {
         return ownedCacheFiles().count { it.lastModified() < cutoff && it.delete() }
     }
 
-    fun ownedCacheFiles(): List<File> = cacheDirectory.listFiles()?.filter(File::isFile).orEmpty()
+    fun ownedCacheFiles(): List<File> = cacheDirectory.listFiles()?.mapNotNull(::ownedFile).orEmpty()
 
     private fun sourceLength(source: Uri): Long = when (source.scheme) {
         "file" -> source.path?.let(::File)?.length() ?: 0L
@@ -108,10 +105,10 @@ class PhotoLifecycle(private val context: Context) {
     }
 
     private fun compressUnknownLength(source: Uri): ManagedPhoto {
-        val boundedCopy = createCacheFile()
+        val boundedCopy = createManagedPhoto()
         try {
             open(source).use { input ->
-                FileOutputStream(boundedCopy).use { output ->
+                FileOutputStream(boundedCopy.file).use { output ->
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     var total = 0L
                     while (true) {
@@ -124,9 +121,18 @@ class PhotoLifecycle(private val context: Context) {
                     if (total == 0L) throw InvalidPhotoException()
                 }
             }
-            return compress(Uri.fromFile(boundedCopy))
+            return compress(Uri.fromFile(boundedCopy.file))
         } finally {
             boundedCopy.delete()
+        }
+    }
+
+    private fun ownedFile(file: File): File? {
+        val candidate = file.canonicalFile
+        return candidate.takeIf {
+            candidate.isFile &&
+                candidate.parentFile == cacheDirectory.canonicalFile &&
+                candidate.name.startsWith(CACHE_PREFIX)
         }
     }
 

@@ -1,0 +1,47 @@
+Task 5 unforgeable ownership GREEN - 2026-07-18 Asia/Seoul
+
+Base:
+- commit 39e1fe0e3545f1747a981a65d97e9613b1c669f8
+- independent residual report preserved byte-for-byte during implementation:
+  SHA-256 3E1AB31FE9D2BE91234BEA5A7277317A48E160F7DB177D7CBBF4D23CAFBE10EC
+
+RED -> GREEN toggle:
+- RED: PhotoLifecycleTest ran 11 tests, 3 failed at the exact residual boundaries; see
+  task-5-ownership-red.txt.
+- GREEN: focused PhotoLifecycleTest and androidTest compilation succeeded in 14s after the capability fix.
+- final focused T5 JVM bundle: tests=18 failures=0 errors=0 skipped=0.
+
+Ownership closures:
+1. ManagedPhoto has a private source constructor. Its only factory input is PhotoLifecycle; no factory or
+   camera API accepts a caller File or directory. The JVM API assertion rejects public non-synthetic
+   constructors and verifies compressCamera(File) is absent.
+2. Camera capture is created as a lifecycle ManagedPhoto, passed to FileProvider and compressCamera as
+   that opaque handle, and deleted through the handle's canonical parent/regular-file/prefix check.
+3. sweepStale enumerates only regular files whose canonical parent is the dedicated directory and whose
+   name has the lifecycle prefix. Old foreign files inside and outside the directory survive.
+4. Unknown-length 64 MiB cap, 256 KiB request bounds, concurrent one-shot execution, 15-second Firebase
+   task bound, cancellation, exact JPEG multipart evidence, and EXIF orientations 5/7 remain green.
+
+Connected SM_F711N proof after final source change:
+- PhotoPickerTest run 1: tests=4 failures=0 errors=0 skipped=0; BUILD SUCCESSFUL in 17s.
+- PhotoPickerTest run 2: tests=4 failures=0 errors=0 skipped=0; BUILD SUCCESSFUL in 17s.
+- native camera test wrote a real JPEG to the lifecycle-owned capture handle, used TakePicture/FileProvider
+  contracts, compressed it, and asserted the owned capture no longer existed.
+
+Real OS restart proof (task-5-restart.txt):
+- PID 25864 -> force-stop absent -> cold PID 25968
+- stale owned=false; fresh owned=true; old foreign inside=true; old foreign outside=true
+- REAL_OS_RESTART_OWNERSHIP=PASS
+
+Final forced Android gate:
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' \
+    --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug :app:assembleRelease \
+    :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain
+  BUILD SUCCESSFUL in 48s; 112 actionable tasks: 112 executed.
+
+Artifacts/security:
+- debug APK SHA-256 3D792B1E0E733D8ED8D30B9CC3097CFB5F128AEADE3F78BB25BA1896361DFDEC
+- release APK SHA-256 B1027FF9B568F02BE99C492F8844D4709F038D12CF1084DDDD64449FC80C0E21
+- debug/release aapt resource and raw APK secret-pattern hits=0
+- release usesCleartextTraffic hits=0; FileProvider declarations=2
+- canonical scripts/scan_secrets.ps1 passed, 118 files inspected

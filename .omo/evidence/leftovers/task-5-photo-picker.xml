@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding='UTF-8' ?>
-<testsuite name="com.junited31.leftovers.photo.PhotoPickerTest" tests="4" failures="0" errors="0" skipped="0" time="1.776" timestamp="2026-07-18T04:27:36" hostname="localhost">
+<testsuite name="com.junited31.leftovers.photo.PhotoPickerTest" tests="4" failures="0" errors="0" skipped="0" time="1.655" timestamp="2026-07-18T05:09:57" hostname="localhost">
   <properties>
     <property name="device" value="SM-F711N - 15" />
     <property name="flavor" value="" />
     <property name="project" value=":app" />
   </properties>
-  <testcase name="exif_transpose_and_transverse_rotate_and_mirror_real_jpeg" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.092" />
-  <testcase name="cancel_restart_sweep_has_one_request_and_no_transient_files" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.158" />
+  <testcase name="exif_transpose_and_transverse_rotate_and_mirror_real_jpeg" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.126" />
+  <testcase name="cancel_restart_sweep_has_one_request_and_no_transient_files" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.126" />
   <testcase name="native_contracts_use_visual_picker_and_file_provider_uri" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.001" />
-  <testcase name="real_large_bitmap_is_compressed_uploaded_once_and_deleted" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.217" />
+  <testcase name="real_large_bitmap_is_compressed_uploaded_once_and_deleted" classname="com.junited31.leftovers.photo.PhotoPickerTest" time="0.216" />
 </testsuite>

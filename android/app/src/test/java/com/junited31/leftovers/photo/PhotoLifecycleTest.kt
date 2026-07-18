@@ -21,10 +21,74 @@ import org.robolectric.shadows.ShadowContentResolver
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.lang.reflect.Modifier
 import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 class PhotoLifecycleTest {
+    @Test
+    fun camera_compression_surface_never_deletes_foreign_file() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val foreign = File(context.cacheDir, "persistent-camera.jpg")
+        val bitmap = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+        FileOutputStream(foreign).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+        bitmap.recycle()
+        val rawFileMethod = PhotoLifecycle::class.java.methods.singleOrNull {
+            it.name == "compressCamera" && it.parameterTypes.contentEquals(arrayOf(File::class.java))
+        }
+
+        // When
+        val output = rawFileMethod?.invoke(lifecycle, foreign) as? PhotoLifecycle.ManagedPhoto
+
+        // Then
+        assertTrue("foreign camera input must survive", foreign.exists())
+        output?.file?.delete()
+        foreign.delete()
+    }
+
+    @Test
+    fun stale_sweep_preserves_old_foreign_file_inside_transient_directory() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val now = 2_000_000_000_000L
+        val staleOwned = lifecycle.createManagedPhoto().file.apply {
+            writeText("owned")
+            setLastModified(now - Duration.ofHours(25).toMillis())
+        }
+        val staleForeign = File(staleOwned.parentFile, "foreign-camera.jpg").apply {
+            writeText("foreign")
+            setLastModified(now - Duration.ofDays(7).toMillis())
+        }
+
+        // When
+        val deleted = lifecycle.sweepStale(now)
+
+        // Then
+        assertEquals(1, deleted)
+        assertFalse(staleOwned.exists())
+        assertTrue("foreign file inside transient directory must survive", staleForeign.exists())
+        staleForeign.delete()
+    }
+
+    @Test
+    fun ownership_capability_exposes_no_caller_construction_or_raw_file_camera_entrypoint() {
+        // Given
+        val constructors = PhotoLifecycle.ManagedPhoto::class.java.declaredConstructors
+        val rawFileCameraMethods = PhotoLifecycle::class.java.methods.filter {
+            it.name == "compressCamera" && it.parameterTypes.contentEquals(arrayOf(File::class.java))
+        }
+
+        // When / Then
+        assertFalse(
+            "ManagedPhoto must expose no public source constructor",
+            constructors.any { Modifier.isPublic(it.modifiers) && !it.isSynthetic },
+        )
+        assertTrue("compressCamera(File) must not exist", rawFileCameraMethods.isEmpty())
+    }
+
     @Test
     fun compression_limits_dimensions_quality_and_size() {
         // Given
@@ -54,11 +118,11 @@ class PhotoLifecycleTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val lifecycle = PhotoLifecycle(context)
         val now = 2_000_000_000_000L
-        val stale = lifecycle.createCacheFile().apply {
+        val stale = lifecycle.createManagedPhoto().file.apply {
             writeText("stale")
             setLastModified(now - Duration.ofHours(25).toMillis())
         }
-        val fresh = lifecycle.createCacheFile().apply {
+        val fresh = lifecycle.createManagedPhoto().file.apply {
             writeText("fresh")
             setLastModified(now - Duration.ofHours(23).toMillis())
         }
@@ -84,7 +148,8 @@ class PhotoLifecycleTest {
         // Given
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val lifecycle = PhotoLifecycle(context)
-        val cameraFile = lifecycle.createCacheFile()
+        val cameraPhoto = lifecycle.createManagedPhoto()
+        val cameraFile = cameraPhoto.file
         val bitmap = Bitmap.createBitmap(1600, 800, Bitmap.Config.ARGB_8888)
         FileOutputStream(cameraFile).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }
         bitmap.recycle()
@@ -94,7 +159,7 @@ class PhotoLifecycleTest {
         }
 
         // When
-        val compressed = lifecycle.compressCamera(cameraFile)
+        val compressed = lifecycle.compressCamera(cameraPhoto)
 
         // Then
         val decoded = BitmapFactory.decodeFile(compressed.file.path)
@@ -114,7 +179,8 @@ class PhotoLifecycleTest {
             ExifInterface.ORIENTATION_TRANSPOSE,
             ExifInterface.ORIENTATION_TRANSVERSE,
         ).map { orientation ->
-            val source = lifecycle.createCacheFile()
+            val sourcePhoto = lifecycle.createManagedPhoto()
+            val source = sourcePhoto.file
             val bitmap = Bitmap.createBitmap(1600, 800, Bitmap.Config.ARGB_8888).apply {
                 eraseColor(Color.RED)
                 for (x in 800 until width) {
@@ -127,7 +193,7 @@ class PhotoLifecycleTest {
                 setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
                 saveAttributes()
             }
-            lifecycle.compressCamera(source)
+            lifecycle.compressCamera(sourcePhoto)
         }
 
         // When
@@ -142,22 +208,6 @@ class PhotoLifecycleTest {
         transpose.recycle()
         transverse.recycle()
         results.forEach { it.file.delete() }
-    }
-
-    @Test
-    fun foreign_file_cannot_become_managed_or_be_deleted() {
-        // Given
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val lifecycle = PhotoLifecycle(context)
-        val foreign = File(context.cacheDir, "persistent-photo.jpg").apply { writeBytes(byteArrayOf(1)) }
-
-        // When
-        val managed = lifecycle.manage(foreign)
-
-        // Then
-        assertEquals(null, managed)
-        assertTrue(foreign.exists())
-        foreign.delete()
     }
 
     @Test(expected = PhotoTooLargeException::class)

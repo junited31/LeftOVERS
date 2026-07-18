@@ -4,7 +4,7 @@
   "classes": {
     "malformed_input": {
       "status": "applies",
-      "evidence": "empty, known-length >64 MiB, and unknown-length >64 MiB sources reject; UTF-8 JSON/context >256 KiB rejects before token/network; HTTP failures map to typed results"
+      "evidence": "empty, known-length >64 MiB, and unknown-length >64 MiB sources reject; UTF-8 JSON/context >256 KiB rejects before token/network; ownership deletion requires a regular canonical child with the app prefix"
     },
     "prompt_injection": {
       "status": "not_applicable",
@@ -12,19 +12,19 @@
     },
     "cancel_resume": {
       "status": "applies",
-      "evidence": "cancelled delayed MockWebServer call returns Cancelled, deletes only the managed photo, records exactly one request, and performs no retry"
+      "evidence": "cancelled delayed MockWebServer call returns Cancelled, deletes only an unforgeable ManagedPhoto, records exactly one request, and performs no retry"
     },
     "stale_state": {
       "status": "applies",
-      "evidence": "real force-stop/cold-relaunch changed PID 18784 to 18932; Application startup removed stale owned cache while preserving fresh owned and old foreign files"
+      "evidence": "real force-stop/cold-relaunch changed PID 25864 to 25968; startup removed stale owned cache while preserving fresh owned and old foreign files both inside and outside the dedicated directory"
     },
     "dirty_worktree": {
       "status": "applies",
-      "evidence": "connected test first exposed a fresh owned file left by restart proof; test setup now clears only the owned transient cache; the concurrent orchestration ledger remains unstaged"
+      "evidence": "T5 source/evidence paths are isolated; verifier-owned independent report is preserved and included unchanged; concurrent plan, Boulder, and ledger state is not edited or staged"
     },
     "hung_or_long_commands": {
       "status": "applies",
-      "evidence": "HTTP waits remain bounded and Firebase Task awaits now have a 15 second timeout; a never-completing Task maps to TokenUnavailableException in a focused unit test"
+      "evidence": "HTTP waits remain bounded and Firebase Task awaits have a 15 second timeout; every Gradle/device/manual command completed within its explicit bound"
     },
     "flaky_tests": {
       "status": "applies",
@@ -32,11 +32,11 @@
     },
     "misleading_success_output": {
       "status": "applies",
-      "evidence": "claims use parsed JVM/connected XML, exact multipart JPEG-part extraction and hash rather than randomized envelope hash, real process PIDs, and file-existence checks"
+      "evidence": "claims use parsed 18-test JVM XML, 4-test connected XML, exact JPEG-part hash, actual camera-handle existence, real process PIDs, and four restart file-existence checks"
     },
     "repeated_interruptions": {
       "status": "applies",
-      "evidence": "PhotoAdviceCall is atomic one-shot: concurrent second execute returns AlreadyExecuted, only one server request occurs, and only the owning execution performs cleanup"
+      "evidence": "PhotoAdviceCall stays atomic one-shot under concurrent execute; real force-stop/cold-launch independently exercises startup ownership sweep without broad directory deletion"
     }
   }
 }

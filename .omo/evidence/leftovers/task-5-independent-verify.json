@@ -1,153 +1,123 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "review": "AdversarialVerify",
   "verdict": "needs-fix",
   "confidence": {
     "level": "high",
     "score": 0.99,
     "productAtExactCommit": "needs-fix",
-    "overallReason": "Fresh automated and connected gates pass, but the implementation violates required ownership and bounded-input/cancellation contracts. PhotoAdviceCall finally deletes any File supplied by its caller rather than proving it is an owned transient cache file; unknown-length content URIs bypass the 64 MiB source cap; JSON and multipart context are unbounded; one PhotoAdviceCall can execute concurrently and create two requests; and Firebase Tasks.await has no timeout. Existing green evidence does not exercise these failures and mislabels a whole multipart-body hash/size as JPEG evidence."
+    "overallReason": "Commit 39e1fe0 closes the originally demonstrated upload, unknown-length, request-size, one-shot call, Firebase timeout, EXIF 5/7, multipart evidence, and real-restart gaps under fresh tests. It does not close the broader required ownership contract: public compressCamera(File) still deletes any supplied file in finally without proving ownership, startup sweep classifies every file in the transient directory as owned without the prefix/capability checks used elsewhere, and ManagedPhoto's module-visible constructor accepts both the file and claimed cache directory so the ownership capability is forgeable by any app-module caller."
   },
-  "task": "T5 Android auth/API client and ephemeral photo lifecycle",
-  "verifiedCommit": "2ca1857505b5dd4874660440eeac8585bfed96d7",
-  "parentCommit": "cf87762d1fe0182fca809a931cbd23a399c8779f",
-  "commitSubject": "feat(network): connect secure AI and photo transport",
-  "verifiedAt": "2026-07-18T12:51:00.9201712+09:00",
+  "task": "T5 Android auth/API client and ephemeral photo lifecycle hardening re-verification",
+  "verifiedCommit": "39e1fe0e3545f1747a981a65d97e9613b1c669f8",
+  "hardeningBase": "2ca1857505b5dd4874660440eeac8585bfed96d7",
+  "commitSubject": "fix(network): harden photo lifecycle boundaries",
+  "verifiedAt": "2026-07-18T13:45:19.0894825+09:00",
   "repository": "D:/workspace/develop/LeftOVERS-impl",
+  "priorIndependentReview": {
+    "verdict": "needs-fix",
+    "verifiedCommit": "2ca1857505b5dd4874660440eeac8585bfed96d7",
+    "reportSha256": "EBA722C7BEBEE60EE56F3047601FC1250DC70F23AC4A8BB419DAC5F1EE82C0A2",
+    "preservation": "All seven prior findings are evaluated individually below; this report replaces but does not erase the prior needs-fix history."
+  },
   "device": {
     "serial": "R5CR91DXA8R",
     "model": "SM_F711N",
     "reportedTestDevice": "SM-F711N - 15"
   },
-  "findings": [
+  "blockingFindings": [
     {
       "severity": "high",
-      "title": "Upload cleanup can delete caller-owned or foreign files",
-      "requirement": "Only owned cache deletion in finally on all paths.",
+      "title": "Camera compression still deletes arbitrary foreign files",
+      "requirement": "Arbitrary foreign files are never deleted; only lifecycle-owned transient cache artifacts may be deleted in finally.",
       "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/network/LeftoversApi.kt:51-70 accepts an arbitrary java.io.File and carries no PhotoLifecycle ownership proof.",
-        "android/app/src/main/java/com/junited31/leftovers/network/LeftoversApi.kt:111-130 unconditionally calls photo.delete() in finally on success, HTTP error, auth failure, cancellation, malformed file, and oversize file paths.",
-        "The fresh passing JVM test error_response_deletes_transient_upload dynamically creates File.createTempFile without the owned cache directory and asserts that this foreign temp file is deleted, locking in the unsafe behavior rather than rejecting it."
+        "android/app/src/main/java/com/junited31/leftovers/photo/PhotoLifecycle.kt:59 exposes compressCamera(file: File) rather than an owned capability.",
+        "PhotoLifecycle.kt:59-63 calls file.delete() unconditionally in finally after success or every failure, with no canonical-directory, prefix, or ManagedPhoto ownership check.",
+        "The hardening regression foreign_file_cannot_become_managed_or_be_deleted calls only manage(foreign); it never passes a foreign File through compressCamera, so the passing test does not cover this deletion path.",
+        "A valid persistent JPEG outside cacheDir/leftovers-photos will be decoded into an owned output and then the original will be deleted; malformed/oversize foreign inputs are also deleted in finally."
       ],
-      "impact": "A future caller that passes a persistent app file, camera original outside the owned transient directory, or any other caller-controlled File loses it even before a request is created (for example AuthUnavailable or PayloadTooLarge).",
-      "requiredFix": "Make the upload type/constructor accept only a PhotoLifecycle-created owned artifact, or validate canonical containment in the dedicated leftovers-photos directory before deletion; reject foreign files and add a regression test proving they survive every terminal path."
-    },
-    {
-      "severity": "high",
-      "title": "Unknown-length content URIs bypass the source byte limit",
-      "requirement": "Bound photo input before processing and enforce the source/multipart limits.",
-      "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/photo/PhotoLifecycle.kt:77-80 returns AssetFileDescriptor.length directly; Android providers may report UNKNOWN_LENGTH (-1).",
-        "android/app/src/main/java/com/junited31/leftovers/photo/PhotoLifecycle.kt:39-48 rejects only length == 0 or length > 64 MiB, so -1 is accepted and decoded from the provider stream without a counting cap.",
-        "The oversize test uses RandomAccessFile with a known positive length and does not cover an unknown-length ContentProvider stream."
-      ],
-      "impact": "A picker provider can stream an arbitrarily large or compressed-bomb payload past the intended 64 MiB trust-boundary check, causing excessive I/O or memory/CPU pressure.",
-      "requiredFix": "Treat negative/unknown length as requiring a bounded copy/counting stream into an owned file, abort at MAX_SOURCE_BYTES + 1, then decode only the bounded artifact."
-    },
-    {
-      "severity": "high",
-      "title": "One photo call can create multiple concurrent uploads",
-      "requirement": "Cancellation exactly one call/no reupload, including repeated interruptions.",
-      "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/network/LeftoversApi.kt:111-127 has no one-shot/atomic executed state.",
-        "Two threads can both pass photo.isFile/cancelled, invoke requestFactory, overwrite the shared call field, and execute separate OkHttp calls before either finally deletes the file.",
-        "cancel() at lines 133-136 can cancel only whichever call most recently won the shared assignment.",
-        "Fresh tests cover one execute thread and two consecutive test runs, not concurrent/repeated execute on the same PhotoAdviceCall."
-      ],
-      "impact": "Duplicate photo uploads and quota/cost consumption are possible; cancellation can leave one in-flight request running.",
-      "requiredFix": "Use an atomic one-shot state that permits exactly one execute transition and tracks/cancels that single call; add a two-thread regression proving requestCount remains one."
+      "impact": "A caller can lose a persistent or caller-owned camera source simply by using the public camera compression entry point. This is the same root ownership class as the original upload deletion finding, on a sibling path.",
+      "requiredFix": "Accept an ownership-proving camera artifact/capability, or canonical-check the input against the exact lifecycle directory and prefix before deleting. Add success and failure regressions proving a foreign valid/malformed file survives."
     },
     {
       "severity": "medium",
-      "title": "JSON and multipart context inputs have no client-side bounds",
-      "requirement": "Enforce JSON/multipart limits and produce typed boundary failures without unnecessary upload.",
+      "title": "Startup sweep deletes prefix-free files inside the transient directory",
+      "requirement": "Startup sweep removes only owned files older than 24 hours while preserving old foreign files.",
       "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/network/LeftoversApi.kt:40-48 converts any String to a request body without the 256 KiB JSON limit used by the service contract.",
-        "android/app/src/main/java/com/junited31/leftovers/network/LeftoversApi.kt:51-64 adds contextJson to multipart without a bound; only photo.length is checked later at line 114.",
-        "The connected assertion allows multipart body size up to MAX_UPLOAD_BYTES + 4096 for its tiny context but does not test oversized context."
+        "PhotoLifecycle.kt:98-100 sweeps every element returned by ownedCacheFiles.",
+        "PhotoLifecycle.kt:103 defines ownedCacheFiles as every regular file under cacheDir/leftovers-photos; unlike manage/delete at lines 28-50 it applies no leftovers-photo- prefix check.",
+        "Both committed and independent restart probes place the old foreign file outside leftovers-photos, so they do not adversarially test an old prefix-free file inside the directory that sweep claims as owned."
       ],
-      "impact": "The client can allocate and transmit requests that the backend must reject as 413, and multipart total size is not bounded by the intended contract.",
-      "requiredFix": "Apply the canonical UTF-8 JSON/context byte cap before token acquisition/request construction and return PayloadTooLarge with requestCount zero."
+      "impact": "Any other app feature or migration that places a file in the dedicated directory can have it deleted after 24 hours even though it cannot be managed by the ownership API.",
+      "requiredFix": "Use one canonical ownership predicate for manage, delete, and sweep, and add an old prefix-free in-directory preservation regression."
     },
     {
       "severity": "medium",
-      "title": "Firebase token acquisition can hang indefinitely",
-      "requirement": "Hung operations must terminate with a typed result/cancellable boundary.",
+      "title": "ManagedPhoto ownership capability is forgeable within the app module",
+      "requirement": "Do not rely on caller-supplied directory/prefix claims or a prefix-only ownership token.",
       "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/network/AnonymousFirebaseTokenProvider.kt:14-16 uses both Tasks.await calls without a timeout.",
-        "PhotoAdviceCall cancellation cannot interrupt tokenProvider.idToken because the OkHttp Call does not exist until token acquisition completes.",
-        "No AnonymousFirebaseTokenProvider test simulates a never-completing sign-in/token task."
+        "PhotoLifecycle.kt:24-26 declares ManagedPhoto's constructor internal and accepts both file and cacheDirectory from the caller.",
+        "Any source in the Android app module can construct ManagedPhoto(foreignPrefixNamedFile, foreignPrefixNamedFile.parentFile); delete then sees canonical parent equality and a leftovers-photo- prefix and deletes the foreign file.",
+        "LeftoversApi accepts ManagedPhoto directly, so the new type is not an unforgeable lifecycle-issued capability inside the production module."
       ],
-      "impact": "Network/auth degradation can strand the worker indefinitely and make cancel appear ineffective until Firebase eventually completes.",
-      "requiredFix": "Use a bounded token wait or a cancellable async provider and map timeout/cancellation to AuthUnavailable/Cancelled."
-    },
-    {
-      "severity": "medium",
-      "title": "Committed lifecycle evidence overstates what was observed",
-      "requirement": "Fresh observables and misleading_success_output probe.",
-      "evidence": [
-        "PhotoPickerTest reads request.body.readByteArray(), then writes body.size and sha256(body) under fields named jpegBytes and sha256. Those values describe the entire multipart body including its randomized boundary, not the JPEG part.",
-        "The committed multipart hash 490f88bc... differs from the fresh run hash 1ee07fe0... while image dimensions/fixture are unchanged, consistent with hashing the randomized multipart envelope.",
-        "task-5-green.txt accurately calls restart simulated, but task-5-cancel.txt exposes restart_entrypoint while the test constructs a second Application and calls onCreate in the same process; no real process restart is executed."
-      ],
-      "impact": "The artifact cannot independently prove exact JPEG bytes or a real process-restart lifecycle even though its field names and summary can be read that way.",
-      "requiredFix": "Parse the recorded multipart and hash/assert the photo part itself; name total multipart bytes separately. Either run an actual force-stop/relaunch sweep or label the evidence strictly as direct onCreate invocation."
-    },
-    {
-      "severity": "low",
-      "title": "EXIF transpose and transverse orientations are ignored",
-      "requirement": "EXIF-aware compression.",
-      "evidence": [
-        "android/app/src/main/java/com/junited31/leftovers/photo/PhotoLifecycle.kt:102-110 handles rotate 90/180/270 and horizontal/vertical flip but not ORIENTATION_TRANSPOSE or ORIENTATION_TRANSVERSE.",
-        "The sole EXIF regression covers only ORIENTATION_ROTATE_90."
-      ],
-      "impact": "JPEGs using EXIF orientations 5 or 7 are uploaded with incorrect visual orientation.",
-      "requiredFix": "Handle all eight EXIF orientation values and add one mirrored-rotation regression."
+      "impact": "The ownership guarantee depends on every future internal caller voluntarily using PhotoLifecycle factories, recreating the original misuse risk for prefix-named persistent files.",
+      "requiredFix": "Make lifecycle issuance unforgeable: hide construction behind a factory tied to the private canonical lifecycle directory and do not accept a caller-provided ownership directory."
     }
   ],
-  "passingScope": {
-    "authBoundary": {
-      "result": "partial_pass",
-      "evidence": "AnonymousFirebaseTokenProvider uses FirebaseAuth anonymous sign-in/current-user ID token and no production secret or conditional test bypass was found. TokenProvider injection is used by tests, not selected by a runtime test flag. Live Firebase configuration is absent and is deferred to the later deployment task; this review does not claim a live token was minted."
+  "priorFindingResults": [
+    {
+      "finding": "Arbitrary upload File deleted in finally",
+      "result": "closed_for_LeftoversApi_but_broader_contract_still_fails",
+      "evidence": "LeftoversApi now accepts ManagedPhoto, its delete re-canonicalizes and checks exact parent plus prefix, and foreign manage regression passes. Public compressCamera(File) remains an unchecked sibling deletion path and ManagedPhoto remains forgeable module-wide."
     },
-    "typedHttpAndNoRetry": {
-      "result": "pass_with_hung_gap",
-      "evidence": "OkHttp is forced to retryOnConnectionFailure(false) even for an injected client; fresh tests map 200/401/413/422/429/502, network disconnect, and cancellation. Token wait remains unbounded as a separate finding."
+    {
+      "finding": "Unknown-length content URI bypasses 64 MiB cap",
+      "result": "closed",
+      "evidence": "Negative/unknown length is copied through an 8 KiB counting loop, throws immediately after MAX_SOURCE_BYTES is exceeded, removes the bounded copy in finally, and fresh unknown-length 64 MiB+1 regression passed with no owned residue. No API request can be constructed because compression does not return a ManagedPhoto."
     },
-    "photoTransform": {
-      "result": "partial_pass",
-      "evidence": "Fresh real-device test generated a 2600x1800 MediaStore JPEG, passed it through PickVisualMedia.parseResult, compressed to 1280x886 JPEG at quality 80, sent one recorded request, and observed the owned cache empty. Known-length size enforcement and rotate-90 EXIF pass; unknown-length and EXIF 5/7 remain gaps."
+    {
+      "finding": "Concurrent PhotoAdviceCall can upload twice",
+      "result": "closed",
+      "evidence": "AtomicBoolean started.compareAndSet admits one execute; the loser returns AlreadyExecuted. Fresh two-thread regression observed one success, one AlreadyExecuted, and MockWebServer requestCount=1. call is assigned once and cancel targets that sole call."
     },
-    "nativeContracts": {
-      "result": "pass",
-      "evidence": "Connected PhotoPickerTest used PickVisualMedia.ImageOnly parsing and verified TakePicture EXTRA_OUTPUT equals an app FileProvider content URI. No CameraX dependency/source was found."
+    {
+      "finding": "JSON and multipart context unbounded",
+      "result": "closed",
+      "evidence": "UTF-8 byte length greater than 256 KiB returns PayloadTooLarge before token acquisition/request construction for both JSON and multipart context. Fresh regression observed tokenCalls=0 and requestCount=0."
     },
-    "startupSweep": {
-      "result": "pass_at_entrypoint",
-      "evidence": "LeftoversApplication.onCreate invokes sweepStale. JVM coverage deletes only files under cacheDir/leftovers-photos older than 24h and preserves a 23h owned file plus a 7-day file outside that directory. Connected direct onCreate invocation deletes a 25h owned fixture."
+    {
+      "finding": "Firebase Tasks.await can hang indefinitely",
+      "result": "closed_for_timeout",
+      "evidence": "BoundedTaskWaiter defaults to 15 seconds and maps TimeoutException, execution failure, task cancellation, and interruption to TokenUnavailableException while restoring interrupt state. LeftoversApi catches only the typed token error. Fresh never-completing task regression terminated under one second with typed failure."
     },
-    "manifestSecurity": {
-      "result": "pass",
-      "evidence": "Cleartext is enabled only by the debug manifest. Release manifest has no usesCleartextTraffic/networkSecurityConfig override at targetSdk 35. FileProvider is non-exported, grants URI permissions, and exposes only cache-path leftovers-photos/ rather than the cache root/files/external root."
+    {
+      "finding": "Multipart evidence hashes envelope and restart is simulated",
+      "result": "closed",
+      "evidence": "Connected test parses the photo part by multipart boundary, byte-compares it with the compressed JPEG, records separate envelope/JPEG sizes, and hashes only the JPEG. An independent force-stop/cold-launch probe changed PID 22289 to 22472, removed stale owned, and preserved fresh owned plus old foreign files."
     },
-    "secrets": {
-      "result": "pass",
-      "evidence": "Canonical scanner passed 112 files. In-memory scan of all 218 debug APK zip entries and aapt resource dump found zero OPENAI_API_KEY, actual OpenAI key, long Google key, or PEM private-key patterns."
+    {
+      "finding": "EXIF transpose/transverse missing",
+      "result": "closed",
+      "evidence": "Orientation 5 and 7 now apply distinct mirrored rotations. Fresh JVM and SM_F711N tests used asymmetric red/blue JPEGs, asserted 640x1280 dimensions, opposite vertical color polarity, and passed."
     }
-  },
+  ],
   "automated": [
     {
-      "command": "$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\\Sdk'; .\\gradlew.bat :app:testDebugUnitTest --tests '*LeftoversApiTest' --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain",
+      "command": "$env:ANDROID_HOME=Join-Path $env:LOCALAPPDATA 'Android\\Sdk'; .\\gradlew.bat :app:testDebugUnitTest --tests '*LeftoversApiTest' --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain",
       "cwd": "D:/workspace/develop/LeftOVERS-impl/android",
       "exitCode": 0,
-      "result": "BUILD SUCCESSFUL in 33s; 64 actionable tasks, 64 executed."
+      "result": "BUILD SUCCESSFUL in 49s; 112 actionable tasks, 112 executed."
     },
     {
-      "command": "Parse app/build/test-results/testDebugUnitTest/TEST-com.junited31.leftovers.network.LeftoversApiTest.xml and TEST-com.junited31.leftovers.photo.PhotoLifecycleTest.xml",
+      "command": "Parse focused JVM XML",
       "exitCode": 0,
       "result": {
-        "jvm": {"files": 2, "tests": 10, "failures": 0, "errors": 0, "skipped": 0},
-        "classes": {"LeftoversApiTest": 5, "PhotoLifecycleTest": 5}
+        "files": 2,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": {"LeftoversApiTest": 8, "PhotoLifecycleTest": 8}
       }
     },
     {
@@ -156,85 +126,95 @@
       "runs": 2,
       "exitCodes": [0, 0],
       "results": [
-        "3/3 passed, failures=0, errors=0, skipped=0, XML time=1.289s",
-        "3/3 passed, failures=0, errors=0, skipped=0, XML time=1.336s"
+        "XML run 1: tests=4 failures=0 errors=0 skipped=0 time=1.838",
+        "XML run 2: tests=4 failures=0 errors=0 skipped=0 time=1.306"
       ]
-    },
-    {
-      "command": ".\\gradlew.bat :app:assembleRelease --no-daemon --console=plain; aapt.exe dump xmltree app-release-unsigned.apk AndroidManifest.xml",
-      "cwd": "D:/workspace/develop/LeftOVERS-impl/android",
-      "exitCode": 0,
-      "result": "BUILD SUCCESSFUL in 19s; release has no cleartext override; FileProvider exported=false with narrow XML path resource.",
-      "artifactSha256": "FA929A6DE38C7265DB6C7094E17783C9E8B3251B028847D7FFFFA0ABABE761A7"
     },
     {
       "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1",
       "exitCode": 0,
-      "result": "Secret scan passed (112 files inspected)."
+      "result": "Secret scan passed (116 files inspected)."
     },
     {
-      "command": "In-memory ZipArchive scan of all debug APK entries plus aapt dump resources",
+      "command": "In-memory ZipArchive raw scan of every debug/release APK entry plus aapt resource scan",
       "exitCode": 0,
-      "result": {"apkEntries": 218, "rawSecretHits": 0, "resourceSecretHits": 0},
-      "artifactSha256": "B4B8934754BC0F9233E43A2266FA74473E3A572396CB2BC9765A3B7CE6B3760F"
+      "result": {"debugEntries": 218, "releaseEntries": 216, "rawSecretHits": 0, "resourceSecretHits": 0, "releaseCleartextOverrideHits": 0},
+      "artifacts": {
+        "debugSha256": "AA38C0DB699BC418874892150685E97BE88AB1CEE911EFD320F2644A1770D457",
+        "releaseSha256": "A7013149D342DDE9D202C4F3E2B0A53813BAFA30D6D0BFDF0D9F418E277F8ED5"
+      }
     }
   ],
-  "manualAndFreshObservables": {
-    "generatedPickerUpload": {
-      "deviceEvidenceReadback": {
-        "fixture": "generated MediaStore JPEG 2600x1800",
-        "result": "Success",
-        "compressedWidth": 1280,
-        "compressedHeight": 886,
-        "quality": 80,
-        "recordedMultipartBytes": 7812,
-        "requestCount": 1,
-        "ownedCacheEmpty": true,
-        "freshEnvelopeSha256": "1ee07fe0fcbab4d13ee0f1b368c52dfc8d16fa27949efad06a8f35f538c53f12"
-      },
-      "qualification": "The fresh field named jpegBytes was corrected here to recordedMultipartBytes because the test hashes/reads the whole multipart request body."
+  "freshDeviceObservables": {
+    "multipart": {
+      "fixture": "generated MediaStore JPEG 2600x1800 through PickVisualMedia result",
+      "multipartEnvelopeBytes": 7812,
+      "jpegPartBytes": 7478,
+      "jpegPartSha256": "bd96c9a05fc704daf702d74b63baf48a86b9a0e4d2e708c7168f9e2fc282ea47",
+      "compressed": "1280x886 quality 80",
+      "requestCount": 1,
+      "cacheEmpty": true,
+      "qualification": "Source test byte-compares the parsed JPEG multipart part with the pre-upload compressed file; the hash no longer covers the randomized envelope."
     },
-    "cancelAndSweep": {
-      "deviceEvidenceReadback": {
-        "result": "Cancelled",
-        "requestCount": 1,
-        "automaticRetry": false,
-        "uploadExists": false,
-        "stale25hOwnedCacheExists": false
-      },
-      "qualification": "This is one-thread delayed cancellation followed by direct construction of a second Application and onCreate in the same process, not an OS process restart. Fresh/foreign preservation is separately proven by the passing JVM sweep test."
+    "cancel": {
+      "result": "Cancelled",
+      "requestCount": 1,
+      "automaticRetry": false,
+      "uploadExists": false,
+      "stale25hOwnedExists": false
+    },
+    "independentRealRestart": {
+      "steps": [
+        "adb install -r exact-commit debug APK",
+        "cold launch MainActivity and capture PID",
+        "run-as create independent stale owned, fresh owned, and old foreign fixtures",
+        "adb shell am force-stop com.junited31.leftovers",
+        "cold launch MainActivity and capture new PID",
+        "run-as exact existence checks"
+      ],
+      "pidBefore": 22289,
+      "pidImmediatelyAfterForceStop": "absent",
+      "pidAfter": 22472,
+      "pidChanged": true,
+      "staleOwnedExists": false,
+      "freshOwnedExists": true,
+      "oldForeignOutsideOwnedDirectoryExists": true,
+      "discardedProbe": "The first PowerShell existence helper passed sh -c arguments incorrectly and reported exit 1 for all three files; it was discarded. Direct run-as ls recheck produced the cited 1/0/0 absence/presence exits."
     }
+  },
+  "securityAndOwnershipAudit": {
+    "noRetry": "pass; retryOnConnectionFailure(false) is applied to default and injected OkHttp clients.",
+    "broadExceptions": "pass for typed auth/network mapping; token catches only TokenUnavailableException and OkHttp catches IOException. Photo compression cleanup catches Exception only to delete its owned output and immediately rethrows, so it does not convert or swallow failures.",
+    "canonicalPathTraversal": "partial pass; manage and ManagedPhoto.delete use canonical exact-parent equality rather than string prefix paths, and delete re-canonicalizes at deletion time.",
+    "symlink": "partial pass; a symlink resolving outside the lifecycle directory fails exact canonical-parent deletion. The raw compressCamera(File) deletion and module-forgeable directory claim bypass this protection.",
+    "fileProvider": "pass; non-exported provider and narrow cache-path leftovers-photos/ remain unchanged.",
+    "cleartext": "pass; debug-only cleartext remains, release target has no cleartext/network-security override.",
+    "firebaseBoundary": "pass for code boundary; no embedded secret or runtime test-mode bypass found. Live Firebase project configuration remains a later deployment concern and was not claimed here."
   },
   "adversarialClasses": {
-    "malformed_input": {"result": "needs_fix", "evidence": "Known empty and known >64 MiB files reject, but unknown-length provider streams bypass the source cap; JSON/context strings are unbounded."},
-    "prompt_injection": {"result": "not_applicable", "reason": "T5 transports opaque context and contains no prompt execution/instruction parser."},
-    "cancel_resume": {"result": "needs_fix", "evidence": "The tested single call cancels with requestCount=1, but concurrent execute on one PhotoAdviceCall can issue two requests and cancel only one; restart evidence is direct onCreate, not process recreation."},
-    "stale_state": {"result": "pass", "evidence": "Sweep boundary is strictly older than 24h and is rooted in the dedicated owned directory; 23h owned and old foreign files survive in JVM coverage."},
-    "dirty_worktree": {"result": "pass_with_out_of_scope_head_advance", "evidence": "Verification began at exact HEAD 2ca1857. A concurrent T4 completion commit advanced HEAD to 8383b6b, changing only plan/ledger/T4 evidence; git diff of all T5 Android product paths against 2ca1857 remained empty. This reviewer did not edit those paths."},
-    "hung": {"result": "needs_fix", "evidence": "Gradle/ADB/server probes completed, but production Firebase sign-in and ID-token Tasks.await calls have no timeout and are not cancellable by PhotoAdviceCall.cancel."},
-    "flaky": {"result": "pass", "evidence": "Focused PhotoPickerTest passed twice consecutively on SM_F711N with parsed 3/3 XML both runs."},
-    "misleading_success_output": {"result": "needs_fix", "evidence": "Committed jpegBytes/hash actually cover the randomized multipart envelope; fresh hash changed. The restart artifact invokes onCreate in-process rather than restarting the app process."},
-    "repeated_interruptions": {"result": "needs_fix", "evidence": "No atomic execute-once state exists; two callers can race into two uploads and shared call cancellation covers only the last assignment."},
-    "secrets": {"result": "pass", "evidence": "Repository scanner and independent raw/resource APK scans found no actual secret material."}
+    "malformed_input": {"result": "pass", "evidence": "Empty, known oversize, unknown-length oversize, JSON oversize, and context oversize paths reject with no unintended request/owned residue."},
+    "prompt_injection": {"result": "not_applicable", "reason": "T5 transports opaque context and has no prompt execution/instruction parser."},
+    "cancel_resume": {"result": "pass_for_network_call", "evidence": "One-shot atomic execution, delayed cancellation, no retry, and one request are fresh green; real PID-changing restart sweep was independently repeated."},
+    "stale_state": {"result": "needs_fix", "evidence": "Actual restart preserves fresh owned and old foreign outside the directory, but sweep treats every prefix-free file inside leftovers-photos as owned."},
+    "dirty_worktree": {"result": "pass_with_out_of_scope_ledger", "evidence": "HEAD stayed exact 39e1fe0 during product verification. Existing .omo/start-work/ledger.jsonl modification was left untouched. No T5 product/test path differs from verified commit."},
+    "hung": {"result": "pass", "evidence": "All Gradle/ADB/test commands completed; Firebase wait has a 15-second production bound and typed timeout regression."},
+    "flaky": {"result": "pass", "evidence": "PhotoPickerTest passed 4/4 twice consecutively on SM_F711N with parsed XML."},
+    "misleading_success_output": {"result": "pass", "evidence": "Fresh evidence distinguishes envelope and JPEG part, hashes the JPEG part, and real restart is backed by force-stop, absent PID, changed cold PID, and exact file states."},
+    "repeated_interruptions": {"result": "pass_for_PhotoAdviceCall", "evidence": "Atomic one-shot regression observed one request under two execute threads; cancel owns the sole created call."},
+    "secrets": {"result": "pass", "evidence": "Canonical repository scan and independent raw/resource scans of both APKs found zero actual secret patterns."}
   },
-  "discardedOrFailedVerifierAttempts": [
-    "The first combined Gradle invocation was successful but mostly UP-TO-DATE, so it was not used as the fresh JVM/lint/build proof; a second invocation with --rerun-tasks executed all 64 tasks and produced the cited XML.",
-    "Initial adb content query/delete where-clause probes lost SQL quoting through the host/device shell boundary. Cleanup used exact device file removal, then a no-where MediaStore query piped to device-side grep; final matching row count was zero.",
-    "The connected artifact's field name jpegBytes was not repeated as fact; direct source inspection proved it is body.size for the whole multipart envelope."
-  ],
   "cleanup": {
-    "mediaStore": {"result": "pass", "details": "Fresh task-5 Download artifacts and leftovers-t5-large.jpg were removed; device-side filtered MediaStore queries reported downloadRows=0 and imageRows=0."},
-    "ownedCache": {"result": "pass_at_test_end", "details": "Fresh connected lifecycle reported cacheEmpty=true; cancelled upload and >25h stale fixture both absent."},
-    "devicePackages": {"result": "pass", "details": "com.junited31.leftovers and com.junited31.leftovers.test absent; matching package/process count=0."},
-    "mockServersAndPorts": {"result": "pass", "details": "Every test owns/shuts down its MockWebServer; all test processes completed and no server process was left running."},
-    "temp": {"result": "pass", "details": "No verifier temp directory/file was created; APK scanning was in-memory. Product tests delete their explicit source/temp files in their terminal paths."},
-    "gradle": {"result": "pass", "details": "android/gradlew.bat -p android --stop exited 0 and stopped one daemon; the transient Java listener observed immediately afterward exited, and a fresh listener inventory reported zero Java listeners."},
-    "adb": {"result": "pass", "details": "adb kill-server exited 0 after all device cleanup/evidence readback; a fresh process inventory reported zero adb processes."}
+    "mediaStore": {"result": "pass", "details": "Fresh task-5 Download rows and leftovers-t5-large image rows both filtered to zero after exact cleanup."},
+    "independentRestartFixtures": {"result": "pass", "details": "All independent stale/fresh/foreign run-as fixtures were removed before uninstall."},
+    "devicePackagesAndProcesses": {"result": "pass", "details": "Target app uninstall succeeded; test package was already absent. Final matching package and process counts were zero."},
+    "serversAndPorts": {"result": "pass", "details": "MockWebServer-owning test processes completed; final Java listener inventory was zero."},
+    "gradle": {"result": "pass", "details": "gradlew --stop exited 0 and reported no Gradle daemons running."},
+    "adb": {"result": "pass", "details": "adb kill-server exited 0; final adb process count was zero."},
+    "localTemp": {"result": "pass", "details": "Verifier created no local temp files/directories; APK scanning remained in memory."}
   },
   "finalWorktreeObservation": {
-    "headAtStart": "2ca1857505b5dd4874660440eeac8585bfed96d7",
-    "headAtReportWrite": "8383b6be02dcef7abd2dcac02b35ff243b2a6e9c",
-    "headAdvance": "Concurrent chore(omo): record T4 completion; T5 Android product diff from verified commit remained empty.",
+    "headAtStartAndFinish": "39e1fe0e3545f1747a981a65d97e9613b1c669f8",
+    "preExistingOutOfScopeModification": ".omo/start-work/ledger.jsonl",
     "reviewerWrites": [".omo/evidence/leftovers/task-5-independent-verify.json"],
     "reviewerCommit": false
   }

@@ -48,8 +48,13 @@ class PhotoPickerTest {
         // Given
         val context = ApplicationProvider.getApplicationContext<Context>()
         val lifecycle = PhotoLifecycle(context)
-        val cameraFile = lifecycle.createCacheFile()
-        val cameraUri = lifecycle.fileProviderUri(cameraFile)
+        val cameraPhoto = lifecycle.createManagedPhoto()
+        val cameraUri = lifecycle.fileProviderUri(cameraPhoto)
+        val cameraBitmap = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
+        FileOutputStream(cameraPhoto.file).use {
+            check(cameraBitmap.compress(Bitmap.CompressFormat.JPEG, 95, it))
+        }
+        cameraBitmap.recycle()
 
         // When
         val pickerIntent = PhotoContracts.pick.createIntent(
@@ -65,7 +70,9 @@ class PhotoPickerTest {
         assertEquals("content", cameraUri.scheme)
         assertEquals("${context.packageName}.fileprovider", cameraUri.authority)
         assertEquals(cameraUri, cameraIntent.getParcelableExtra(android.provider.MediaStore.EXTRA_OUTPUT, Uri::class.java))
-        cameraFile.delete()
+        val compressed = lifecycle.compressCamera(cameraPhoto)
+        assertFalse(cameraPhoto.file.exists())
+        compressed.file.delete()
     }
 
     @Test
@@ -155,7 +162,7 @@ class PhotoPickerTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val lifecycle = PhotoLifecycle(context)
         val upload = lifecycle.createManagedPhoto().apply { file.writeBytes(ByteArray(1024)) }
-        val stale = lifecycle.createCacheFile().apply {
+        val stale = lifecycle.createManagedPhoto().file.apply {
             writeBytes(byteArrayOf(1))
             setLastModified(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
         }
@@ -210,7 +217,8 @@ class PhotoPickerTest {
             ExifInterface.ORIENTATION_TRANSPOSE,
             ExifInterface.ORIENTATION_TRANSVERSE,
         ).map { orientation ->
-            val source = lifecycle.createCacheFile()
+            val sourcePhoto = lifecycle.createManagedPhoto()
+            val source = sourcePhoto.file
             val bitmap = Bitmap.createBitmap(1600, 800, Bitmap.Config.ARGB_8888)
             Canvas(bitmap).apply {
                 drawColor(Color.RED)
@@ -222,7 +230,7 @@ class PhotoPickerTest {
                 setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
                 saveAttributes()
             }
-            lifecycle.compressCamera(source)
+            lifecycle.compressCamera(sourcePhoto)
         }
 
         // When

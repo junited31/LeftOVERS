@@ -1,0 +1,28 @@
+Task 5 ownership RED - 2026-07-18 Asia/Seoul
+
+Base commit:
+  39e1fe0e3545f1747a981a65d97e9613b1c669f8
+
+Independent residual report preserved before edits:
+  SHA-256 3E1AB31FE9D2BE91234BEA5A7277317A48E160F7DB177D7CBBF4D23CAFBE10EC
+
+Command:
+  $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*PhotoLifecycleTest' \
+    --no-daemon --console=plain
+
+Result: expected runtime failure, exit 1; BUILD FAILED in 15s.
+Parsed result: 11 tests completed, 3 failed.
+
+Failing safety tests added before production edits:
+1. camera_compression_surface_never_deletes_foreign_file
+   AssertionError: compressCamera(File) produced an owned output but unconditionally deleted the valid
+   foreign input from context.cacheDir.
+2. stale_sweep_preserves_old_foreign_file_inside_transient_directory
+   AssertionError: sweepStale counted/deleted an old regular file named foreign-camera.jpg inside
+   leftovers-photos even though it lacked the app-owned prefix.
+3. ownership_capability_exposes_no_caller_construction_or_raw_file_camera_entrypoint
+   AssertionError: ManagedPhoto's JVM constructor was not private and compressCamera(File) remained public.
+
+The three failures independently reproduce the reported ownership mechanisms rather than relying only
+on source inspection.
