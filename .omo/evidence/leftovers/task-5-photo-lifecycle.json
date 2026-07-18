@@ -1,0 +1,17 @@
+{
+              "device":"SM_F711N",
+              "fixture":"generated MediaStore JPEG 2600x1800",
+              "pickerContract":"PickVisualMedia.ImageOnly",
+              "cameraContract":"TakePicture + FileProvider",
+              "result":"Success",
+              "jpegBytes":7812,
+              "compressedWidth":1280,
+              "compressedHeight":886,
+              "maxDimension":1280,
+              "quality":80,
+              "sha256":"490f88bc4ad5ba9e587bbcfc82b98379ce2527a9570a3b3c134f4bf9e63425af",
+              "requestCount":1,
+              "cacheEmpty":true,
+              "bearerTokenRecorded":false,
+              "imageBytesRecorded":false
+            }

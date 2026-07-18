@@ -1,0 +1,8 @@
+device=SM_F711N
+            result=Cancelled
+            request_count=1
+            automatic_retry=false
+            upload_cache_exists=false
+            stale_25h_cache_exists=false
+            restart_entrypoint=LeftoversApplication.onCreate
+            transient_token_or_image_logged=false

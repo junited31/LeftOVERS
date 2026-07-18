@@ -1,0 +1,27 @@
+Task 5 RED - 2026-07-18 Asia/Seoul
+
+Command:
+  $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' --tests '*PhotoLifecycleTest'
+
+Result: expected failure, exit 1.
+
+The behavior-first tests compiled far enough to resolve existing Android/T4 code, then failed because T5
+production symbols were absent. Representative compiler failures:
+- Unresolved reference `executeJson`, `ApiResult`, `newPhotoAdviceCall`, `LeftoversApi`, `TokenProvider`.
+- Unresolved reference `PhotoLifecycle` and `PhotoTooLargeException`.
+
+The first attempt without ANDROID_HOME failed before compilation because this checkout has no local.properties.
+Rerunning with the installed `%LOCALAPPDATA%\Android\Sdk` isolated the intended missing-feature RED result above.
+
+Coverage introduced before production code:
+- actual authenticated JSON request/body and one-call count;
+- typed 200/401/413/422/429/502/network/cancel outcomes and no retry;
+- actual bitmap compression dimensions/JPEG/size and oversize rejection;
+- native picker/TakePicture/FileProvider intent contracts;
+- response/cancel cache deletion and startup stale sweep after a simulated restart.
+
+Refinement RED:
+- After the first GREEN pass, the camera-specific orientation/input-deletion test was added first.
+- The focused command exited 1 on `Unresolved reference 'compressCamera'`, proving the owned camera
+  input lifecycle seam was absent before its minimal implementation.

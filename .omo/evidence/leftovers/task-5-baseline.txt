@@ -1,0 +1,16 @@
+Task 5 baseline - 2026-07-18 Asia/Seoul
+
+Repository: D:\workspace\develop\LeftOVERS-impl
+Branch: feat/leftovers-mvp
+HEAD: cf87762 feat(pantry): track ingredients and kitchen equipment
+
+Observed before T5 edits:
+- `rg -n "OkHttp|FirebaseAuth|FileProvider|PickVisualMedia|TakePicture|photo" android` returned no matches.
+- android/app/build.gradle.kts had no Firebase Auth, OkHttp, MockWebServer, or ExifInterface dependency.
+- android/app/src/main/AndroidManifest.xml declared only MainActivity; no Application class or FileProvider.
+- MainActivity launched the committed T4 pantry/equipment Compose shell backed by Room/DataStore.
+- android/app/src/debug/AndroidManifest.xml selected DebugApplication for the T4 debug seed/reset receiver.
+- `adb devices -l` reported one connected `SM_F711N` (`R5CR91DXA8R`).
+
+Baseline implication: auth, API transport, native photo contracts, cache ownership/cleanup, compression,
+cancellation, and startup stale-cache sweeping did not exist. T5 must add them without changing the T4 UI flow.

@@ -1,0 +1,39 @@
+Task 5 GREEN - 2026-07-18 Asia/Seoul
+
+Final combined Android gate (exit 0):
+  $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' \
+    --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug \
+    :app:compileDebugAndroidTestKotlin :app:connectedDebugAndroidTest \
+    "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.photo.PhotoPickerTest"
+  BUILD SUCCESSFUL in 16s
+
+Parsed JVM XML:
+- LeftoversApiTest: tests=5 failures=0 errors=0 skipped=0
+- PhotoLifecycleTest: tests=5 failures=0 errors=0 skipped=0
+
+Connected SM_F711N gate (both final consecutive runs exited 0):
+  android\gradlew.bat -p android :app:connectedDebugAndroidTest \
+    "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.photo.PhotoPickerTest"
+- run 1: BUILD SUCCESSFUL in 15s
+- run 2: BUILD SUCCESSFUL in 9s
+- parsed connected XML: tests=3 failures=0 errors=0 skipped=0, device=SM-F711N - 15
+- committed XML copy: task-5-photo-picker.xml
+
+Observed device lifecycle:
+- generated MediaStore JPEG: 2600x1800
+- selected through PickVisualMedia parse result
+- TakePicture intent carried an app FileProvider content URI
+- compressed JPEG: 1280x886, quality=80, multipart recorded bytes=7812
+- multipart SHA-256: 490f88bc4ad5ba9e587bbcfc82b98379ce2527a9570a3b3c134f4bf9e63425af
+- request count=1; cache empty after response
+- cancelled no-response call: Cancelled, request count=1, no retry, upload deleted
+- simulated application restart swept the >25h app-cache fixture
+
+Secret gates (exit 0):
+- aapt resource dump: OPENAI_API_KEY/actual OpenAI key/Google key/PEM hits=0
+- raw APK binary scan: same actual secret shapes hits=0
+- canonical scripts/scan_secrets.ps1: passed, 112 files inspected
+
+No live Firebase configuration was required. AnonymousFirebaseTokenProvider uses FirebaseAuth at runtime;
+the fake token seam exists only in tests and is not a production bypass.

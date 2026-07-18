@@ -1,10 +1,9 @@
 package com.junited31.leftovers
 
-import android.app.Application
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 
-class DebugApplication : Application() {
+class DebugApplication : LeftoversApplication() {
     override fun onCreate() {
         super.onCreate()
         val filter = IntentFilter().apply {

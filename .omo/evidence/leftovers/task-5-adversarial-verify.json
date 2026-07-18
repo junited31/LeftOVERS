@@ -1,0 +1,42 @@
+{
+  "task": 5,
+  "device": "SM_F711N",
+  "classes": {
+    "malformed_input": {
+      "status": "applies",
+      "evidence": "empty malformed image and >64 MiB source reject before upload; 401/413/422/429/502 map to typed results"
+    },
+    "prompt_injection": {
+      "status": "not_applicable",
+      "evidence": "T5 transports an opaque context JSON field and contains no prompt execution or instruction parser"
+    },
+    "cancel_resume": {
+      "status": "applies",
+      "evidence": "cancelled delayed MockWebServer call returns Cancelled, deletes the file, and records exactly one request"
+    },
+    "stale_state": {
+      "status": "applies",
+      "evidence": "LeftoversApplication.onCreate removes only owned cache artifacts older than 24 hours"
+    },
+    "dirty_worktree": {
+      "status": "applies",
+      "evidence": "status and staged paths were constrained to T5 Android/tests/evidence; T4/orchestration/verifier paths were not modified"
+    },
+    "hung_or_long_commands": {
+      "status": "applies",
+      "evidence": "request waits use 2 second record and 5 second completion bounds; connected Gradle runs completed without an orphan server"
+    },
+    "flaky_tests": {
+      "status": "applies",
+      "evidence": "focused PhotoPickerTest completed green on two consecutive final SM_F711N runs"
+    },
+    "misleading_success_output": {
+      "status": "applies",
+      "evidence": "claims use parsed JVM/connected XML, one recorded multipart request, exact dimensions, SHA-256, and file existence checks"
+    },
+    "repeated_interruptions": {
+      "status": "applies",
+      "evidence": "call cancellation followed by a new Application startup preserved request count 1 and swept the abandoned stale cache fixture"
+    }
+  }
+}
