@@ -75,7 +75,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - `adb install -r android/app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.junited31.leftovers/.MainActivity`, PASS when UIAutomator contains `LeftOVERS`, evidence `.omo/evidence/leftovers/task-1-home.xml`; failure - build a release variant and inspect `aapt dump badging`, PASS when package/minSdk/targetSdk mismatch would fail the scripted assertion, evidence `task-1-build-contract.txt`.
   Commit: Y | `build(scaffold): bootstrap Android and API projects`
 
-- [ ] 2. Define canonical domain models, Room schema, and atomic inventory completion
+- [x] 2. Define canonical domain models, Room schema, and atomic inventory completion
   What to do / Must NOT do: Add `PantryItemEntity`, `RecipeSnapshotEntity`, `CookSessionEntity`, `MealLogEntity`, DAOs, `LeftoversDatabase`, JSON converters, and DataStore keys. Pantry units are only `g|ml|count`; quantities are `Long` milli-units, UI parsing accepts at most three decimals, and rows carry an integer version. Recipe snapshots bind usage by pantry UUID/source version/unit. Implement one Room transaction that re-reads rows, validates unique known IDs, unit/version/`0 <= actualUse <= quantity`, writes the immutable meal log snapshot, and subtracts usage. Never clamp, auto-convert, deduct untracked missing ingredients, or delete zero rows.
   Parallelization: Wave 1 | Blocked by: T1 | Blocks: T4,T6,T7,T8,T9 | Can parallelize with: T3
   References: `.omo/drafts/leftovers.md:16-21,32,55-60,62,66-71`; numeric completion rules under Decisions.
