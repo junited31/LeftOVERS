@@ -67,7 +67,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
 
 ## Todos
 > Implementation + Test = ONE todo. Never separate.
-- [ ] 1. Scaffold the reproducible monorepo and build contracts
+- [x] 1. Scaffold the reproducible monorepo and build contracts
   What to do / Must NOT do: Create root `README.md`, `LICENSE`, `.gitignore`, `android/`, `backend/`, and `scripts/scan_secrets.ps1`; use Gradle 8.10.2, AGP 8.7.3, Kotlin/Compose plugin 2.0.21, Java 17, compile/target 35, minSdk 29, package `com.junited31.leftovers`, and Python package pins from the approved draft. Generate the wrapper and one Compose `MainActivity`; create FastAPI `GET /health`. The one PowerShell secret scanner enumerates `git ls-files --cached --others --exclude-standard`, rejects actual `(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{20,}`, long `AIza...`, and PEM shapes, and excludes only `android/app/google-services.json` from the `AIza` rule. Add no feature architecture or secret values.
   Parallelization: Wave 1 | Blocked by: none | Blocks: T2,T3
   References: `.omo/drafts/leftovers.md:29-51,54,75`; known-good build files, verified build-tools, and canonical scanner decision are cited there.

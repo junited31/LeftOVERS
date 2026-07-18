@@ -1,0 +1,16 @@
+{
+  "schema_version": 2,
+  "active_work_id": "leftovers",
+  "works": {
+    "leftovers": {
+      "work_id": "leftovers",
+      "active_plan": ".omo/plans/leftovers.md",
+      "plan_name": "leftovers",
+      "session_ids": [
+        "codex:019f7283-058a-7933-8816-45c385f635b8"
+      ],
+      "status": "active",
+      "worktree_path": "D:/workspace/develop/LeftOVERS-impl"
+    }
+  }
+}
