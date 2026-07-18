@@ -107,7 +107,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - MockWebServer receives <=8 MiB JPEG and cache directory is empty after response, evidence `task-5-photo-lifecycle.json`; failure - cancel a delayed request and restart app, PASS when no network retry occurs and stale cache is swept, evidence `task-5-cancel.txt`.
   Commit: Y | `feat(network): connect secure AI and photo transport`
 
-- [ ] 6. Generate, validate, rank, and display three diverse recipes
+- [x] 6. Generate, validate, rank, and display three diverse recipes
   What to do / Must NOT do: Implement backend recipe prompt/schema, Android recipe request/response, deterministic normalizer/fingerprint/profile/ranker, candidate cards, scoring explanations, missing ingredients, and snapshot save. The prompt includes one compact valid three-candidate example. Hard-filter equipment/cooldowns; require exactly three unique normalized titles/fingerprints, at least two normalized cuisines, and at least two normalized primary techniques. Novelty compares normalized ingredient-name sets, never hash strings. Use the approved 0.45/0.25/0.20/0.10 algorithm/tie-breaks and strict pantry-row binding. No partial-set UI, crawler, recipe corpus, ML, or server persistence.
   Parallelization: Wave 2 | Blocked by: T2,T3,T4,T5 | Blocks: T7,T8,T10
   References: `.omo/drafts/leftovers.md:18,34-35,58-59,63,67-76`; exact ranking/fingerprint/retry definitions are cited there.
