@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.junited31.leftovers.ui.PantryEquipmentTest" tests="7" failures="0" errors="0" skipped="0" time="10.692" timestamp="2026-07-18T02:49:31" hostname="localhost">
+  <properties>
+    <property name="device" value="SM-F711N - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="negativeQuantityShowsInlineErrorWithoutInsertingRoomRow" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="2.259" />
+  <testcase name="overThreeDecimalQuantityShowsInlineErrorWithoutInsertingRoomRow" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="1.509" />
+  <testcase name="unscopedDebugSeedBroadcastPersistsAcrossActivityRecreation" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="0.934" />
+  <testcase name="equipmentSelectionPersistsAcrossActivityRecreation" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="1.004" />
+  <testcase name="blankNameShowsInlineErrorWithoutInsertingRoomRow" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="1.096" />
+  <testcase name="pantryEditPersistsAcrossActivityRecreation" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="1.623" />
+  <testcase name="zeroQuantityShowsInlineErrorWithoutInsertingRoomRow" classname="com.junited31.leftovers.ui.PantryEquipmentTest" time="1.216" />
+</testsuite>

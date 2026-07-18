@@ -1,0 +1,48 @@
+Task 4 GREEN verification
+Date: 2026-07-18 Asia/Seoul
+
+Automated gate:
+  android/gradlew.bat -p android :app:testDebugUnitTest :app:assembleRelease :app:lintDebug :app:compileDebugAndroidTestKotlin
+  PASS: BUILD SUCCESSFUL in 7s; 95 tasks; lint reported 0 errors.
+  Parsed JVM XML: 2 files, tests=8, failures=0, errors=0, skipped=0.
+
+Connected device gate (SM-F711N, Android 15):
+  android/gradlew.bat -p android :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest
+  PASS twice consecutively: 7/7 tests, 0 skipped, 0 failed (19s and 18s).
+  Final XML: task-4-validation.xml
+  XML SHA-256: 373791E637DCB21F76BE89A0F0940026E5E824E65E6E00CA2DB0868ED9D53361
+
+Release boundary:
+  app-release-unsigned.apk SHA-256: A45DC5EEA2F3A521BE7D36FB06386B281A52751AF90EA600DDCB7B336A664D4E
+  aapt 35.0.0 inspected 66 merged-manifest lines.
+  PASS: 0 matches for DEBUG_SEED, DEBUG_RESET, DebugSeedReceiver, DebugApplication, or debug-init.
+
+Secret scan:
+  scripts/scan_secrets.ps1
+  PASS: 94 files inspected.
+
+Manual exact-channel verification:
+  1. Installed final debug APK and launched MainActivity once.
+  2. Ran exactly: adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED
+  3. Broadcast result=0; after force-stop/start, Eggs, Rice, and Spinach remained visible.
+  4. Equipment navigation was tapped through its UI bounds; all nine fixed choices were visible.
+  5. Pantry XML exposes Delete Eggs, Delete Rice, and Delete Spinach.
+  6. Each Equipment clickable row is 144 px high = 48 dp at device density 3.
+
+Final visual evidence:
+  task-4-pantry.png SHA-256: 317C764385687A3F80E07F712E134063E464D9019CE1826DF1CBDD2E7BBE4782
+  task-4-equipment.png SHA-256: FAD76C92315D25632236A5AAA2EC1C9FD36BF9635D5357327D9EFA4E7047FE82
+  Two independent final reviewers: PASS, HIGH confidence; blocking findings: none.
+  Detail: task-4-visual-qa.txt
+
+Cleanup receipt:
+  Exact DEBUG_RESET broadcast returned result=0.
+  After force-stop/start, empty-state text was present and seeded names were absent.
+  Task-specific remote XML files were removed.
+  com.junited31.leftovers and its test package are absent.
+  One Gradle daemon was stopped and the run-started ADB server was stopped.
+
+Adversarial verification:
+  task-4-adversarial-verify.json parses as JSON and covers all nine required classes.
+
+RESULT: PASS.

@@ -1,0 +1,31 @@
+Task 4 baseline captured before production edits
+Date: 2026-07-18 Asia/Seoul
+HEAD: 7f20935 chore(omo): record T2 completion
+Device: R5CR91DXA8R / SM_F711N (connected)
+
+Build and launch:
+- ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk android/gradlew.bat -p android :app:assembleDebug
+- BUILD SUCCESSFUL; 37 actionable tasks, 37 up-to-date
+- adb install -r android/app/build/outputs/apk/debug/app-debug.apk: Success
+- force-stop then launch com.junited31.leftovers/.MainActivity: success
+
+Visible T2 UI contract:
+- One centered semantics/text node: LeftOVERS
+- No Pantry or Equipment navigation, list, form, or persisted equipment surface exists.
+- Raw UIAutomator capture: task-4-baseline.xml
+
+T2 data persistence contract retained for T4:
+- LeftoversDatabase schema version 1 includes pantry_items.
+- PantryItemEntity uses PantryItemId UUID identity, Long quantityMilliUnits,
+  PantryUnit, optional expiryEpochDay, and integer version.
+- PantryDao insertAll/get/getAll persists real Room rows; getAll orders by ID.
+- PantryUnit accepts only g, ml, count.
+- QuantityParser accepts signed decimal text with at most three decimals and
+  returns exact milli-units; T4 must add the positive-value UI boundary.
+- LeftoversPreferenceKeys exists but no equipment preference key or DataStore
+  UI integration exists yet.
+
+Concurrent out-of-scope dirty state observed and preserved:
+- backend/app/openai_client.py
+- backend/tests/test_openai_client.py
+- task-3 evidence files

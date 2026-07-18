@@ -1,0 +1,43 @@
+{
+  "task": "T4 pantry and equipment",
+  "date": "2026-07-18",
+  "device": "SM-F711N Android 15",
+  "classes": {
+    "malformed_input": {
+      "result": "pass",
+      "reason": "Connected tests reject blank names, zero, negative, and over-three-decimal quantities with inline errors and unchanged Room row counts."
+    },
+    "prompt_injection": {
+      "result": "not_applicable",
+      "reason": "T4 has no prompt, model, remote content, or instruction-processing boundary."
+    },
+    "cancel_resume": {
+      "result": "not_applicable",
+      "reason": "T4 has no cancellable network or long-running user operation."
+    },
+    "stale_state": {
+      "result": "pass",
+      "reason": "Equipment and pantry edits survive Activity recreation; exact debug seed data survives force-stop/start through DataStore and Room."
+    },
+    "dirty_worktree": {
+      "result": "pass",
+      "reason": "Concurrent T3 backend, orchestration, and evidence changes were never staged or edited by T4."
+    },
+    "hung_or_long_commands": {
+      "result": "pass",
+      "reason": "All Gradle, ADB, aapt, and secret-scan commands were bounded and completed; no command was abandoned."
+    },
+    "flaky_tests": {
+      "result": "pass",
+      "reason": "A DataStore recreation race was exposed, fixed by awaiting the persisted observable and avoiding a false empty initial render, then the full focused class passed twice consecutively."
+    },
+    "misleading_success_output": {
+      "result": "pass",
+      "reason": "Pass claims use parsed JVM and connected XML, direct Room row counts, aapt release XML, force-stop/start UI readback, and opened screenshots."
+    },
+    "repeated_interruptions": {
+      "result": "pass",
+      "reason": "Visual reviewers examining superseded captures were interrupted; after the final source and capture refresh, two new independent reviewers both returned PASS with high confidence."
+    }
+  }
+}

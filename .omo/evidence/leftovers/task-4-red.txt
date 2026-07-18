@@ -1,0 +1,35 @@
+Task 4 behavior-first RED
+Date: 2026-07-18 Asia/Seoul
+Device: SM-F711N / Android 15
+
+Compile gate:
+  android/gradlew.bat -p android :app:compileDebugAndroidTestKotlin
+Result: PASS, proving the tests compiled against the untouched T2 production app.
+
+Behavior gate:
+  android/gradlew.bat -p android :app:connectedDebugAndroidTest
+    -Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest
+Result: EXPECTED FAIL (7 tests, 7 failures)
+
+Observed feature-absence failures:
+- blank name: nav-pantry missing before submission path can exist
+- zero quantity: nav-pantry missing before validation path can exist
+- negative quantity: nav-pantry missing before validation path can exist
+- over-three-decimal quantity: nav-pantry missing before validation path can exist
+- equipment persistence: nav-equipment missing
+- pantry edit/restart persistence: nav-pantry missing
+- debug/release source-set boundary: expected one debug seed receiver, found zero;
+  release safety cannot be meaningfully exercised until the debug-only hook exists
+
+The first fixture error (missing leftovers.db) was corrected in test code only;
+the final RED run failed solely because the requested T4 UI/debug surfaces do not exist.
+Generated connected result XML under android/app/build/outputs/androidTest-results/connected/debug/.
+
+Exact manual-channel RED on SM-F711N / Android 15:
+  1. Launch the debug app once.
+  2. adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED
+  3. Force-stop/start and dump UI.
+Observed: `Broadcast completed: result=0`, but Room stayed empty and UIAutomator
+showed `Your pantry is empty`. PackageManager resolved DebugSeedReceiver, and
+explicit component delivery seeded three rows and survived restart. This isolates
+Android 8+ implicit manifest-broadcast delivery as the missing exact-channel seam.

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PantryDao {
@@ -17,6 +18,15 @@ interface PantryDao {
 
     @Query("SELECT * FROM pantry_items ORDER BY id")
     suspend fun getAll(): List<PantryItemEntity>
+
+    @Query("SELECT * FROM pantry_items ORDER BY name COLLATE NOCASE, id")
+    fun observeAll(): Flow<List<PantryItemEntity>>
+
+    @Update
+    suspend fun update(item: PantryItemEntity): Int
+
+    @Query("DELETE FROM pantry_items WHERE id = :id")
+    suspend fun delete(id: PantryItemId): Int
 }
 
 @Dao

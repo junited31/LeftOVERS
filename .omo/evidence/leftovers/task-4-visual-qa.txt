@@ -1,0 +1,25 @@
+Task 4 final visual QA
+Date: 2026-07-18 Asia/Seoul
+
+Artifacts inspected:
+- task-4-pantry.png (1080x2640 RGBA)
+- task-4-pantry.xml
+- task-4-equipment.png (1080x2640 RGBA)
+- task-4-equipment.xml
+- android/app/src/main/java/com/junited31/leftovers/MainActivity.kt
+
+Independent reviewer 1: t4_visual_precision_final2
+Verdict: PASS (HIGH confidence)
+- Clean final captures with no clipping, overlap, duplication, or erroneous empty state.
+- Contextual Delete Eggs, Delete Rice, and Delete Spinach semantics confirmed.
+- All nine equipment choices are visible exactly once.
+- Every equipment row is 144 px high, which is 48 dp at 3 px/dp.
+
+Independent reviewer 2: t4_visual_integrity_final2
+Verdict: PASS (HIGH confidence)
+- Both final captures are valid and were produced after the final MainActivity source.
+- Pantry cards and Equipment choices are complete and unobstructed.
+- Clickable equipment rows are 960x144 px and meet the minimum touch target.
+- The thin far-left handle is confirmed Samsung Edge-panel OS chrome, not app UI.
+
+Blocking findings: none.

@@ -1,0 +1,24 @@
+Task 4 release boundary proof
+Date: 2026-07-18 Asia/Seoul
+
+Build:
+  android/gradlew.bat -p android :app:assembleRelease
+  BUILD SUCCESSFUL
+
+Artifact:
+  android/app/build/outputs/apk/release/app-release-unsigned.apk
+  SHA-256: A45DC5EEA2F3A521BE7D36FB06386B281A52751AF90EA600DDCB7B336A664D4E
+
+Inspection:
+  %LOCALAPPDATA%/Android/Sdk/build-tools/35.0.0/aapt.exe dump xmltree
+    android/app/build/outputs/apk/release/app-release-unsigned.apk AndroidManifest.xml
+
+Searched merged release manifest for:
+- DEBUG_SEED
+- DEBUG_RESET
+- DebugSeedReceiver
+- DebugApplication
+- debug-init
+
+Result: 66 manifest lines inspected; 0 debug hook matches.
+PASS: release APK contains no debug receiver, startup component, action, or seed/reset hook.
