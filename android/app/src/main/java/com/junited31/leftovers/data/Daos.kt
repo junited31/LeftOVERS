@@ -31,11 +31,17 @@ interface PantryDao {
 
 @Dao
 interface RecipeSnapshotDao {
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insert(snapshot: RecipeSnapshotEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(snapshot: RecipeSnapshotEntity): Long
 
     @Query("SELECT * FROM recipe_snapshots WHERE id = :id")
     suspend fun get(id: String): RecipeSnapshotEntity?
+
+    @Query("SELECT COUNT(*) FROM recipe_snapshots")
+    suspend fun count(): Int
+
+    @Query("SELECT id FROM recipe_snapshots ORDER BY createdAtEpochMillis, id")
+    suspend fun getAllIds(): List<String>
 }
 
 @Dao

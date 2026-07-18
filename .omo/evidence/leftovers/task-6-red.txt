@@ -1,0 +1,37 @@
+T6 RED - behavior-first recipe validation and ranking tests
+Captured: 2026-07-18 Asia/Seoul
+Production files had not been edited.
+
+Backend command:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py
+Expected failures observed:
+- missing equipment returned HTTP 200 instead of typed 422;
+- compact schema-valid three-candidate prompt example was absent (ImportError for RECIPE_EXAMPLE_JSON).
+Summary: 2 failed, 13 passed; exit 1.
+
+Android command:
+  android/gradlew.bat -p android :app:testDebugUnitTest --tests '*RecommendationRankerTest'
+Expected failure observed:
+- compileDebugUnitTestKotlin failed because RecommendationCandidate, RecommendationRanker, RecipeNormalizer, RecipeFingerprint, RecommendationHistory, and typed invalid reasons did not exist.
+Summary: BUILD FAILED; exit 1.
+
+Behavior matrix introduced before production edits:
+- missing equipment; 2 vs 3 candidates; duplicate normalized title/fingerprint; one cuisine/technique;
+- unknown/duplicate pantry ID; version/unit/amount mismatch;
+- no-history defaults; NFKC/whitespace/Locale.ROOT normalization; exact tag formula;
+- Jaccard over ingredient-name sets; newest 20/5 truncation; exact UTC 30-day boundary;
+- stable tie ordering; expiry weights; stable ordered IDs across three runs;
+- compact valid prompt example parsed through the production Pydantic schema/binding validator.
+
+Second RED cycle:
+- backend prompt-injection/history fixture failed because RecipeGenerateRequest forbade the `history` boundary field;
+- Android RecipeJson/RecipeDecodeResult/RecipeSnapshotSaver and Room count seam were unresolved at compile time.
+
+UI RED cycle:
+- focused RecipeScreenTest could not compile because the debug-only real-API override and recipe snapshot query did not exist;
+- the production navigation had no Recipe destination, generate action, complete ranked cards, or save action.
+
+Visual-polish RED cycle on SM_F711N:
+- the new accessibility/scanability assertions could not find `Why this ranks` or individual metric labels;
+- the initial screenshot exposed placeholder P/R/E navigation glyphs and orphan-wrapped metric values;
+- after a behavior-first assertion change, the focused connected test failed before the Material-icon and two-column metric implementation.

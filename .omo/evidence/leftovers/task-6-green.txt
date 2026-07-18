@@ -1,0 +1,71 @@
+T6 GREEN - diverse pantry-first recipe recommendations
+Captured: 2026-07-18 Asia/Seoul
+
+Backend focused:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py
+  PASS: 15 passed in 1.24s
+
+Backend full:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests
+  PASS: 40 passed in 1.48s
+
+Backend quality/container:
+  uvx ruff check backend
+  PASS: All checks passed
+  check-no-excuse-rules.py backend
+  PASS: no violations in 15 files
+  docker build -t leftovers-backend:t6 backend
+  PASS: image built from python:3.14-slim
+
+Android focused:
+  android/gradlew.bat -p android :app:testDebugUnitTest --tests '*RecommendationRankerTest'
+  PASS: BUILD SUCCESSFUL; 14 tests, 0 failures
+
+Android full gate:
+  android/gradlew.bat -p android :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin
+  PASS: BUILD SUCCESSFUL in 30s; 112 actionable tasks
+  Parsed JVM XML: 43 tests, 0 failures, 0 errors, 0 skipped across 7 suites
+  Parsed lint XML: 0 errors
+  Debug and unsigned release APKs exist; Android instrumentation Kotlin compiled.
+
+Connected production-UI gate:
+  android/gradlew.bat -p android :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.RecipeScreenTest"
+  PASS twice consecutively on SM-F711N Android 15: 2 tests, 0 failures, 0 errors, 0 skipped per invocation
+  Production Activity uses the concrete LeftoversApi path with MockWebServer, real Room/DataStore seed state, deterministic ranking, and immutable snapshot insertion.
+
+Manual authenticated live HTTP:
+- literal curl with seeded pantry/equipment and Bearer valid-token returned HTTP 200 with exactly three schema-valid candidates;
+- invalid duplicate fixture produced attempts 0, 1, and 2, then typed HTTP 422 model_validation_failed;
+- RecipeScreen typed-422 test showed no partial cards and preserved Room snapshot count.
+
+Determinism and hard filters:
+- same fixture asserts byte-stable ordered SHA-256 IDs over three runs;
+- exact NFKC/trim/whitespace/Locale.ROOT normalization, pantry bindings, equipment, cooldown, diversity, expiry, tag-score, Jaccard novelty, and tie-break fixtures pass;
+- prompt compact example parses through the production Pydantic response and binding validator and appears exactly once.
+
+Visual QA:
+- final reviewers: PASS and PASS (HIGH confidence); no blockers.
+- screenshot/XML show Material navigation icons, itemized usage, equipment, coverage, expiry, preference, novelty, missing disclosure, and a full-width save action.
+
+Adversarial verification - all nine probes:
+1. malformed_input: PASS - malformed JSON, two-candidate, duplicate, equipment, pantry UUID/version/unit/amount, cuisine, and technique fixtures fail closed.
+2. prompt_injection: PASS - injected text remains only in delimited user_data, never instructions; store=false is asserted.
+3. cancel_resume: N/A - no T6 gate was intentionally interrupted; there is no automatic retry/background mutation UI.
+4. stale_state: PASS - source pantry versions and exact 30-day UTC cooldown boundaries are asserted; immutable Room insert uses IGNORE.
+5. dirty_worktree: PASS - baseline HEAD 46be24b was clean; only declared T6 source/tests/evidence are staged for the task commit.
+6. hung_commands: PASS - all HTTP, Gradle, connected-device, Docker, and pytest commands completed under bounded waits; Uvicorn was stopped.
+7. flaky_tests: PASS - focused RecipeScreen class passed twice consecutively and stable ordered IDs are asserted over three runs.
+8. misleading_output: PASS - console success was cross-checked with HTTP status/body, Pydantic parsing, JVM/connected XML, Room counts, APK files, screenshot/XML, and Docker build.
+9. repeated_interruptions: N/A - no repeated task interruption occurred; intermediate assertion failures were deterministic RED or test-debug cycles and were resolved before the final gates.
+
+Secret scan:
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1
+  PASS after final evidence creation: 135 files inspected.
+
+Cleanup receipt:
+- localhost Uvicorn listener stopped and port 18080 has zero listeners;
+- literal curl bodies, live adapter, debug journal, and ignored backend verification venv removed;
+- task-6 device PNG/XML removed and both app/test packages absent;
+- temporary Docker tag/image removed; one Gradle daemon stopped; ADB server stopped with zero adb/Gradle-daemon processes.
+
+Blocking risks: none.

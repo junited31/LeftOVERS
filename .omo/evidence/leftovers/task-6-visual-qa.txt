@@ -1,0 +1,22 @@
+T6 final visual QA
+Capture: task-6-recipes.png and task-6-recipes.xml
+Device: SM_F711N, Android 15, 1080x2640
+Captured: 2026-07-18 15:46:36 Asia/Seoul
+
+Revision evidence:
+- Initial reviewer A: REVISE for placeholder P/R/E navigation glyphs and orphan-wrapped usage/rank text.
+- Initial reviewer B: PASS; confirmed viewport-edge clipping was intentional mid-scroll behavior, not overlap.
+- Revision: Material Pantry/Recipes/Equipment icons with semantics; usage split by ingredient; rank reasons rendered as two aligned metric rows.
+
+Final independent reviewer A: PASS
+- clear hierarchy, no trapped overlap, legible fields, complete card structure, Material navigation icons, and adequate touch targets;
+- no concrete visual or production blockers.
+
+Final independent reviewer B: PASS (HIGH confidence)
+- fresh PNG/XML match at 1080x2640;
+- no orphan wraps, placeholder glyphs, overlap, weak contrast, or error leakage;
+- partial cards are bounded mid-scroll clipping and all cards/actions remain reachable.
+
+Artifact SHA-256:
+- task-6-recipes.png: CE5BEB12EC3B4E571FA97BF3FE149453987792A91F553262E09CA7C00C1E8CF2
+- task-6-recipes.xml: 2A40BD25BC5CAF90C7D587CB2D5A4874A40DCAC95034B76B9B9B8FA3830FF0B6

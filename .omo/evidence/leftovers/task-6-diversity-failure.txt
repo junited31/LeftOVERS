@@ -1,0 +1,18 @@
+T6 invalid candidate-set evidence
+
+Literal authenticated HTTP request:
+curl.exe -sS -i -X POST http://127.0.0.1:18080/v1/recipes/generate -H "Authorization: Bearer valid-token" -H "Content-Type: application/json" --data-binary '@backend/.tmp-t6-invalid.json'
+
+HTTP result:
+HTTP/1.1 422 Unprocessable Content
+{"error":{"code":"model_validation_failed","message":"Model response failed validation"}}
+
+Production retry boundary observed from the local Uvicorn process:
+recipe_attempt=0 invalid_fixture=True
+recipe_attempt=1 invalid_fixture=True
+recipe_attempt=2 invalid_fixture=True
+Exactly two retries occurred after the first invalid response.
+
+Android persistence boundary:
+RecipeScreenTest.typed422ShowsNoPartialSetAndDoesNotSaveSnapshots passed on SM_F711N.
+The test asserts zero recipe cards, a typed model_validation_failed message, and an unchanged immutable Room snapshot count.

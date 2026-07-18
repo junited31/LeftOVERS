@@ -21,6 +21,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Kitchen
+import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -41,6 +46,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -58,6 +65,7 @@ import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
 import com.junited31.leftovers.data.QuantityParser
 import com.junited31.leftovers.data.leftoversDataStore
+import com.junited31.leftovers.recipes.RecipeScreen
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -67,13 +75,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val database = LeftoversDatabase.get(applicationContext)
+        val recipeApi = (application as LeftoversApplication).createRecipeApi()
         setContent {
-            LeftoversApp(database.pantryDao(), applicationContext.leftoversDataStore)
+            LeftoversApp(
+                database.pantryDao(),
+                database.recipeSnapshotDao(),
+                applicationContext.leftoversDataStore,
+                recipeApi,
+            )
         }
     }
 }
 
-private enum class AppScreen { PANTRY, EQUIPMENT }
+private enum class AppScreen { PANTRY, RECIPES, EQUIPMENT }
 
 private data class EquipmentChoice(val id: String, val label: String)
 
@@ -91,7 +105,12 @@ private val equipmentChoices = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LeftoversApp(pantryDao: PantryDao, dataStore: DataStore<Preferences>) {
+private fun LeftoversApp(
+    pantryDao: PantryDao,
+    snapshotDao: com.junited31.leftovers.data.RecipeSnapshotDao,
+    dataStore: DataStore<Preferences>,
+    recipeApi: com.junited31.leftovers.network.LeftoversApi,
+) {
     val pantryItems by pantryDao.observeAll().collectAsState(initial = emptyList())
     val preferences by dataStore.data.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
@@ -114,9 +133,23 @@ private fun LeftoversApp(pantryDao: PantryDao, dataStore: DataStore<Preferences>
                             screen = AppScreen.PANTRY
                             showForm = false
                         },
-                        icon = { Text("P") },
+                        icon = { Icon(Icons.Outlined.Inventory2, contentDescription = "Pantry") },
                         label = { Text("Pantry") },
-                        modifier = Modifier.testTag("nav-pantry"),
+                        modifier = Modifier.testTag("nav-pantry").semantics {
+                            contentDescription = "Pantry"
+                        },
+                    )
+                    NavigationBarItem(
+                        selected = screen == AppScreen.RECIPES,
+                        onClick = {
+                            screen = AppScreen.RECIPES
+                            showForm = false
+                        },
+                        icon = { Icon(Icons.Outlined.RestaurantMenu, contentDescription = "Recipes") },
+                        label = { Text("Recipes") },
+                        modifier = Modifier.testTag("nav-recipes").semantics {
+                            contentDescription = "Recipes"
+                        },
                     )
                     NavigationBarItem(
                         selected = screen == AppScreen.EQUIPMENT,
@@ -124,9 +157,11 @@ private fun LeftoversApp(pantryDao: PantryDao, dataStore: DataStore<Preferences>
                             screen = AppScreen.EQUIPMENT
                             showForm = false
                         },
-                        icon = { Text("E") },
+                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = "Equipment") },
                         label = { Text("Equipment") },
-                        modifier = Modifier.testTag("nav-equipment"),
+                        modifier = Modifier.testTag("nav-equipment").semantics {
+                            contentDescription = "Equipment"
+                        },
                     )
                 }
             },
@@ -156,6 +191,15 @@ private fun LeftoversApp(pantryDao: PantryDao, dataStore: DataStore<Preferences>
                     },
                     onDelete = { scope.launch { pantryDao.delete(it.id) } },
                 )
+                screen == AppScreen.RECIPES -> preferences?.let { loadedPreferences ->
+                    RecipeScreen(
+                        pantry = pantryItems,
+                        equipment = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
+                        api = recipeApi,
+                        snapshotDao = snapshotDao,
+                        modifier = Modifier.padding(padding),
+                    )
+                } ?: Text("Loading recipes…", modifier = Modifier.padding(padding).padding(20.dp))
                 else -> preferences?.let { loadedPreferences ->
                     EquipmentChecklist(
                         selected = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
@@ -178,7 +222,11 @@ private fun LeftoversApp(pantryDao: PantryDao, dataStore: DataStore<Preferences>
 }
 
 private val AppScreen.title: String
-    get() = if (this == AppScreen.PANTRY) "Pantry" else "Equipment"
+    get() = when (this) {
+        AppScreen.PANTRY -> "Pantry"
+        AppScreen.RECIPES -> "Recipes"
+        AppScreen.EQUIPMENT -> "Equipment"
+    }
 
 @Composable
 private fun PantryList(

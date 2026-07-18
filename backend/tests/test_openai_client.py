@@ -101,6 +101,17 @@ async def test_prompt_injection_remains_delimited_user_data() -> None:
     transport = RecordingTransport()
     adapter = GPT56Adapter(transport)
     payload = recipe_request(name=injection, notes=injection)
+    payload["history"] = [
+        {
+            "fingerprint": "a" * 64,
+            "cuisine": injection,
+            "primaryTechnique": injection,
+            "ingredientNames": [injection],
+            "rating": 4,
+            "recommendAgain": True,
+            "completedAt": "2026-07-17T00:00:00Z",
+        }
+    ]
 
     # When: the adapter builds the provider request.
     await adapter.generate_recipes(
@@ -111,7 +122,7 @@ async def test_prompt_injection_remains_delimited_user_data() -> None:
     # Then: untrusted text stays in the user-data envelope and cannot mutate controls.
     outbound = transport.requests[0]
     assert injection not in outbound.instructions
-    assert outbound.user_data.count(injection) == 2
+    assert outbound.user_data.count(injection) == 5
     assert outbound.store is False
     assert outbound.schema_name == "recipe_set"
 

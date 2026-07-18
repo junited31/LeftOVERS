@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -32,6 +33,24 @@ def invalid_outputs() -> list[tuple[str, JsonObject]]:
     amount["recipes"][0]["trackedUses"][0]["proposedMilliUnits"] = 500_001
     duplicate_recipes = deepcopy(base)
     duplicate_recipes["recipes"][1]["title"] = duplicate_recipes["recipes"][0]["title"]
+    two_recipes = deepcopy(base)
+    two_recipes["recipes"].pop()
+    missing_equipment = deepcopy(base)
+    missing_equipment["recipes"][0]["requiredEquipment"] = ["oven"]
+    duplicate_fingerprint = deepcopy(base)
+    duplicate_fingerprint["recipes"][1]["cuisine"] = " Korean "
+    duplicate_fingerprint["recipes"][1]["primaryTechnique"] = "STIR-FRY"
+    duplicate_fingerprint["recipes"][1]["trackedUses"] = deepcopy(
+        duplicate_fingerprint["recipes"][0]["trackedUses"]
+    )
+    duplicate_fingerprint["recipes"][1]["missingIngredients"] = []
+    duplicate_fingerprint["recipes"][2]["cuisine"] = "Japanese"
+    one_cuisine = deepcopy(base)
+    for recipe in one_cuisine["recipes"]:
+        recipe["cuisine"] = "Korean"
+    one_technique = deepcopy(base)
+    for recipe in one_technique["recipes"]:
+        recipe["primaryTechnique"] = "pan-fry"
     return [
         ("duplicate pantry id", duplicate_id),
         ("unknown pantry id", unknown_id),
@@ -39,6 +58,11 @@ def invalid_outputs() -> list[tuple[str, JsonObject]]:
         ("unit mismatch", unit),
         ("amount mismatch", amount),
         ("duplicate recipes", duplicate_recipes),
+        ("two recipes", two_recipes),
+        ("missing equipment", missing_equipment),
+        ("duplicate fingerprint", duplicate_fingerprint),
+        ("one cuisine", one_cuisine),
+        ("one technique", one_technique),
     ]
 
 
@@ -49,8 +73,6 @@ async def test_invalid_recipe_binding_exhausts_exactly_two_retries(
     bad_payload: JsonObject,
 ) -> None:
     del case
-    import json
-
     # Given: every model attempt returns an invalid set.
     ai = FakeAI(recipe_outputs=[json.dumps(bad_payload)])
     with configured_app(ai=ai) as (app, _, _, _):
@@ -85,8 +107,6 @@ async def test_response_never_binds_unrequested_pantry_row() -> None:
     # Given: a model response that references an unrequested UUID.
     payload = valid_recipe_payload()
     payload["recipes"][0]["trackedUses"][0]["pantryItemId"] = UNKNOWN_PANTRY_ID
-    import json
-
     ai = FakeAI(recipe_outputs=[json.dumps(payload)])
     with configured_app(ai=ai) as (app, _, _, _):
         # When: generation is requested.
@@ -96,3 +116,20 @@ async def test_response_never_binds_unrequested_pantry_row() -> None:
     assert response.status_code == 422
     body = response.json()
     assert UNKNOWN_PANTRY_ID not in str(body)
+
+
+def test_recipe_prompt_contains_one_compact_schema_valid_three_candidate_example() -> None:
+    from app.models import RecipeGenerateRequest, RecipeGenerateResponse, validate_recipe_bindings
+    from app.prompts import RECIPE_EXAMPLE_JSON, RECIPE_INSTRUCTIONS
+
+    # Given: the machine-readable example embedded in the recipe instructions.
+    request = RecipeGenerateRequest.model_validate(recipe_request())
+
+    # When: the example is parsed by the same boundary and binding validator as a model response.
+    response = RecipeGenerateResponse.model_validate_json(RECIPE_EXAMPLE_JSON)
+    validate_recipe_bindings(response, request)
+
+    # Then: it is one compact valid three-candidate set included verbatim in the instructions.
+    assert len(response.recipes) == 3
+    assert RECIPE_INSTRUCTIONS.count(RECIPE_EXAMPLE_JSON) == 1
+    assert len(RECIPE_EXAMPLE_JSON) < 2_500

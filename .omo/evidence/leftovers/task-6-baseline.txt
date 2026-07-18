@@ -1,0 +1,25 @@
+T6 BASELINE - existing T3 backend and T5 Android behavior
+Captured: 2026-07-18 Asia/Seoul
+HEAD: 46be24b
+
+Backend command:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py
+Result:
+  9 passed in 2.41s
+
+Existing backend behavior before T6:
+- Recipe endpoint authenticates, consumes quota, accepts only three schema-shaped candidates, validates title/cuisine/technique diversity, and rejects bad pantry bindings after initial plus two repair attempts.
+- It does not yet validate required equipment or exact normalized recipe fingerprints.
+- Its recipe prompt does not yet include a compact three-candidate example.
+
+Android command:
+  android/gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest'
+Result:
+  BUILD SUCCESSFUL in 5s; 29 actionable tasks (1 executed, 28 up-to-date)
+
+Existing Android behavior before T6:
+- LeftoversApi sends authenticated JSON to /v1/recipes/generate with retries disabled and maps 200/401/413/422/429/502 to typed results.
+- The app has pantry/equipment screens and Room recipe snapshot storage, but no recipe request/response parser, deterministic recommendation ranker, recipe screen, or snapshot save from a validated ranked set.
+
+Environment note:
+- This task worktree had no local backend virtualenv and no Android SDK environment variable. An ignored backend/.venv was created from backend/requirements.txt; Gradle was run with ANDROID_HOME and ANDROID_SDK_ROOT set to the installed %LOCALAPPDATA%/Android/Sdk.
