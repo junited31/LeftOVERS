@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from openai import APIError, AsyncOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from .models import CookingAdviceResponse, RecipeGenerateResponse
 from .prompts import ADVICE_INSTRUCTIONS, RECIPE_INSTRUCTIONS
@@ -65,6 +65,8 @@ class OpenAIResponsesTransport:
                 input=input_data,
                 text_format=request.response_model,
             )
+        except ValidationError:
+            return "{}"
         except APIError as error:
             raise OpenAIUpstreamError from error
         parsed = response.output_parsed

@@ -1,0 +1,54 @@
+T3 structured-output ValidationError fix verification (2026-07-18 Asia/Seoul)
+
+Root-cause runtime reproduction before production edits:
+Command: inline CPython harness using OpenAIResponsesTransport with an SDK-shaped responses.parse seam that raises an actual RecipeGenerateResponse Pydantic ValidationError.
+Result on two consecutive runs:
+run=1 escaped=ValidationError location=('recipes',) type=too_short
+run=2 escaped=ValidationError location=('recipes',) type=too_short
+
+RED:
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_openai_client.py -k 'transport_translates or sdk_validation'
+Result before fix: exit 1; 3 failed, 2 deselected in 1.66s. Each failure escaped from responses.parse through OpenAIResponsesTransport.execute.
+
+GREEN and toggle proof:
+Command: same selected pytest command after the narrow ValidationError translation.
+Result: exit 0; 3 passed, 2 deselected in 0.57s.
+The translation was temporarily reverted; the transport test returned to exit 1 with 1 failed in 0.47s. The translation was restored; the selected set returned to 3 passed in 0.57s.
+
+Affected adapter/retry verification:
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_openai_client.py backend/tests/test_recipe_generation.py
+Result: exit 0; 14 passed in 0.59s.
+
+Full backend verification:
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests
+Final result: exit 0; 34 passed in 0.75s.
+
+Docker build:
+Command: docker build -t leftovers-api:t3-validation-fix backend
+Final result: exit 0; manifest-list sha256:23c2353848a3d71b7424fbb4f35feb3b2bd3054c263f5fb2b0e5fdc290594426.
+
+Secret and static gates:
+Command: powershell.exe -NoProfile -File scripts/scan_secrets.ps1
+Final result: exit 0; Secret scan passed (78 files inspected).
+Command: uvx ruff check backend
+Result: exit 0; All checks passed.
+Command: backend/.venv/Scripts/python.exe C:/Users/ljhlj/.codex/plugins/cache/sisyphuslabs/omo/4.18.2/skills/programming/scripts/python/check-no-excuse-rules.py backend
+Result: exit 0; no violations in 15 files.
+
+Live external dependency-override curl QA on 127.0.0.1:8875:
+- Three invalid model results: HTTP 422 with error.code=model_validation_failed; state readback {"mode":"invalid","model_calls":3}.
+- Two invalid results followed by repair: HTTP 200 with exactly three recipes; state readback {"mode":"repair","model_calls":3}.
+- Malformed request {}: HTTP 422 with error.code=validation_error; state readback {"mode":"invalid","model_calls":0}.
+- The temporary uvicorn process stopped; no listener remained on 8875 (only client TIME_WAIT entries).
+
+Adversarial probes:
+- misleading_success_output: HTTP status, typed body, recipe count, and independent model-call state were read together.
+- malformed_input: typed request 422 occurred before any model call.
+- stale_state/retry count: reset readback was zero; both exhaustion and repair made exactly three calls.
+- prompt_injection: the unchanged isolation test passed in the affected/full runs; untrusted text remains outside instructions and cannot alter model, schema, or store=false.
+- dirty_worktree: only backend fix/tests and T3 evidence are in commit scope; ledger and T2 evidence are excluded.
+
+Independent verifier artifact integrity:
+Path: .omo/evidence/leftovers/task-3-adversarial-verify.json
+SHA-256 before and after work: fc0bbab8d117406dfd942d1ab7cba4aa91e50a0fb4ca1c0c3bf9d0fbf2c73aa8
+The artifact was not modified.

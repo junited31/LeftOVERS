@@ -1,0 +1,23 @@
+Command:
+backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_openai_client.py -k 'transport_translates or sdk_validation'
+
+Result: exit 1
+
+FFF                                                                      [100%]
+E pydantic_core._pydantic_core.ValidationError: 1 validation error for RecipeGenerateResponse
+E recipes
+E   Tuple should have at least 3 items after validation, not 0 [type=too_short]
+
+Transport stack:
+backend/app/openai_client.py:61 in execute
+  response = await self._client.responses.parse(...)
+backend/tests/test_openai_client.py:28 in parse
+  raise outcome
+
+FAILED test_transport_translates_structured_validation_to_canonical_invalid_result
+FAILED test_sdk_validation_exhausts_three_attempts_as_typed_422
+FAILED test_sdk_validation_retry_succeeds_when_later_output_repairs
+3 failed, 2 deselected in 1.66s
+
+Interpretation:
+The SDK-shaped Pydantic ValidationError escapes OpenAIResponsesTransport.execute before parse_model_output can receive the canonical invalid result and perform its three-attempt retry policy.

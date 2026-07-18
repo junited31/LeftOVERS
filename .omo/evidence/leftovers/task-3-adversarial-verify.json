@@ -1,0 +1,171 @@
+{
+  "kind": "AdversarialVerify",
+  "task": "T3",
+  "verifiedAt": "2026-07-18T10:25:50.6254013+09:00",
+  "verdict": "needs-fix",
+  "confidence": 0.98,
+  "doneClaim": {
+    "implementationCommit": "eea0356c3e82e4b2736dca7d22cee0260bc47d04",
+    "subject": "feat(api): add authenticated GPT cooking contracts",
+    "parent": "26eb66a9e5170972640502abfad2bba7e7c6931b",
+    "tree": "40b993e29f93c5902b699d7853a69f927fa2ed41",
+    "stablePatchId": "0970c803a8a60ae0501ee0c0507bc164b495a10f",
+    "inspectedDiff": "26eb66a9e5170972640502abfad2bba7e7c6931b..eea0356c3e82e4b2736dca7d22cee0260bc47d04",
+    "headMatchedCommitDuringInspection": true,
+    "gitDiffCheckExitCode": 0
+  },
+  "planReview": {
+    "path": ".omo/plans/leftovers.md",
+    "sha256": "668d6c6e1ff66046f7a425b4a30f2a4e7650b96879757c53c24717c612a30d2b",
+    "reread": "full plan plus complete T3 What-to-do, acceptance criteria, QA scenarios, dependencies, and T11 cloud boundary",
+    "t11Boundary": "No real cloud traffic was required for T3; the production Firebase, Firestore, and OpenAI adapter wiring was inspected."
+  },
+  "blockingFindings": [
+    {
+      "id": "T3-AV-1",
+      "severity": "high",
+      "title": "Production OpenAI schema parse failures bypass the required repair retries and typed 422",
+      "requirement": "One initial model attempt plus at most two schema/diversity repair attempts, ending in typed 422 when validation cannot be repaired.",
+      "evidence": [
+        "backend/app/openai_client.py:61 calls AsyncOpenAI.responses.parse with a Pydantic response model.",
+        "backend/app/openai_client.py:68 catches only openai.APIError.",
+        "backend/app/main.py:181-197 performs the three-attempt validation loop only after the adapter returns a raw JSON string.",
+        "backend/tests/test_recipe_generation.py and backend/tests/test_cooking_advice.py inject raw invalid strings through FakeAI; they never exercise OpenAIResponsesTransport.",
+        "backend/tests/test_openai_client.py records GPT56Adapter request fields but never invokes OpenAIResponsesTransport.execute."
+      ],
+      "smallestReproduction": {
+        "command": "backend/.venv/Scripts/python.exe -c \"import sys; sys.path.insert(0, 'backend'); from openai import APIError; from openai.lib._parsing._responses import parse_text; from app.models import RecipeGenerateResponse; print('validation_is_api_error=', issubclass(__import__('pydantic').ValidationError, APIError)); parse_text('{}', RecipeGenerateResponse)\"",
+        "exitCode": 1,
+        "result": "validation_is_api_error=False, followed by pydantic_core.ValidationError from the same SDK parse path used by responses.parse",
+        "expected": "The invalid provider schema should count as a failed validation attempt; the service should retry at most twice and then return error.code=model_validation_failed with HTTP 422.",
+        "actual": "The non-API Pydantic ValidationError escapes OpenAIResponsesTransport before parse_model_output can retry; no handler maps it to the typed 422 contract, so the production request becomes an unhandled 500 path."
+      },
+      "minimalFixDirection": "At the production transport seam, convert SDK Pydantic parse failures into a validation result the existing three-attempt loop can consume, and add a transport-level regression test proving 3 attempts then typed 422. Do not broaden transport retries for API/network failures."
+    }
+  ],
+  "automatedVerification": [
+    {
+      "command": "uv venv backend/.venv --python 3.14 && uv pip install --python backend/.venv/Scripts/python.exe -r backend/requirements.txt",
+      "exitCode": 0,
+      "result": "Disposable CPython 3.14.3 venv created; all 57 packages resolved from pinned requirements and installed."
+    },
+    {
+      "command": "backend/.venv/Scripts/python.exe -m pytest -q backend/tests",
+      "exitCode": 0,
+      "result": "31 passed in 1.96s; no skips or xfails reported."
+    },
+    {
+      "command": "docker build -t leftovers-api:verify-t3 backend",
+      "exitCode": 0,
+      "result": "Build succeeded; manifest-list digest sha256:960fce1c22397b7cb607909896f0e13b308b683e1616ee3609af132a0e5674e1."
+    },
+    {
+      "command": "powershell -NoProfile -File scripts/scan_secrets.ps1",
+      "exitCode": 0,
+      "result": "Secret scan passed, 71 files inspected."
+    },
+    {
+      "command": "uvx ruff check backend",
+      "exitCode": 0,
+      "result": "All checks passed."
+    },
+    {
+      "command": "backend/.venv/Scripts/python.exe C:/Users/ljhlj/.codex/plugins/cache/sisyphuslabs/omo/4.18.2/skills/programming/scripts/python/check-no-excuse-rules.py backend",
+      "exitCode": 0,
+      "result": "No violations in 15 files. backend/app/main.py independently measured 248 pure LOC, inside the checker's 200-250 warning band."
+    },
+    {
+      "command": "Repeat 3x: backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_quota.py -k concurrent",
+      "exitCode": 0,
+      "result": "All three independent repeats passed; each run was 2 passed, 5 deselected in 0.16-0.18s. Assertions were inspected: exact allowed/rejected counts are 20/1 for recipes and 50/1 for advice."
+    }
+  ],
+  "implementationInspection": {
+    "typedBoundaries": "Pydantic v2 frozen extra-forbid models cover UUID IDs, nonnegative versions, canonical g/ml/count units, positive milli-unit quantities, bounded request fields, exact three recipe responses, and typed advice.",
+    "firebaseBearer": "Production dependency uses HTTPBearer and firebase_admin.auth.verify_id_token; expired, invalid, revoked, and disabled-user tokens map to the typed 401 path; no production fake bypass was found.",
+    "quota": "HMAC-SHA256 hides raw UIDs. QuotaService selects exact 20/50 UID and 2000/5000 global caps, uses UTC route/day document IDs, and computes ceil seconds to next UTC midnight. FirestoreCounterBackend reads and conditionally writes the per-UID and single global route/day documents in one transactional callback.",
+    "recipeBinding": "Response validation rejects duplicate normalized titles, fewer than two normalized cuisines or techniques, duplicate tracked IDs within a recipe, unknown UUIDs, and version/unit/amount mismatches. Exactly three is enforced by the Pydantic response model.",
+    "providerControls": "The production adapter selects gpt-5.6, passes store=false, supplies Pydantic response models, separates system instructions from JSON user_data, and passes images as data URLs. Injection-like pantry/note text remained solely in the user-data envelope in the inspected test and live request; it could not mutate model, schema_name, or store=false.",
+    "resourcesAndLogs": "Photo reads are 64 KiB chunks with an 8 MiB in-memory ceiling and UploadFile close in endpoint finally. Metadata logging includes method/path/status only and not Authorization or request bodies."
+  },
+  "manualHttpQa": {
+    "runner": "Temporary external .omo/t3_verify_runner.py; imported the committed fakes and used only FastAPI dependency_overrides. No production bypass or product/test edit was used.",
+    "port": 8873,
+    "requests": [
+      {
+        "command": "curl.exe -sS -i --max-time 10 http://127.0.0.1:8873/health",
+        "status": 200,
+        "body": {"status": "ok"}
+      },
+      {
+        "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -H 'Content-Type: application/json' --data-binary '@.omo/t3-verify-recipe.json' http://127.0.0.1:8873/v1/recipes/generate",
+        "status": 200,
+        "result": "Three schema-valid recipes, three unique titles, two cuisines, two techniques, and only requested pantry UUIDs; payload included injection-like pantry/name notes."
+      },
+      {
+        "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -F 'context=<.omo/t3-verify-context.json' -F 'photo=@.omo/t3-verify-photo.jpg;type=image/jpeg' http://127.0.0.1:8873/v1/cooking/advice",
+        "status": 200,
+        "result": "Typed status/observations/nextActions/confidence/safetyNote response."
+      },
+      {
+        "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -F 'context=<.omo/t3-verify-context.json' -F 'photo=@.omo/t3-verify-large.jpg;type=image/jpeg' http://127.0.0.1:8873/v1/cooking/advice",
+        "status": 413,
+        "body": {"error": {"code": "payload_too_large", "message": "Payload exceeds service limit"}}
+      },
+      {
+        "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED invalid]' -F 'context=<.omo/t3-verify-context.json' -F 'photo=@.omo/t3-verify-photo.jpg;type=image/jpeg' http://127.0.0.1:8873/v1/cooking/advice",
+        "status": 401,
+        "body": {"error": {"code": "unauthorized", "message": "Valid Firebase bearer token required"}}
+      },
+      {
+        "command": "curl.exe -sS -i http://127.0.0.1:8873/__verify/state after reset plus 413/401 probes",
+        "status": 200,
+        "body": {"model_calls": 0, "stored_bytes": 0}
+      }
+    ],
+    "docker": {
+      "command": "docker run --rm -d -p 127.0.0.1:8874:8080 --name leftovers-api-verify-t3 leftovers-api:verify-t3; curl.exe -sS -i http://127.0.0.1:8874/health",
+      "status": 200,
+      "body": {"status": "ok"},
+      "containerImageId": "sha256:960fce1c22397b7cb607909896f0e13b308b683e1616ee3609af132a0e5674e1"
+    }
+  },
+  "adversarialMatrix": {
+    "malformed_input": "IN: strict request/response models, unknown/duplicate tracked IDs, version/unit/amount mismatches, diversity, 256 KiB JSON, and 8 MiB+1 photo were inspected or exercised. The production schema-parser exception gap is the blocking failure.",
+    "prompt_injection": "IN: injection-like pantry and notes strings were sent through live HTTP and inspected at GPT56Adapter. They stayed JSON user_data, absent from instructions, while model=gpt-5.6, schema_name=recipe_set, and store=false remained fixed.",
+    "stale_state": "IN: tests and code were inspected for non-UTC input conversion, next-midnight Retry-After, per-route/day counter keys, and atomic cap outcomes.",
+    "dirty_worktree": "IN: HEAD and the exact T3 commit/tree were pinned before review. Concurrent out-of-scope T2 activity was observed only under android/**, .omo/start-work/ledger.jsonl, .debug-journal.md, and task-2-* evidence; it was neither read as T3 evidence nor modified/cleaned.",
+    "hung_or_long_commands": "IN: pytest/build/curl commands had bounded tool waits or curl max-time; uvicorn readiness was explicit and both live processes were terminated.",
+    "flaky_tests": "IN: concurrent quota boundary tests passed three fresh repeats with exact 20/50 allowed and one rejected assertions.",
+    "misleading_success_output": "IN: HTTP status and bodies, typed error codes, post-probe fake state, Docker image ID, container health body, test assertions, and cleanup state were inspected rather than trusting command labels.",
+    "cancel_resume": "PARTLY IN: server-side upload resources are closed in finally and tests cover success/413/422. Client resume, background retry, and interrupted photo re-upload are OUT for T3 and owned by T5; T3 exposes no resumable job or automatic transport retry.",
+    "repeated_interruptions": "OUT by design: T3 requests are stateless HTTP calls with no resumable workflow; repeated client interruption/retry semantics belong to T5. The only T3 retry loop is validation-only and bounded to three calls."
+  },
+  "artifacts": [
+    {"path": ".omo/evidence/leftovers/task-3-api.json", "sha256": "6c4628eec5b39a14c7b894dffdcd37b9f0a99eb31cbb8b48c94f8208b1bb6362"},
+    {"path": ".omo/evidence/leftovers/task-3-baseline.txt", "sha256": "769acd12003361a95bfe207bf69d105ba3c75325f61ae20868faef9db6a966fe"},
+    {"path": ".omo/evidence/leftovers/task-3-boundaries.txt", "sha256": "e0721268ccc8c162b8e12b7383a4dd91bc27ba74a69ac6104c547fda57d2b87b"},
+    {"path": ".omo/evidence/leftovers/task-3-green.txt", "sha256": "730cfffb488673bc1e627232ac95fba458f6f071cc10e1f21e7c252cd91a5226"},
+    {"path": ".omo/evidence/leftovers/task-3-red.txt", "sha256": "b451e1ee53a7355ea91601dda0550ccd61e3b4201fb0660b57d6a45c93f0b592"},
+    {"path": "backend/app/openai_client.py", "sha256": "aab2d6cac0d4a8627fd071904ff9382515b19a27a2a4888dcae1700cf0560941"},
+    {"path": "backend/app/main.py", "sha256": "af2536cd1150073acc439774225c60081e8b72a0364223398394dfed7432e1a7"},
+    {"path": "backend/app/models.py", "sha256": "339be3378f6c0735b4c803d62f54b410394054cb120908f41fb647ae3750dcf2"}
+  ],
+  "cleanup": {
+    "uvicornPid16188Absent": true,
+    "portsFree": [8873, 8874],
+    "dockerContainerRemoved": "leftovers-api-verify-t3",
+    "dockerImageRemoved": "leftovers-api:verify-t3",
+    "payloadsRemoved": true,
+    "temporaryRunnerRemoved": true,
+    "newlyCreatedVenvRemoved": true,
+    "productionFilesOrTestsEdited": false,
+    "gitCommitCreated": false
+  },
+  "risks": [
+    "The blocker means the committed green tests overstate production retry coverage: fake adapters return raw malformed JSON, but the real SDK parses before the retry loop.",
+    "Firestore transaction correctness was inspected statically and quota semantics were stress-tested with the atomic fake; live Firestore contention is intentionally deferred to T11.",
+    "FastAPI/Starlette parses multipart input into UploadFile before the endpoint's 8 MiB chunked read, so the endpoint ceiling does not by itself prove an ingress-level temporary-spool bound for arbitrarily large bodies.",
+    "backend/app/main.py is 248 pure LOC, in the programming skill warning band; the next substantive edit should split a responsibility before crossing 250."
+  ]
+}
