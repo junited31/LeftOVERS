@@ -99,7 +99,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - seed by `adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED`, restart, and capture pantry/equipment screens, evidence `task-4-pantry.png` and `task-4-equipment.png`; failure - submit blank/zero input and PASS when inline error appears and DB count is unchanged, evidence `task-4-validation.xml`.
   Commit: Y | `feat(pantry): track ingredients and kitchen equipment`
 
-- [ ] 5. Add Android auth/API client and ephemeral photo lifecycle
+- [x] 5. Add Android auth/API client and ephemeral photo lifecycle
   What to do / Must NOT do: Add Firebase anonymous token provider, OkHttp client, typed error mapping, native `PickVisualMedia` + `TakePicture`, app `FileProvider`, 1280px/quality-80 JPEG compression, cache `finally` deletion, cancellation handling, and startup sweep older than 24h. Do not embed OpenAI secrets, retry automatically, upload in background, or use CameraX.
   Parallelization: Wave 2 | Blocked by: T3 | Blocks: T6,T7,T10 | Can parallelize with: T4
   References: `.omo/drafts/leftovers.md:32-34,45,56-57,61,64,70-76` plus photo/offline decisions.
