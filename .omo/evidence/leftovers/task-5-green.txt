@@ -1,39 +1,51 @@
-Task 5 GREEN - 2026-07-18 Asia/Seoul
+Task 5 GREEN (hardened) - 2026-07-18 Asia/Seoul
 
-Final combined Android gate (exit 0):
+Canonical final Android gate (exit 0):
   $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
   android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' \
-    --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug \
-    :app:compileDebugAndroidTestKotlin :app:connectedDebugAndroidTest \
-    "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.photo.PhotoPickerTest"
-  BUILD SUCCESSFUL in 16s
+    --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug :app:assembleRelease \
+    :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain
+  BUILD SUCCESSFUL in 35s; 112 actionable tasks: 112 executed
 
 Parsed JVM XML:
-- LeftoversApiTest: tests=5 failures=0 errors=0 skipped=0
-- PhotoLifecycleTest: tests=5 failures=0 errors=0 skipped=0
+- LeftoversApiTest + PhotoLifecycleTest: tests=16 failures=0 errors=0
 
-Connected SM_F711N gate (both final consecutive runs exited 0):
+Connected SM_F711N gate after final test isolation (both consecutive runs exited 0):
   android\gradlew.bat -p android :app:connectedDebugAndroidTest \
-    "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.photo.PhotoPickerTest"
-- run 1: BUILD SUCCESSFUL in 15s
-- run 2: BUILD SUCCESSFUL in 9s
-- parsed connected XML: tests=3 failures=0 errors=0 skipped=0, device=SM-F711N - 15
+    "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.photo.PhotoPickerTest" \
+    --no-daemon --console=plain
+- run 1: tests=4 failures=0 errors=0 skipped=0
+- run 2: tests=4 failures=0 errors=0 skipped=0; BUILD SUCCESSFUL in 17s
 - committed XML copy: task-5-photo-picker.xml
 
 Observed device lifecycle:
 - generated MediaStore JPEG: 2600x1800
 - selected through PickVisualMedia parse result
 - TakePicture intent carried an app FileProvider content URI
-- compressed JPEG: 1280x886, quality=80, multipart recorded bytes=7812
-- multipart SHA-256: 490f88bc4ad5ba9e587bbcfc82b98379ce2527a9570a3b3c134f4bf9e63425af
-- request count=1; cache empty after response
+- compressed JPEG: 1280x886, quality=80
+- multipart envelope bytes=7812; parsed JPEG part bytes=7478
+- exact JPEG part SHA-256: bd96c9a05fc704daf702d74b63baf48a86b9a0e4d2e708c7168f9e2fc282ea47
+- request count=1; owned upload cache empty after response
 - cancelled no-response call: Cancelled, request count=1, no retry, upload deleted
-- simulated application restart swept the >25h app-cache fixture
+- EXIF orientations 5 and 7 passed real-JPEG mirrored-polarity assertions on SM_F711N
 
-Secret gates (exit 0):
-- aapt resource dump: OPENAI_API_KEY/actual OpenAI key/Google key/PEM hits=0
-- raw APK binary scan: same actual secret shapes hits=0
-- canonical scripts/scan_secrets.ps1: passed, 112 files inspected
+Real OS restart proof (task-5-restart.txt):
+- PID before force-stop=18784; immediately after force-stop=absent; cold-relaunch PID=18932
+- stale owned file removed; fresh owned file and old foreign file preserved
+- REAL_OS_RESTART_SWEEP=PASS
+
+Boundary hardening:
+- only PhotoLifecycle.ManagedPhoto can be uploaded/deleted; arbitrary caller files are rejected and survive
+- unknown-length streams are copied with a strict 64 MiB cap and cleaned on rejection
+- a PhotoAdviceCall is one-shot under concurrent execution; second execution is AlreadyExecuted
+- UTF-8 JSON/context larger than 256 KiB is rejected before token/network activity
+- Firebase sign-in/token awaits are bounded at 15 seconds and map to AuthUnavailable
+
+Secret and manifest gates (exit 0):
+- debug APK resource/raw secret-pattern hits=0; SHA-256=AA38C0DB699BC418874892150685E97BE88AB1CEE911EFD320F2644A1770D457
+- release APK resource/raw secret-pattern hits=0; SHA-256=A7013149D342DDE9D202C4F3E2B0A53813BAFA30D6D0BFDF0D9F418E277F8ED5
+- canonical scripts/scan_secrets.ps1 passed, 116 files inspected
+- release manifest usesCleartextTraffic hits=0; FileProvider remains declared
 
 No live Firebase configuration was required. AnonymousFirebaseTokenProvider uses FirebaseAuth at runtime;
 the fake token seam exists only in tests and is not a production bypass.

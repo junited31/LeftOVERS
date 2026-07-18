@@ -1,11 +1,17 @@
 Task 5 cleanup - 2026-07-18 Asia/Seoul
 
-The connected tests shut down every MockWebServer in-test and delete the generated MediaStore image.
-After pulling the redacted evidence, the device cleanup removed task-5 Download artifacts and any
-leftovers-t5-large.jpg fixture. Gradle's connected runner had already removed app and test packages.
+The connected tests shut down every MockWebServer in-test and delete their generated MediaStore image.
+After pulling the corrected redacted evidence, device cleanup removed all task-5 Download artifacts and
+any leftovers-t5-large.jpg fixture. Only the T5-owned paths and application packages were targeted.
 
-Final observed receipt (exit 0):
-  DEVICE_CLEANUP=PASS downloads=0 fixtures=0 packages=0 processes=0
+Final device receipt (exit 0):
+  DEVICE_CLEANUP downloads=0 fixtures=0 packages=0 process_present=False
 
-No bearer token or image bytes were written to logs/evidence. The lifecycle JSON contains only the
-multipart hash, byte count, dimensions, quality, request count, and cache result.
+Host process cleanup (exit 0):
+- android\gradlew.bat --stop: 1 daemon stopped
+- adb kill-server
+- HOST_CLEANUP adb_processes=0
+
+No bearer token or image bytes were written to logs/evidence. The lifecycle JSON contains only redacted
+metadata plus multipart-envelope/JPEG-part byte counts, exact JPEG-part SHA-256, dimensions, quality,
+request count, and cache result.

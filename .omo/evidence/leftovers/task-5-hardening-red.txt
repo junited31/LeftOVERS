@@ -1,0 +1,29 @@
+Task 5 hardening RED - 2026-07-18 Asia/Seoul
+
+Independent report preserved before edits:
+- verified commit: 2ca1857505b5dd4874660440eeac8585bfed96d7
+- report SHA-256: EBA722C7BEBEE60EE56F3047601FC1250DC70F23AC4A8BB419DAC5F1EE82C0A2
+
+Command:
+  $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' \
+    --tests '*PhotoLifecycleTest' :app:compileDebugAndroidTestKotlin
+
+Result: expected failure, exit 1 (BUILD FAILED in 11s).
+
+Failing-first boundary coverage added before production edits:
+1. managed upload type and foreign-file survival (`ManagedPhoto`, `createManagedPhoto`, `manage` absent);
+2. unknown-length ContentProvider stream >64 MiB+1 with no owned residue;
+3. concurrent second execute returns typed `AlreadyExecuted` and one MockWebServer request;
+4. UTF-8 JSON and multipart context >256 KiB fail before token/network;
+5. never-completing Firebase task uses bounded `BoundedTaskWaiter` and typed failure;
+6. connected multipart parses and hashes the JPEG part separately from envelope bytes;
+7. EXIF transpose/transverse outputs require mirrored 90-degree transforms.
+
+Representative intended compiler failures:
+- unresolved `ManagedPhoto`, `.file`, `createManagedPhoto`, and `manage`;
+- unresolved `MAX_REQUEST_BYTES` and `ApiResult.AlreadyExecuted`;
+- unresolved `BoundedTaskWaiter`.
+
+The unknown-length provider, concurrent execution, bounded UTF-8 inputs, and EXIF 5/7 assertions were
+also present in the failing test sources at this RED point; compilation stopped at the missing canonical APIs.

@@ -1,0 +1,19 @@
+Task 5 real OS restart sweep - SM_F711N - 2026-07-18 Asia/Seoul
+
+Artifact preparation used the installed debug APK and `adb shell run-as com.junited31.leftovers`:
+- owned stale: cache/leftovers-photos/leftovers-photo-stale.jpg, mtime 2020-01-01
+- owned fresh: cache/leftovers-photos/leftovers-photo-fresh.jpg, current mtime
+- foreign old: cache/foreign-old.txt, mtime 2020-01-01
+
+Observed process lifecycle:
+- PID before force-stop: 18784
+- PID immediately after `adb shell am force-stop com.junited31.leftovers`: absent
+- PID after cold relaunch of `.MainActivity`: 18932
+- process changed: true
+
+Observed after relaunch/Application.onCreate:
+- stale owned file exists: false
+- fresh owned file exists: true
+- old foreign file exists: true
+
+Result: REAL_OS_RESTART_SWEEP=PASS

@@ -21,7 +21,34 @@ object PhotoContracts {
 class PhotoLifecycle(private val context: Context) {
     private val cacheDirectory = File(context.cacheDir, CACHE_DIRECTORY).apply { mkdirs() }
 
+    class ManagedPhoto internal constructor(
+        internal val file: File,
+        private val cacheDirectory: File,
+    ) {
+        internal fun delete() {
+            val ownedDirectory = cacheDirectory.canonicalFile
+            val candidate = file.canonicalFile
+            if (candidate.parentFile == ownedDirectory && candidate.name.startsWith(CACHE_PREFIX)) {
+                candidate.delete()
+            }
+        }
+    }
+
     fun createCacheFile(): File = File.createTempFile(CACHE_PREFIX, ".jpg", cacheDirectory)
+
+    fun createManagedPhoto(): ManagedPhoto = ManagedPhoto(createCacheFile(), cacheDirectory)
+
+    fun manage(file: File): ManagedPhoto? {
+        val candidate = file.canonicalFile
+        return if (
+            candidate.parentFile == cacheDirectory.canonicalFile &&
+            candidate.name.startsWith(CACHE_PREFIX)
+        ) {
+            ManagedPhoto(candidate, cacheDirectory)
+        } else {
+            null
+        }
+    }
 
     fun fileProviderUri(file: File): Uri = FileProvider.getUriForFile(
         context,
@@ -29,14 +56,15 @@ class PhotoLifecycle(private val context: Context) {
         file,
     )
 
-    fun compressCamera(file: File): File = try {
+    fun compressCamera(file: File): ManagedPhoto = try {
         compress(Uri.fromFile(file))
     } finally {
         file.delete()
     }
 
-    fun compress(source: Uri): File {
+    fun compress(source: Uri): ManagedPhoto {
         val sourceLength = sourceLength(source)
+        if (sourceLength < 0) return compressUnknownLength(source)
         if (sourceLength == 0L) throw InvalidPhotoException()
         if (sourceLength > MAX_SOURCE_BYTES) throw PhotoTooLargeException()
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -50,14 +78,14 @@ class PhotoLifecycle(private val context: Context) {
         if (oriented !== decoded) decoded.recycle()
         val scaled = scale(oriented)
         if (scaled !== oriented) oriented.recycle()
-        val output = createCacheFile()
+        val output = createManagedPhoto()
         try {
-            FileOutputStream(output).use {
+            FileOutputStream(output.file).use {
                 if (!scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it)) {
                     throw InvalidPhotoException()
                 }
             }
-            if (output.length() !in 1..MAX_UPLOAD_BYTES) throw PhotoTooLargeException()
+            if (output.file.length() !in 1..MAX_UPLOAD_BYTES) throw PhotoTooLargeException()
             return output
         } catch (error: Exception) {
             output.delete()
@@ -76,7 +104,30 @@ class PhotoLifecycle(private val context: Context) {
 
     private fun sourceLength(source: Uri): Long = when (source.scheme) {
         "file" -> source.path?.let(::File)?.length() ?: 0L
-        else -> context.contentResolver.openAssetFileDescriptor(source, "r")?.use { it.length } ?: 0L
+        else -> context.contentResolver.openAssetFileDescriptor(source, "r")?.use { it.length } ?: -1L
+    }
+
+    private fun compressUnknownLength(source: Uri): ManagedPhoto {
+        val boundedCopy = createCacheFile()
+        try {
+            open(source).use { input ->
+                FileOutputStream(boundedCopy).use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var total = 0L
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        if (total > MAX_SOURCE_BYTES) throw PhotoTooLargeException()
+                        output.write(buffer, 0, read)
+                    }
+                    if (total == 0L) throw InvalidPhotoException()
+                }
+            }
+            return compress(Uri.fromFile(boundedCopy))
+        } finally {
+            boundedCopy.delete()
+        }
     }
 
     private fun open(source: Uri) = context.contentResolver.openInputStream(source)
@@ -107,6 +158,14 @@ class PhotoLifecycle(private val context: Context) {
                 ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(270f)
                 ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
                 ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    postRotate(90f)
+                    postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    postRotate(-90f)
+                    postScale(-1f, 1f)
+                }
             }
         }
         return if (matrix.isIdentity) bitmap else Bitmap.createBitmap(

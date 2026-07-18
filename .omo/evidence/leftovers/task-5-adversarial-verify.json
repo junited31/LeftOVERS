@@ -4,39 +4,39 @@
   "classes": {
     "malformed_input": {
       "status": "applies",
-      "evidence": "empty malformed image and >64 MiB source reject before upload; 401/413/422/429/502 map to typed results"
+      "evidence": "empty, known-length >64 MiB, and unknown-length >64 MiB sources reject; UTF-8 JSON/context >256 KiB rejects before token/network; HTTP failures map to typed results"
     },
     "prompt_injection": {
       "status": "not_applicable",
-      "evidence": "T5 transports an opaque context JSON field and contains no prompt execution or instruction parser"
+      "evidence": "T5 transports an opaque bounded context JSON field and contains no prompt execution or instruction parser"
     },
     "cancel_resume": {
       "status": "applies",
-      "evidence": "cancelled delayed MockWebServer call returns Cancelled, deletes the file, and records exactly one request"
+      "evidence": "cancelled delayed MockWebServer call returns Cancelled, deletes only the managed photo, records exactly one request, and performs no retry"
     },
     "stale_state": {
       "status": "applies",
-      "evidence": "LeftoversApplication.onCreate removes only owned cache artifacts older than 24 hours"
+      "evidence": "real force-stop/cold-relaunch changed PID 18784 to 18932; Application startup removed stale owned cache while preserving fresh owned and old foreign files"
     },
     "dirty_worktree": {
       "status": "applies",
-      "evidence": "status and staged paths were constrained to T5 Android/tests/evidence; T4/orchestration/verifier paths were not modified"
+      "evidence": "connected test first exposed a fresh owned file left by restart proof; test setup now clears only the owned transient cache; the concurrent orchestration ledger remains unstaged"
     },
     "hung_or_long_commands": {
       "status": "applies",
-      "evidence": "request waits use 2 second record and 5 second completion bounds; connected Gradle runs completed without an orphan server"
+      "evidence": "HTTP waits remain bounded and Firebase Task awaits now have a 15 second timeout; a never-completing Task maps to TokenUnavailableException in a focused unit test"
     },
     "flaky_tests": {
       "status": "applies",
-      "evidence": "focused PhotoPickerTest completed green on two consecutive final SM_F711N runs"
+      "evidence": "final PhotoPickerTest suite completed 4/4 green on two consecutive SM_F711N runs after the last source change"
     },
     "misleading_success_output": {
       "status": "applies",
-      "evidence": "claims use parsed JVM/connected XML, one recorded multipart request, exact dimensions, SHA-256, and file existence checks"
+      "evidence": "claims use parsed JVM/connected XML, exact multipart JPEG-part extraction and hash rather than randomized envelope hash, real process PIDs, and file-existence checks"
     },
     "repeated_interruptions": {
       "status": "applies",
-      "evidence": "call cancellation followed by a new Application startup preserved request count 1 and swept the abandoned stale cache fixture"
+      "evidence": "PhotoAdviceCall is atomic one-shot: concurrent second execute returns AlreadyExecuted, only one server request occurs, and only the owning execution performs cleanup"
     }
   }
 }

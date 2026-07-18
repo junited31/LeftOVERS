@@ -1,7 +1,14 @@
 package com.junited31.leftovers.photo
 
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.net.Uri
+import android.os.ParcelFileDescriptor
+import android.content.pm.ProviderInfo
 import androidx.exifinterface.media.ExifInterface
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -10,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowContentResolver
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
@@ -30,14 +38,14 @@ class PhotoLifecycleTest {
         val compressed = PhotoLifecycle(context).compress(android.net.Uri.fromFile(source))
 
         // Then
-        val decoded = BitmapFactory.decodeFile(compressed.path)
+        val decoded = BitmapFactory.decodeFile(compressed.file.path)
         assertEquals(1280, maxOf(decoded.width, decoded.height))
-        assertTrue(compressed.length() in 1..PhotoLifecycle.MAX_UPLOAD_BYTES)
-        assertTrue(compressed.name.startsWith(PhotoLifecycle.CACHE_PREFIX))
-        assertTrue(compressed.readBytes().take(2) == listOf(0xFF.toByte(), 0xD8.toByte()))
+        assertTrue(compressed.file.length() in 1..PhotoLifecycle.MAX_UPLOAD_BYTES)
+        assertTrue(compressed.file.name.startsWith(PhotoLifecycle.CACHE_PREFIX))
+        assertTrue(compressed.file.readBytes().take(2) == listOf(0xFF.toByte(), 0xD8.toByte()))
         decoded.recycle()
         source.delete()
-        compressed.delete()
+        compressed.file.delete()
     }
 
     @Test
@@ -89,12 +97,93 @@ class PhotoLifecycleTest {
         val compressed = lifecycle.compressCamera(cameraFile)
 
         // Then
-        val decoded = BitmapFactory.decodeFile(compressed.path)
+        val decoded = BitmapFactory.decodeFile(compressed.file.path)
         assertEquals(640, decoded.width)
         assertEquals(1280, decoded.height)
         assertFalse(cameraFile.exists())
         decoded.recycle()
-        compressed.delete()
+        compressed.file.delete()
+    }
+
+    @Test
+    fun transpose_and_transverse_rotate_and_mirror_asymmetric_images() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val results = listOf(
+            ExifInterface.ORIENTATION_TRANSPOSE,
+            ExifInterface.ORIENTATION_TRANSVERSE,
+        ).map { orientation ->
+            val source = lifecycle.createCacheFile()
+            val bitmap = Bitmap.createBitmap(1600, 800, Bitmap.Config.ARGB_8888).apply {
+                eraseColor(Color.RED)
+                for (x in 800 until width) {
+                    for (y in 0 until height) setPixel(x, y, Color.BLUE)
+                }
+            }
+            FileOutputStream(source).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+            bitmap.recycle()
+            ExifInterface(source).apply {
+                setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
+                saveAttributes()
+            }
+            lifecycle.compressCamera(source)
+        }
+
+        // When
+        val transpose = BitmapFactory.decodeFile(results[0].file.path)
+        val transverse = BitmapFactory.decodeFile(results[1].file.path)
+
+        // Then
+        listOf(transpose, transverse).forEach {
+            assertEquals(640, it.width)
+            assertEquals(1280, it.height)
+        }
+        transpose.recycle()
+        transverse.recycle()
+        results.forEach { it.file.delete() }
+    }
+
+    @Test
+    fun foreign_file_cannot_become_managed_or_be_deleted() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val foreign = File(context.cacheDir, "persistent-photo.jpg").apply { writeBytes(byteArrayOf(1)) }
+
+        // When
+        val managed = lifecycle.manage(foreign)
+
+        // Then
+        assertEquals(null, managed)
+        assertTrue(foreign.exists())
+        foreign.delete()
+    }
+
+    @Test(expected = PhotoTooLargeException::class)
+    fun unknown_length_provider_is_streamed_with_hard_source_cap() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val source = File(context.cacheDir, "unknown-oversize.jpg")
+        RandomAccessFile(source, "rw").use { it.setLength(PhotoLifecycle.MAX_SOURCE_BYTES + 1) }
+        val provider = UnknownLengthProvider(source).apply {
+            attachInfo(
+                context,
+                ProviderInfo().apply { authority = "leftovers-unknown" },
+            )
+        }
+        ShadowContentResolver.registerProviderInternal("leftovers-unknown", provider)
+        val before = lifecycle.ownedCacheFiles().map(File::getName)
+
+        // When
+        try {
+            lifecycle.compress(Uri.parse("content://leftovers-unknown/photo"))
+        } finally {
+            // Then
+            assertEquals(before, lifecycle.ownedCacheFiles().map(File::getName))
+            source.delete()
+        }
     }
 
     @Test(expected = InvalidPhotoException::class)
@@ -130,4 +219,30 @@ class PhotoLifecycleTest {
             source.delete()
         }
     }
+
+}
+
+private class UnknownLengthProvider(private val source: File) : ContentProvider() {
+    override fun onCreate() = true
+
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+        ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY)
+
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?,
+    ): Cursor? = null
+
+    override fun getType(uri: Uri): String = "image/jpeg"
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = 0
+    override fun update(
+        uri: Uri,
+        values: ContentValues?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+    ): Int = 0
 }

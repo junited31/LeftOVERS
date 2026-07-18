@@ -1,0 +1,39 @@
+Task 5 hardening GREEN - 2026-07-18 Asia/Seoul
+
+RED baseline:
+- task-5-hardening-red.txt records expected compilation failure before production APIs existed.
+- independent report task-5-independent-verify.json remained byte-identical:
+  SHA-256 EBA722C7BEBEE60EE56F3047601FC1250DC70F23AC4A8BB419DAC5F1EE82C0A2
+
+Final forced Android gate (exit 0):
+  android\gradlew.bat -p android :app:testDebugUnitTest --tests '*LeftoversApiTest' \
+    --tests '*PhotoLifecycleTest' :app:lintDebug :app:assembleDebug :app:assembleRelease \
+    :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain
+  BUILD SUCCESSFUL in 35s; 112 actionable tasks: 112 executed
+
+Parsed test receipts:
+- JVM: tests=16 failures=0 errors=0
+- connected run 1: PhotoPickerTest tests=4 failures=0 errors=0 skipped=0 on SM-F711N
+- connected run 2: PhotoPickerTest tests=4 failures=0 errors=0 skipped=0 on SM-F711N
+
+Finding closures:
+1. ManagedPhoto confines upload deletion to canonical leftovers-photos cache children; foreign file regression passes.
+2. Unknown-length ContentProvider stream of 64 MiB+1 rejects before upload with no owned residue.
+3. Concurrent execute has one winner, one AlreadyExecuted result, and exactly one MockWebServer request.
+4. UTF-8 JSON and multipart context over 256 KiB return PayloadTooLarge before token/network.
+5. A never-completing Firebase Task times out through BoundedTaskWaiter and maps to typed token failure.
+6. Connected multipart proof parses the exact JPEG part: bytes=7478,
+   SHA-256=bd96c9a05fc704daf702d74b63baf48a86b9a0e4d2e708c7168f9e2fc282ea47.
+7. Real JPEG EXIF orientation 5/7 tests assert swapped dimensions and mirrored color polarity on SM-F711N.
+
+Real restart receipt:
+- force-stop PID 18784 -> absent -> cold-launch PID 18932
+- stale owned=false; fresh owned=true; old foreign=true
+- REAL_OS_RESTART_SWEEP=PASS
+
+Artifact/security receipts:
+- debug APK SHA-256 AA38C0DB699BC418874892150685E97BE88AB1CEE911EFD320F2644A1770D457
+- release APK SHA-256 A7013149D342DDE9D202C4F3E2B0A53813BAFA30D6D0BFDF0D9F418E277F8ED5
+- aapt resource and raw APK secret-pattern hits=0 for both APKs
+- scripts/scan_secrets.ps1 passed, 116 files inspected
+- release usesCleartextTraffic hits=0

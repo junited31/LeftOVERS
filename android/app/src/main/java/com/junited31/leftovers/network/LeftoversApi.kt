@@ -1,6 +1,7 @@
 package com.junited31.leftovers.network
 
 import com.junited31.leftovers.photo.PhotoLifecycle
+import com.junited31.leftovers.photo.PhotoLifecycle.ManagedPhoto
 import okhttp3.Call
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,8 +11,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
 sealed interface ApiResult {
     data class Success(val body: String) : ApiResult
@@ -25,6 +26,7 @@ sealed interface ApiResult {
     data object InvalidPhoto : ApiResult
     data object NetworkFailure : ApiResult
     data object Cancelled : ApiResult
+    data object AlreadyExecuted : ApiResult
 }
 
 class LeftoversApi(
@@ -38,6 +40,7 @@ class LeftoversApi(
     private val client = client.newBuilder().retryOnConnectionFailure(false).build()
 
     fun executeJson(path: String, json: String): ApiResult {
+        if (json.toByteArray().size > MAX_REQUEST_BYTES) return ApiResult.PayloadTooLarge
         val url = baseUrl.resolve(path) ?: return ApiResult.InvalidRequest
         val token = token() ?: return ApiResult.AuthUnavailable
         val request = Request.Builder()
@@ -48,7 +51,7 @@ class LeftoversApi(
         return execute(client.newCall(request))
     }
 
-    fun newPhotoAdviceCall(contextJson: String, photo: File): PhotoAdviceCall = PhotoAdviceCall(
+    fun newPhotoAdviceCall(contextJson: String, photo: ManagedPhoto): PhotoAdviceCall = PhotoAdviceCall(
         requestFactory = {
             val token = token()
             if (token == null) {
@@ -60,7 +63,7 @@ class LeftoversApi(
                     .post(
                         MultipartBody.Builder().setType(MultipartBody.FORM)
                             .addFormDataPart("context", contextJson)
-                            .addFormDataPart("photo", "step.jpg", photo.asRequestBody(JPEG_MEDIA_TYPE))
+                            .addFormDataPart("photo", "step.jpg", photo.file.asRequestBody(JPEG_MEDIA_TYPE))
                             .build(),
                     )
                     .build()
@@ -68,11 +71,16 @@ class LeftoversApi(
             }
         },
         photo = photo,
+        preflightFailure = if (contextJson.toByteArray().size > MAX_REQUEST_BYTES) {
+            ApiResult.PayloadTooLarge
+        } else {
+            null
+        },
     )
 
     private fun token(): String? = try {
         tokenProvider.idToken()
-    } catch (_: Exception) {
+    } catch (_: TokenUnavailableException) {
         null
     }
 
@@ -85,6 +93,7 @@ class LeftoversApi(
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         private val JPEG_MEDIA_TYPE = "image/jpeg".toMediaType()
+        const val MAX_REQUEST_BYTES = 256 * 1024
 
         internal fun mapResponse(response: Response): ApiResult = when (response.code) {
             200 -> ApiResult.Success(response.body?.string().orEmpty())
@@ -100,24 +109,27 @@ class LeftoversApi(
 
 class PhotoAdviceCall internal constructor(
     private val requestFactory: () -> CallCreation,
-    private val photo: File,
+    private val photo: ManagedPhoto,
+    private val preflightFailure: ApiResult?,
 ) {
     @Volatile
     private var call: Call? = null
 
-    @Volatile
-    private var cancelled = false
+    private val cancelled = AtomicBoolean()
+    private val started = AtomicBoolean()
 
     fun execute(): ApiResult {
+        if (!started.compareAndSet(false, true)) return ApiResult.AlreadyExecuted
         try {
-            if (!photo.isFile) return ApiResult.InvalidPhoto
-            if (photo.length() > PhotoLifecycle.MAX_UPLOAD_BYTES) return ApiResult.PayloadTooLarge
-            if (cancelled) return ApiResult.Cancelled
+            preflightFailure?.let { return it }
+            if (!photo.file.isFile) return ApiResult.InvalidPhoto
+            if (photo.file.length() > PhotoLifecycle.MAX_UPLOAD_BYTES) return ApiResult.PayloadTooLarge
+            if (cancelled.get()) return ApiResult.Cancelled
             return when (val created = requestFactory()) {
                 is CallCreation.Failed -> created.result
                 is CallCreation.Ready -> {
                     call = created.call
-                    if (cancelled) created.call.cancel()
+                    if (cancelled.get()) created.call.cancel()
                     try {
                         created.call.execute().use(LeftoversApi::mapResponse)
                     } catch (_: IOException) {
@@ -131,7 +143,7 @@ class PhotoAdviceCall internal constructor(
     }
 
     fun cancel() {
-        cancelled = true
+        cancelled.set(true)
         call?.cancel()
     }
 }

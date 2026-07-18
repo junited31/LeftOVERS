@@ -6,6 +6,9 @@ import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -13,7 +16,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.exifinterface.media.ExifInterface
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import com.junited31.leftovers.network.TokenProvider
@@ -21,16 +24,25 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.security.MessageDigest
+import java.io.FileOutputStream
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PhotoPickerTest {
+    @Before
+    fun clearOwnedTransientCache() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        PhotoLifecycle(context).ownedCacheFiles().forEach { it.delete() }
+    }
+
     @Test
     fun native_contracts_use_visual_picker_and_file_provider_uri() {
         // Given
@@ -79,7 +91,8 @@ class PhotoPickerTest {
             PhotoContracts.pick.parseResult(Activity.RESULT_OK, Intent().setData(source)),
         )
         val compressed = lifecycle.compress(picked)
-        val decoded = BitmapFactory.decodeFile(compressed.path)
+        val expectedJpeg = compressed.file.readBytes()
+        val decoded = BitmapFactory.decodeFile(compressed.file.path)
         val server = MockWebServer().apply {
             enqueue(MockResponse().setResponseCode(200).setBody("{\"observations\":[]}"))
             start()
@@ -94,13 +107,20 @@ class PhotoPickerTest {
         val request = server.takeRequest(2, TimeUnit.SECONDS)!!
         val body = request.body.readByteArray()
         val bodyText = String(body, Charsets.ISO_8859_1)
+        val jpeg = multipartPart(
+            body,
+            checkNotNull(request.getHeader("Content-Type")),
+            "photo",
+        )
         assertTrue(request.getHeader("Content-Type")!!.startsWith("multipart/form-data"))
         assertTrue(body.size <= PhotoLifecycle.MAX_UPLOAD_BYTES + 4096)
         assertTrue(bodyText.contains("name=\"context\""))
         assertTrue(bodyText.contains("name=\"photo\""))
+        assertTrue(expectedJpeg.contentEquals(jpeg))
+        assertTrue(jpeg.size <= PhotoLifecycle.MAX_UPLOAD_BYTES)
         assertEquals(1280, maxOf(decoded.width, decoded.height))
         assertEquals(1, server.requestCount)
-        assertFalse(compressed.exists())
+        assertFalse(compressed.file.exists())
         assertTrue(lifecycle.ownedCacheFiles().isEmpty())
         writeEvidence(
             context,
@@ -111,12 +131,13 @@ class PhotoPickerTest {
               "pickerContract":"PickVisualMedia.ImageOnly",
               "cameraContract":"TakePicture + FileProvider",
               "result":"${result::class.simpleName}",
-              "jpegBytes":${body.size},
+              "multipartEnvelopeBytes":${body.size},
+              "jpegPartBytes":${jpeg.size},
               "compressedWidth":${decoded.width},
               "compressedHeight":${decoded.height},
               "maxDimension":${maxOf(decoded.width, decoded.height)},
               "quality":${PhotoLifecycle.JPEG_QUALITY},
-              "sha256":"${sha256(body)}",
+              "jpegPartSha256":"${sha256(jpeg)}",
               "requestCount":${server.requestCount},
               "cacheEmpty":${lifecycle.ownedCacheFiles().isEmpty()},
               "bearerTokenRecorded":false,
@@ -133,7 +154,7 @@ class PhotoPickerTest {
         // Given
         val context = ApplicationProvider.getApplicationContext<Context>()
         val lifecycle = PhotoLifecycle(context)
-        val upload = lifecycle.createCacheFile().apply { writeBytes(ByteArray(1024)) }
+        val upload = lifecycle.createManagedPhoto().apply { file.writeBytes(ByteArray(1024)) }
         val stale = lifecycle.createCacheFile().apply {
             writeBytes(byteArrayOf(1))
             setLastModified(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
@@ -157,17 +178,12 @@ class PhotoPickerTest {
         assertTrue(server.takeRequest(2, TimeUnit.SECONDS) != null)
         call.cancel()
         assertTrue(finished.await(5, TimeUnit.SECONDS))
-        val restarted = InstrumentationRegistry.getInstrumentation().newApplication(
-            checkNotNull(com.junited31.leftovers.LeftoversApplication::class.java.classLoader),
-            com.junited31.leftovers.LeftoversApplication::class.java.name,
-            context,
-        )
-        restarted.onCreate()
+        lifecycle.sweepStale()
 
         // Then
         assertEquals(ApiResult.Cancelled, result)
         assertEquals(1, server.requestCount)
-        assertFalse(upload.exists())
+        assertFalse(upload.file.exists())
         assertFalse(stale.exists())
         writeEvidence(
             context,
@@ -176,12 +192,56 @@ class PhotoPickerTest {
             result=Cancelled
             request_count=${server.requestCount}
             automatic_retry=false
-            upload_cache_exists=${upload.exists()}
+            upload_cache_exists=${upload.file.exists()}
             stale_25h_cache_exists=${stale.exists()}
-            restart_entrypoint=LeftoversApplication.onCreate
+            sweep_entrypoint=PhotoLifecycle.sweepStale
+            os_restart_evidence=task-5-restart.txt
             transient_token_or_image_logged=false""".trimIndent(),
         )
         server.shutdown()
+    }
+
+    @Test
+    fun exif_transpose_and_transverse_rotate_and_mirror_real_jpeg() {
+        // Given
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val outputs = listOf(
+            ExifInterface.ORIENTATION_TRANSPOSE,
+            ExifInterface.ORIENTATION_TRANSVERSE,
+        ).map { orientation ->
+            val source = lifecycle.createCacheFile()
+            val bitmap = Bitmap.createBitmap(1600, 800, Bitmap.Config.ARGB_8888)
+            Canvas(bitmap).apply {
+                drawColor(Color.RED)
+                drawRect(800f, 0f, 1600f, 800f, Paint().apply { color = Color.BLUE })
+            }
+            FileOutputStream(source).use { check(bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)) }
+            bitmap.recycle()
+            ExifInterface(source).apply {
+                setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
+                saveAttributes()
+            }
+            lifecycle.compressCamera(source)
+        }
+
+        // When
+        val transpose = BitmapFactory.decodeFile(outputs[0].file.path)
+        val transverse = BitmapFactory.decodeFile(outputs[1].file.path)
+
+        // Then
+        listOf(transpose, transverse).forEach {
+            assertEquals(640, it.width)
+            assertEquals(1280, it.height)
+            assertNotEquals(isRed(it.getPixel(it.width / 2, 100)), isRed(it.getPixel(it.width / 2, it.height - 100)))
+        }
+        assertNotEquals(
+            isRed(transpose.getPixel(transpose.width / 2, 100)),
+            isRed(transverse.getPixel(transverse.width / 2, 100)),
+        )
+        transpose.recycle()
+        transverse.recycle()
+        outputs.forEach { it.file.delete() }
     }
 
     private fun writeEvidence(context: Context, name: String, content: String) {
@@ -209,4 +269,25 @@ class PhotoPickerTest {
     private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
         .digest(bytes)
         .joinToString("") { "%02x".format(it) }
+
+    private fun multipartPart(body: ByteArray, contentType: String, name: String): ByteArray {
+        val boundary = contentType.substringAfter("boundary=")
+        val marker = "name=\"$name\"".toByteArray()
+        val markerStart = body.indexOf(marker)
+        check(markerStart >= 0)
+        val dataStart = body.indexOf("\r\n\r\n".toByteArray(), markerStart) + 4
+        check(dataStart >= 4)
+        val dataEnd = body.indexOf("\r\n--$boundary".toByteArray(), dataStart)
+        check(dataEnd >= dataStart)
+        return body.copyOfRange(dataStart, dataEnd)
+    }
+
+    private fun ByteArray.indexOf(needle: ByteArray, fromIndex: Int = 0): Int {
+        for (start in fromIndex..size - needle.size) {
+            if (needle.indices.all { this[start + it] == needle[it] }) return start
+        }
+        return -1
+    }
+
+    private fun isRed(color: Int): Boolean = Color.red(color) > Color.blue(color)
 }
