@@ -19,6 +19,13 @@ import org.junit.runner.RunWith
 class InventoryCompletionInstrumentedTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val databaseName = "inventory-completion-instrumented.db"
+    private val riceId = pantryId("00000000-0000-0000-0000-000000000003")
+    private val stockId = pantryId("00000000-0000-0000-0000-000000000004")
+    private val concurrentIds = listOf(
+        pantryId("00000000-0000-0000-0000-000000000100"),
+        pantryId("00000000-0000-0000-0000-000000000101"),
+        pantryId("00000000-0000-0000-0000-000000000102"),
+    )
 
     @After
     fun tearDown() {
@@ -32,8 +39,8 @@ class InventoryCompletionInstrumentedTest {
         var database = openDatabase()
         database.pantryDao().insertAll(
             listOf(
-                PantryItemEntity("rice", "Rice", 10_000, PantryUnit.GRAM, null, 1),
-                PantryItemEntity("stock", "Stock", 8_000, PantryUnit.MILLILITER, null, 3),
+                PantryItemEntity(riceId, "Rice", 10_000, PantryUnit.GRAM, null, 1),
+                PantryItemEntity(stockId, "Stock", 8_000, PantryUnit.MILLILITER, null, 3),
             ),
         )
         database.recipeSnapshotDao().insert(
@@ -42,8 +49,8 @@ class InventoryCompletionInstrumentedTest {
                 "Device recipe",
                 PantryBindings(
                     listOf(
-                        PantryBinding("rice", 1, PantryUnit.GRAM, 2_500),
-                        PantryBinding("stock", 3, PantryUnit.MILLILITER, 8_000),
+                        PantryBinding(riceId, 1, PantryUnit.GRAM, 2_500),
+                        PantryBinding(stockId, 3, PantryUnit.MILLILITER, 8_000),
                     ),
                 ),
                 RecipeSteps(listOf("Cook")),
@@ -60,8 +67,8 @@ class InventoryCompletionInstrumentedTest {
                 30,
                 ActualPantryUses(
                     listOf(
-                        ActualPantryUse("rice", 1, PantryUnit.GRAM, 2_500),
-                        ActualPantryUse("stock", 3, PantryUnit.MILLILITER, 8_000),
+                        ActualPantryUse(riceId, 1, PantryUnit.GRAM, 2_500),
+                        ActualPantryUse(stockId, 3, PantryUnit.MILLILITER, 8_000),
                     ),
                 ),
             ),
@@ -71,8 +78,8 @@ class InventoryCompletionInstrumentedTest {
 
         // Then
         assertEquals(CompletionResult.Success("meal"), result)
-        assertEquals(7_500L, database.pantryDao().get("rice")?.quantityMilliUnits)
-        assertEquals(0L, database.pantryDao().get("stock")?.quantityMilliUnits)
+        assertEquals(7_500L, database.pantryDao().get(riceId)?.quantityMilliUnits)
+        assertEquals(0L, database.pantryDao().get(stockId)?.quantityMilliUnits)
         assertEquals(2, database.pantryDao().getAll().size)
         val meal = database.mealLogDao().get("meal")
         assertEquals(1, database.mealLogDao().count())
@@ -87,14 +94,15 @@ class InventoryCompletionInstrumentedTest {
             // Given
             val database = Room.inMemoryDatabaseBuilder(context, LeftoversDatabase::class.java).build()
             val suffix = iteration.toString()
+            val itemId = concurrentIds[iteration]
             database.pantryDao().insertAll(
-                listOf(PantryItemEntity("item$suffix", "Item", 10_000, PantryUnit.COUNT, null, 1)),
+                listOf(PantryItemEntity(itemId, "Item", 10_000, PantryUnit.COUNT, null, 1)),
             )
             database.recipeSnapshotDao().insert(
                 RecipeSnapshotEntity(
                     "recipe$suffix",
                     "Concurrent recipe",
-                    PantryBindings(listOf(PantryBinding("item$suffix", 1, PantryUnit.COUNT, 1_000))),
+                    PantryBindings(listOf(PantryBinding(itemId, 1, PantryUnit.COUNT, 1_000))),
                     RecipeSteps(listOf("Cook")),
                     10,
                 ),
@@ -111,7 +119,7 @@ class InventoryCompletionInstrumentedTest {
                                 "meal-$suffix-$contender",
                                 30,
                                 ActualPantryUses(
-                                    listOf(ActualPantryUse("item$suffix", 1, PantryUnit.COUNT, 1_000)),
+                                    listOf(ActualPantryUse(itemId, 1, PantryUnit.COUNT, 1_000)),
                                 ),
                             ),
                         )
@@ -121,8 +129,8 @@ class InventoryCompletionInstrumentedTest {
 
             // Then
             assertEquals(1, results.count { it is CompletionResult.Success })
-            assertEquals(1, results.count { it == CompletionResult.StaleInventory("item$suffix") })
-            assertEquals(9_000L, database.pantryDao().get("item$suffix")?.quantityMilliUnits)
+            assertEquals(1, results.count { it == CompletionResult.StaleInventory(itemId) })
+            assertEquals(9_000L, database.pantryDao().get(itemId)?.quantityMilliUnits)
             assertEquals(1, database.mealLogDao().count())
             database.close()
         }
@@ -133,5 +141,7 @@ class InventoryCompletionInstrumentedTest {
         LeftoversDatabase::class.java,
         databaseName,
     ).build()
+
+    private fun pantryId(value: String) = requireNotNull(PantryItemId.parse(value))
 
 }

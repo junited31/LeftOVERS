@@ -15,6 +15,7 @@ import org.robolectric.RobolectricTestRunner
 class LeftoversDatabaseTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val databaseName = "leftovers-persistence-test.db"
+    private val riceId = pantryId("00000000-0000-0000-0000-000000000003")
 
     @After
     fun tearDown() {
@@ -27,13 +28,13 @@ class LeftoversDatabaseTest {
         context.deleteDatabase(databaseName)
         var database = openDatabase()
         database.pantryDao().insertAll(
-            listOf(PantryItemEntity("rice", "Rice", 3_500, PantryUnit.GRAM, 21_000, 4)),
+            listOf(PantryItemEntity(riceId, "Rice", 3_500, PantryUnit.GRAM, 21_000, 4)),
         )
         database.recipeSnapshotDao().insert(
             RecipeSnapshotEntity(
                 "recipe",
                 "Rice bowl",
-                PantryBindings(listOf(PantryBinding("rice", 4, PantryUnit.GRAM, 1_500))),
+                PantryBindings(listOf(PantryBinding(riceId, 4, PantryUnit.GRAM, 1_500))),
                 RecipeSteps(listOf("Cook rice")),
                 100,
             ),
@@ -46,7 +47,7 @@ class LeftoversDatabaseTest {
                 "session",
                 "meal",
                 300,
-                ActualPantryUses(listOf(ActualPantryUse("rice", 4, PantryUnit.GRAM, 1_250))),
+                ActualPantryUses(listOf(ActualPantryUse(riceId, 4, PantryUnit.GRAM, 1_250))),
             ),
         )
         database.close()
@@ -54,7 +55,7 @@ class LeftoversDatabaseTest {
 
         // Then
         assertEquals(CompletionResult.Success("meal"), result)
-        assertEquals(2_250L, database.pantryDao().get("rice")?.quantityMilliUnits)
+        assertEquals(2_250L, database.pantryDao().get(riceId)?.quantityMilliUnits)
         val meal = database.mealLogDao().get("meal")
         assertEquals("Rice bowl", meal?.recipeSnapshot?.title)
         assertEquals(1_250L, meal?.actualUses?.values?.single()?.actualMilliUnits)
@@ -75,6 +76,10 @@ class LeftoversDatabaseTest {
         listOf("G", "grams", " ml", "").forEach {
             assertTrue(PantryUnit.parse(it) == null)
         }
+        assertEquals(
+            "00000000-0000-0000-0000-0000000000aa",
+            PantryItemId.parse("00000000-0000-0000-0000-0000000000AA")?.value,
+        )
     }
 
     private fun openDatabase() = Room.databaseBuilder(
@@ -82,4 +87,6 @@ class LeftoversDatabaseTest {
         LeftoversDatabase::class.java,
         databaseName,
     ).allowMainThreadQueries().build()
+
+    private fun pantryId(value: String) = requireNotNull(PantryItemId.parse(value))
 }

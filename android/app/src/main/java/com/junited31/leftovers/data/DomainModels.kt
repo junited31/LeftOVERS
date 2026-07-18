@@ -1,5 +1,21 @@
 package com.junited31.leftovers.data
 
+import java.util.UUID
+
+@ConsistentCopyVisibility
+data class PantryItemId private constructor(val value: String) {
+    companion object {
+        fun parse(value: String): PantryItemId? {
+            val canonical = try {
+                UUID.fromString(value).toString()
+            } catch (_: IllegalArgumentException) {
+                return null
+            }
+            return canonical.takeIf { it.equals(value, ignoreCase = true) }?.let(::PantryItemId)
+        }
+    }
+}
+
 enum class PantryUnit(val value: String) {
     GRAM("g"),
     MILLILITER("ml"),
@@ -12,7 +28,7 @@ enum class PantryUnit(val value: String) {
 }
 
 data class PantryBinding(
-    val pantryItemId: String,
+    val pantryItemId: PantryItemId,
     val sourceVersion: Int,
     val unit: PantryUnit,
     val proposedMilliUnits: Long,
@@ -31,7 +47,7 @@ data class RecipeSnapshotRecord(
 )
 
 data class ActualPantryUse(
-    val pantryItemId: String,
+    val pantryItemId: PantryItemId,
     val sourceVersion: Int,
     val unit: PantryUnit,
     val actualMilliUnits: Long,
@@ -40,7 +56,7 @@ data class ActualPantryUse(
 data class ActualPantryUses(val values: List<ActualPantryUse>)
 
 data class PantryRemaining(
-    val pantryItemId: String,
+    val pantryItemId: PantryItemId,
     val unit: PantryUnit,
     val quantityMilliUnits: Long,
     val version: Int,
@@ -57,13 +73,13 @@ data class CompleteCookSessionCommand(
 
 sealed interface CompletionResult {
     data class Success(val mealLogId: String) : CompletionResult
-    data class DuplicateInventoryId(val pantryItemId: String) : CompletionResult
-    data class UnknownInventory(val pantryItemId: String) : CompletionResult
-    data class InventoryNotBound(val pantryItemId: String) : CompletionResult
-    data class MissingActualUse(val pantryItemId: String) : CompletionResult
-    data class UnitMismatch(val pantryItemId: String) : CompletionResult
-    data class StaleInventory(val pantryItemId: String) : CompletionResult
-    data class InvalidActualUse(val pantryItemId: String) : CompletionResult
+    data class DuplicateInventoryId(val pantryItemId: PantryItemId) : CompletionResult
+    data class UnknownInventory(val pantryItemId: PantryItemId) : CompletionResult
+    data class InventoryNotBound(val pantryItemId: PantryItemId) : CompletionResult
+    data class MissingActualUse(val pantryItemId: PantryItemId) : CompletionResult
+    data class UnitMismatch(val pantryItemId: PantryItemId) : CompletionResult
+    data class StaleInventory(val pantryItemId: PantryItemId) : CompletionResult
+    data class InvalidActualUse(val pantryItemId: PantryItemId) : CompletionResult
     data object UnknownCookSession : CompletionResult
     data object UnknownRecipeSnapshot : CompletionResult
 }

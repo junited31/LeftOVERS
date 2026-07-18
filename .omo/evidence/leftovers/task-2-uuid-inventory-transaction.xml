@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.junited31.leftovers.data.InventoryCompletionInstrumentedTest" tests="2" failures="0" errors="0" skipped="0" time="1.464" timestamp="2026-07-18T01:22:57" hostname="localhost">
+  <properties>
+    <property name="device" value="SM-F711N - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="completionPersistsExactQuantitiesAndOneImmutableLogAcrossReopen" classname="com.junited31.leftovers.data.InventoryCompletionInstrumentedTest" time="0.23" />
+  <testcase name="exactlyOneConcurrentCompletionWinsAgainstOneRowVersion" classname="com.junited31.leftovers.data.InventoryCompletionInstrumentedTest" time="0.133" />
+</testsuite>

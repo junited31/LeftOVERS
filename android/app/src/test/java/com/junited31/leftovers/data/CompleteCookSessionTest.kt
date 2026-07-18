@@ -14,6 +14,9 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class CompleteCookSessionTest {
     private lateinit var database: LeftoversDatabase
+    private val flourId = pantryId("00000000-0000-0000-0000-000000000001")
+    private val milkId = pantryId("00000000-0000-0000-0000-000000000002")
+    private val missingId = pantryId("00000000-0000-0000-0000-000000000099")
 
     @Before
     fun setUp() {
@@ -34,13 +37,13 @@ class CompleteCookSessionTest {
         // When
         val result = database.inventoryCompletionDao().complete(
             command(
-                ActualPantryUse("flour", 1, PantryUnit.GRAM, 10_001),
-                ActualPantryUse("milk", 1, PantryUnit.MILLILITER, 1_000),
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 10_001),
+                ActualPantryUse(milkId, 1, PantryUnit.MILLILITER, 1_000),
             ),
         )
 
         // Then
-        assertEquals(CompletionResult.InvalidActualUse("flour"), result)
+        assertEquals(CompletionResult.InvalidActualUse(flourId), result)
         assertUnchangedInventoryAndNoLog()
     }
 
@@ -52,13 +55,13 @@ class CompleteCookSessionTest {
         // When
         val result = database.inventoryCompletionDao().complete(
             command(
-                ActualPantryUse("flour", 1, PantryUnit.COUNT, 1_000),
-                ActualPantryUse("milk", 1, PantryUnit.MILLILITER, 1_000),
+                ActualPantryUse(flourId, 1, PantryUnit.COUNT, 1_000),
+                ActualPantryUse(milkId, 1, PantryUnit.MILLILITER, 1_000),
             ),
         )
 
         // Then
-        assertEquals(CompletionResult.UnitMismatch("flour"), result)
+        assertEquals(CompletionResult.UnitMismatch(flourId), result)
         assertUnchangedInventoryAndNoLog()
     }
 
@@ -70,13 +73,13 @@ class CompleteCookSessionTest {
         // When
         val result = database.inventoryCompletionDao().complete(
             command(
-                ActualPantryUse("flour", 1, PantryUnit.GRAM, 1_000),
-                ActualPantryUse("milk", 1, PantryUnit.MILLILITER, 1_000),
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 1_000),
+                ActualPantryUse(milkId, 1, PantryUnit.MILLILITER, 1_000),
             ),
         )
 
         // Then
-        assertEquals(CompletionResult.StaleInventory("flour"), result)
+        assertEquals(CompletionResult.StaleInventory(flourId), result)
         assertUnchangedInventoryAndNoLog(flourVersion = 2)
     }
 
@@ -88,13 +91,13 @@ class CompleteCookSessionTest {
         // When
         val result = database.inventoryCompletionDao().complete(
             command(
-                ActualPantryUse("flour", 1, PantryUnit.GRAM, 1_000),
-                ActualPantryUse("flour", 1, PantryUnit.GRAM, 2_000),
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 1_000),
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 2_000),
             ),
         )
 
         // Then
-        assertEquals(CompletionResult.DuplicateInventoryId("flour"), result)
+        assertEquals(CompletionResult.DuplicateInventoryId(flourId), result)
         assertUnchangedInventoryAndNoLog()
     }
 
@@ -106,21 +109,41 @@ class CompleteCookSessionTest {
         // When
         val result = database.inventoryCompletionDao().complete(
             command(
-                ActualPantryUse("flour", 1, PantryUnit.GRAM, 1_000),
-                ActualPantryUse("missing", 1, PantryUnit.MILLILITER, 1_000),
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 1_000),
+                ActualPantryUse(missingId, 1, PantryUnit.MILLILITER, 1_000),
             ),
         )
 
         // Then
-        assertEquals(CompletionResult.UnknownInventory("missing"), result)
+        assertEquals(CompletionResult.UnknownInventory(missingId), result)
         assertUnchangedInventoryAndNoLog()
+    }
+
+    @Test
+    fun rejectsMalformedPantryIdentityBeforeAnyMutation() = runTest {
+        // Given
+        givenSession()
+        val original = database.pantryDao().getAll()
+
+        // When
+        val malformed = listOf("not-a-uuid", "1-1-1-1-1", "").map(PantryItemId::parse)
+
+        // Then
+        assertEquals(
+            Triple(listOf(null, null, null), original, 0),
+            Triple(
+                malformed,
+                database.pantryDao().getAll(),
+                database.mealLogDao().count(),
+            ),
+        )
     }
 
     private suspend fun givenSession(flourVersion: Int = 1) {
         database.pantryDao().insertAll(
             listOf(
-                PantryItemEntity("flour", "Flour", 10_000, PantryUnit.GRAM, null, flourVersion),
-                PantryItemEntity("milk", "Milk", 20_000, PantryUnit.MILLILITER, null, 1),
+                PantryItemEntity(flourId, "Flour", 10_000, PantryUnit.GRAM, null, flourVersion),
+                PantryItemEntity(milkId, "Milk", 20_000, PantryUnit.MILLILITER, null, 1),
             ),
         )
         database.recipeSnapshotDao().insert(
@@ -129,8 +152,8 @@ class CompleteCookSessionTest {
                 title = "Pancakes",
                 pantryBindings = PantryBindings(
                     listOf(
-                        PantryBinding("flour", 1, PantryUnit.GRAM, 5_000),
-                        PantryBinding("milk", 1, PantryUnit.MILLILITER, 2_000),
+                        PantryBinding(flourId, 1, PantryUnit.GRAM, 5_000),
+                        PantryBinding(milkId, 1, PantryUnit.MILLILITER, 2_000),
                     ),
                 ),
                 steps = RecipeSteps(listOf("Mix", "Cook")),
@@ -152,11 +175,13 @@ class CompleteCookSessionTest {
     private suspend fun assertUnchangedInventoryAndNoLog(flourVersion: Int = 1) {
         assertEquals(
             listOf(
-                PantryItemEntity("flour", "Flour", 10_000, PantryUnit.GRAM, null, flourVersion),
-                PantryItemEntity("milk", "Milk", 20_000, PantryUnit.MILLILITER, null, 1),
+                PantryItemEntity(flourId, "Flour", 10_000, PantryUnit.GRAM, null, flourVersion),
+                PantryItemEntity(milkId, "Milk", 20_000, PantryUnit.MILLILITER, null, 1),
             ),
-            database.pantryDao().getAll().sortedBy { it.id },
+            database.pantryDao().getAll().sortedBy { it.id.value },
         )
         assertEquals(0, database.mealLogDao().count())
     }
+
+    private fun pantryId(value: String) = requireNotNull(PantryItemId.parse(value))
 }

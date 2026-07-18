@@ -13,7 +13,7 @@ interface PantryDao {
     suspend fun insertAll(items: List<PantryItemEntity>)
 
     @Query("SELECT * FROM pantry_items WHERE id = :id")
-    suspend fun get(id: String): PantryItemEntity?
+    suspend fun get(id: PantryItemId): PantryItemEntity?
 
     @Query("SELECT * FROM pantry_items ORDER BY id")
     suspend fun getAll(): List<PantryItemEntity>
@@ -55,7 +55,7 @@ abstract class InventoryCompletionDao {
     protected abstract suspend fun recipe(id: String): RecipeSnapshotEntity?
 
     @Query("SELECT * FROM pantry_items WHERE id IN (:ids)")
-    protected abstract suspend fun pantryRows(ids: List<String>): List<PantryItemEntity>
+    protected abstract suspend fun pantryRows(ids: List<PantryItemId>): List<PantryItemEntity>
 
     @Update
     protected abstract suspend fun updatePantry(rows: List<PantryItemEntity>)

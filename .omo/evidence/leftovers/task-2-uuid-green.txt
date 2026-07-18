@@ -1,0 +1,52 @@
+Task 2 UUID identity GREEN
+Date: 2026-07-18 Asia/Seoul
+Base verifier: .omo/evidence/leftovers/task-2-adversarial-verify.json
+Base verifier SHA-256: E23F0AE56FEF8B512C9C2B27C0F6D0C4F20E91F7C24FE702DB6EB41BCD1F52C9
+
+Root-cause toggle:
+- RED: `not-a-uuid` completed successfully, quantity 10000 to 9000, version 1 to 2, logs 0 to 1.
+- GREEN: PantryItemId.parse rejects `not-a-uuid`, shortened `1-1-1-1-1`, and empty input before an entity, binding, or use can be constructed; existing inventory and log count remain unchanged.
+- Canonicalization: uppercase canonical UUID input is accepted and stored lowercase.
+
+Focused regression command:
+android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest.rejectsMalformedPantryIdentityBeforeAnyMutation' --rerun-tasks
+Result: PASS (exit 0), BUILD SUCCESSFUL in 7s, 29 actionable tasks executed.
+
+Full automated command:
+android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest' --tests '*LeftoversDatabaseTest' :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --rerun-tasks
+Result: PASS (exit 0), BUILD SUCCESSFUL in 18s, 64 actionable tasks executed.
+Parsed JVM XML: tests=8 failures=0 errors=0 skipped=0.
+- CompleteCookSessionTest: tests=6 failures=0 errors=0 skipped=0.
+- LeftoversDatabaseTest: tests=2 failures=0 errors=0 skipped=0.
+
+Secret gate:
+powershell -NoProfile -File scripts/scan_secrets.ps1
+Result after final UUID evidence creation and debug-journal cleanup: PASS (exit 0), 75 files inspected.
+
+Focused real-device command, invoked three times:
+android/gradlew.bat -p android :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.data.InventoryCompletionInstrumentedTest"
+Device: R5CR91DXA8R / SM_F711N; XML label SM-F711N - 15.
+Runs 1-3: PASS (exit 0).
+Latest parsed XML: tests=2 failures=0 errors=0 skipped=0.
+- completionPersistsExactQuantitiesAndOneImmutableLogAcrossReopen: PASS with deterministic UUID pantry IDs, exact 7500/0 remaining values, two retained rows, and one immutable log after reopen.
+- exactlyOneConcurrentCompletionWinsAgainstOneRowVersion: PASS; three iterations, each exactly one Success and one StaleInventory, remaining 9000, one log.
+Exact XML: .omo/evidence/leftovers/task-2-uuid-inventory-transaction.xml
+XML SHA-256: EF598B473E33154756B69159C668606AD88251544B97E54B181CA0E0479D7CBB
+
+Required probes:
+- malformed UUID syntax: PASS (`not-a-uuid`, shortened UUID, empty all rejected)
+- duplicate UUID: PASS (DuplicateInventoryId; full pantry/log rollback)
+- unknown valid UUID: PASS (UnknownInventory; full pantry/log rollback)
+- stale version: PASS (StaleInventory; full pantry/log rollback)
+- unit mismatch: PASS (UnitMismatch; full pantry/log rollback)
+- over-use: PASS (InvalidActualUse; full pantry/log rollback)
+- zero row preservation: PASS on SM_F711N after close/reopen
+- signed Long milli-units and strict g|ml|count parsing: previous contracts remain GREEN
+
+Cleanup receipt:
+- focused test databases closed and named file DB deleted by instrumentation tearDown
+- connected runner left no LeftOVERS app/test package installed
+- one Gradle daemon stopped
+- run-started adb server killed
+- remaining Gradle daemon, AndroidJUnitRunner, and adb processes: none
+- no backend, plan, Boulder, ledger, or T3 verifier path changed

@@ -1,0 +1,21 @@
+Task 2 UUID identity RED
+Date: 2026-07-18 Asia/Seoul
+Reviewed base: eea0356c3e82e4b2736dca7d22cee0260bc47d04
+
+Command:
+$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest.rejectsMalformedPantryIdentityBeforeAnyMutation' --rerun-tasks
+
+Result: EXPECTED FAIL (exit 1)
+Test: CompleteCookSessionTest.rejectsMalformedPantryIdentityBeforeAnyMutation
+XML: tests=1 failures=1 errors=0 skipped=0
+
+Exact observable mismatch:
+expected: success=false, PantryItemEntity(id=not-a-uuid, quantityMilliUnits=10000, version=1), mealLogs=0
+actual: success=true, PantryItemEntity(id=not-a-uuid, quantityMilliUnits=9000, version=2), mealLogs=1
+
+BUILD FAILED in 21s
+29 actionable tasks: 29 executed
+
+Root cause: PantryItemEntity.id, PantryBinding.pantryItemId, and ActualPantryUse.pantryItemId accepted unconstrained String values, so Room completion never parsed pantry identity as UUID before mutating inventory and inserting a meal log.

@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "pantry_items")
 data class PantryItemEntity(
-    @PrimaryKey val id: String,
+    @PrimaryKey val id: PantryItemId,
     val name: String,
     val quantityMilliUnits: Long,
     val unit: PantryUnit,

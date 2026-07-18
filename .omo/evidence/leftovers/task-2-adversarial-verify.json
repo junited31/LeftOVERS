@@ -1,0 +1,185 @@
+{
+  "review_type": "DoneClaimReview+AdversarialVerify",
+  "task": "T2",
+  "tier": "HEAVY",
+  "captured_at": "2026-07-18T10:05:08.0692056+09:00",
+  "verdict": "needs-fix",
+  "confidence": 0.98,
+  "reviewed_commit": {
+    "sha": "26eb66a9e5170972640502abfad2bba7e7c6931b",
+    "tree": "64f6db1bf129d2f1e1aa9e9fd3a0f0fdb4859de2",
+    "parent": "d94d81fdb93275b7029400b99e6d1041ae2a5227",
+    "subject": "feat(data): add local kitchen and cooking records",
+    "stable_patch_id": "a4f2d08a47d2b6c97981729eb26288db35a6a710",
+    "diff": "17 files changed, 993 insertions; full git show and every changed Kotlin, Gradle, test, evidence, and Robolectric property file inspected",
+    "worktree_identity": "The Android paths and committed T2 evidence were byte-identical to the reviewed commit during verification. HEAD was the reviewed T2 commit at preflight; concurrent T3 backend work was dirty and later became descendant commit eea0356c3e82e4b2736dca7d22cee0260bc47d04 without changing T2 paths."
+  },
+  "done_claim_review": {
+    "status": "needs-fix",
+    "acceptance_met": false,
+    "automated_verification_met": true,
+    "manual_qa_met": true,
+    "blocking_finding": {
+      "title": "Canonical pantry IDs are not UUID-constrained",
+      "requirement": ".omo/plans/leftovers.md:79 requires recipe usage binding by pantry UUID/source version/unit.",
+      "evidence": [
+        "PantryItemEntity.id and every pantryItemId are unconstrained String values (Entities.kt:10; DomainModels.kt:15,34,43).",
+        "The fresh real-device happy path inserted, bound, and completed literal IDs rice and stock (InventoryCompletionInstrumentedTest.kt:35-36,45-46,63-64), and both tests passed.",
+        "No constructor, converter, DAO, or completion boundary parses or rejects a non-UUID ID."
+      ],
+      "smallest_reproduction": "Run the focused connected test exactly as recorded; completionPersistsExactQuantitiesAndOneImmutableLogAcrossReopen succeeds using pantry IDs rice and stock, which are not UUIDs.",
+      "smallest_fix_direction": "Parse pantry identity once into a UUID-constrained domain value at the entity/command boundary, store its canonical string form in Room, and update fixtures to use real UUIDs. Add one rejection check for malformed IDs before any mutation."
+    },
+    "requirements_verified": {
+      "strict_units": "pass: PantryUnit exposes only g, ml, and count; exact parsing rejects G, grams, whitespace, and empty input.",
+      "three_decimal_long_parsing": "pass: fresh JShell probe returned exact Long.MAX_VALUE and Long.MIN_VALUE at representable boundaries, null for overflow/underflow/exponent/plus/whitespace, and normalized -0.000 to 0.",
+      "uuid_version_unit_binding": "fail: source version and unit are checked against both snapshot binding and reread row, but pantry identity is not UUID-constrained.",
+      "room_transaction_reread": "pass: generated InventoryCompletionDao_Impl delegates complete through RoomDatabaseKt.withTransaction; the transaction rereads session, recipe, and pantry rows.",
+      "unique_known_ids": "pass for actual uses: duplicate use IDs return DuplicateInventoryId and unknown rows return UnknownInventory before writes.",
+      "amount_bounds": "pass: actual use must be in 0..reread quantity; negative and over-use values return InvalidActualUse.",
+      "immutable_snapshot": "pass: meal log stores serialized copies of the recipe, actual uses, and post-subtraction rows; close/reopen assertions read the stored copy.",
+      "exact_subtraction": "pass: quantity uses Long subtraction without conversion or clamping.",
+      "zero_row_preservation": "pass: fresh device test asserted the stock row remains with quantity 0 and total pantry row count remains 2.",
+      "total_rollback": "pass for specified invalid rows: real Room tests assert both pantry rows and meal-log count remain unchanged after over-use, unit mismatch, stale version, duplicate ID, and unknown ID."
+    }
+  },
+  "commands": [
+    {
+      "name": "preflight_and_plan",
+      "command": "git status --short; git branch --show-current; git rev-parse HEAD; git show --stat/--name-status 26eb66a...; Get-Content -Raw .omo/plans/leftovers.md",
+      "exit_code": 0,
+      "result": "Preflight HEAD exactly 26eb66a9e5170972640502abfad2bba7e7c6931b on feat/leftovers-mvp; full plan including T2 acceptance and QA reread; only declared concurrent T3 backend/evidence changes were dirty."
+    },
+    {
+      "name": "exact_diff_review",
+      "command": "git show --no-ext-diff --find-renames --find-copies --format=fuller 26eb66a9e5170972640502abfad2bba7e7c6931b plus git show <sha>:<path> for each changed path",
+      "exit_code": 0,
+      "result": "Full 17-file T2 patch inspected, including implementation, generated transaction seam, tests, Gradle, and prior evidence; stable patch ID a4f2d08a47d2b6c97981729eb26288db35a6a710."
+    },
+    {
+      "name": "android_automated_gate",
+      "command": "android/gradlew.bat -p android :app:testDebugUnitTest --tests '*CompleteCookSessionTest' --tests '*LeftoversDatabaseTest' :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --rerun-tasks",
+      "exit_code": 0,
+      "result": "BUILD SUCCESSFUL in 30s; 64 actionable tasks, all executed. Parsed unit XML: CompleteCookSessionTest 5/5 and LeftoversDatabaseTest 2/2; total tests=7 failures=0 errors=0 skipped=0. Lint, debug APK assembly, and androidTest Kotlin compilation passed."
+    },
+    {
+      "name": "canonical_secret_gate",
+      "command": "powershell -NoProfile -File scripts/scan_secrets.ps1",
+      "exit_code": 0,
+      "result": "Secret scan passed; 70 files inspected, including concurrent T3 dirty paths."
+    },
+    {
+      "name": "parser_boundary_probe",
+      "command": "JShell against freshly compiled QuantityParser and PantryUnit classes",
+      "exit_code": 0,
+      "result": "max=9223372036854775807; min=-9223372036854775808; overflow=null; underflow=null; negzero=0; +1/exponent/leading-space=null; g=GRAM; G=null."
+    },
+    {
+      "name": "fresh_real_device_qa",
+      "command": "android/gradlew.bat -p android :app:connectedDebugAndroidTest \"-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.data.InventoryCompletionInstrumentedTest\"",
+      "exit_code": 0,
+      "result": "Authorized R5CR91DXA8R / SM_F711N. BUILD SUCCESSFUL in 11s. Parsed fresh connected XML: tests=2 failures=0 errors=0 skipped=0; exact cases completionPersistsExactQuantitiesAndOneImmutableLogAcrossReopen and exactlyOneConcurrentCompletionWinsAgainstOneRowVersion both passed. The concurrency case itself repeats three times."
+    },
+    {
+      "name": "cleanup",
+      "command": "query focused packages/processes; conditionally uninstall app/test packages; android/gradlew.bat -p android --stop; adb kill-server; inspect local adb and GradleDaemon processes",
+      "exit_code": 0,
+      "result": "No app/test package or device process remained after connected test; one Gradle daemon stopped; Gradle status reported none running; adb server started by this review was killed; ADB_PROCESSES_AFTER=0 and GRADLE_DAEMONS_AFTER=0."
+    }
+  ],
+  "unit_xml": {
+    "totals": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "exact_assertion_review": "Tests use real Room databases, verify full row values and zero log count after each specified invalid result, close/reopen exact quantities and serialized snapshots, retained zero row, and exactly one Success plus one StaleInventory under concurrency. The test implementation does not mock or mirror the production transaction."
+  },
+  "manual_qa": {
+    "device": "R5CR91DXA8R / SM_F711N; connected XML label SM-F711N - 15",
+    "fresh_result": "2 tests, 0 failures, 0 errors, 0 skipped",
+    "persistence": "close/reopen retained 7500 g-milli-units rice, 0 ml-milli-units stock, two pantry rows, and one meal log",
+    "immutable_log": "meal snapshot title and remaining quantities [7500,0] were reread from the file database",
+    "concurrency": "three iterations in the fresh invocation each asserted exactly one Success, one StaleInventory, remaining quantity 9000, and one log",
+    "flakiness_context": "Committed evidence records four prior focused invocations; the prior XML hash matches its committed copy. One additional fresh invocation passed."
+  },
+  "adversarial_verify": {
+    "malformed_input": "fail overall: numeric and unit parser edges pass, but malformed/non-UUID pantry identities are accepted end to end on a real device.",
+    "prompt_injection": "out of scope: T2 has no prompt, model, network, instruction parser, or text-to-action boundary.",
+    "cancel_resume": "out of scope for this gate: completion is one framework-managed local Room transaction with no resumable external operation or user-visible partial state; no command was intentionally cancelled.",
+    "stale_state": "pass: source version is compared with both immutable recipe binding and the row reread inside the transaction; fresh concurrency returned exactly one typed StaleInventory.",
+    "dirty_worktree": "pass with declared concurrent scope: preflight dirt was only T3 backend/evidence work; Android and committed T2 evidence had no diff from 26eb66a. T3 later committed as descendant eea0356 without modifying T2 paths. This verification JSON is the only reviewer artifact left uncommitted.",
+    "hung_or_long_commands": "pass: automated gate completed in 30s, device gate in 11s, and cleanup in under 3s; no hung process remained.",
+    "flaky_tests": "pass: committed evidence documents four focused runs, the concurrency test repeats three iterations per invocation, and one fresh invocation also passed.",
+    "misleading_success_output": "pass: verdict does not trust Gradle console summaries; unit and connected XML suites, exact testcase names/counts, source assertions, APK/lint artifacts, and hashes were inspected.",
+    "repeated_interruptions": "out of scope: verification was not repeatedly interrupted and T2 exposes no interruption/resume workflow."
+  },
+  "artifacts": [
+    {
+      "path": ".omo/evidence/leftovers/task-2-inventory-transaction.xml",
+      "sha256": "D3B4921847D286582331157E1DD291338760920AC4E2F77040347B9BEC10AFB8",
+      "length": 769,
+      "note": "committed prior focused connected result"
+    },
+    {
+      "path": "android/app/build/outputs/androidTest-results/connected/debug/TEST-SM-F711N - 15-_app-.xml",
+      "sha256": "A367715A6BBEC2E46BABA8027C45C7C716B8042B5944A73B5AA04DF3BD1FF73E",
+      "length": 768,
+      "note": "fresh focused connected result"
+    },
+    {
+      "path": "android/app/build/test-results/testDebugUnitTest/TEST-com.junited31.leftovers.data.CompleteCookSessionTest.xml",
+      "sha256": "2FA0A7938A85720A9FBB99083900530565586E90175C8A67072C1D3F5D4DEC0F",
+      "length": 1056
+    },
+    {
+      "path": "android/app/build/test-results/testDebugUnitTest/TEST-com.junited31.leftovers.data.LeftoversDatabaseTest.xml",
+      "sha256": "949D9FD3E2159DA5AAFCC4073FA9A08EE802E32F2DE4C6855D833F387AA59982",
+      "length": 647
+    },
+    {
+      "path": "android/app/build/reports/lint-results-debug.html",
+      "sha256": "6649D303C710710B1F571A94F8E966A569D598D79615D95AC44850DE025A0535",
+      "length": 98888
+    },
+    {
+      "path": "android/app/build/outputs/apk/debug/app-debug.apk",
+      "sha256": "283447027C434DF5D783A8F2491E818ECC919D48EE76CDEEDAE999EF6EC04F76",
+      "length": 24285716
+    },
+    {
+      "path": ".omo/evidence/leftovers/task-2-green.txt",
+      "sha256": "42836A87CBF6563175082AC83186590479F403687F299F895767104948207265",
+      "length": 4213
+    },
+    {
+      "path": ".omo/evidence/leftovers/task-2-red.txt",
+      "sha256": "320C640D42D513BAFB060AA56B5AF8C2BB95349955B5ED43D316EE8B48F520D8",
+      "length": 1957
+    },
+    {
+      "path": ".omo/evidence/leftovers/task-2-baseline.txt",
+      "sha256": "02BED570867FAC950A2ADBA848C0B80E42D0A7DABB02BF36B0BE79E939AAE98D",
+      "length": 976
+    },
+    {
+      "path": "scripts/scan_secrets.ps1",
+      "sha256": "335295D86B850FB5F47182EE7CAA6186A82CFCD252DC1DC88A86410EFEE55F92",
+      "length": 2101
+    }
+  ],
+  "cleanup_receipts": [
+    "Focused instrumentation tearDown deletes its named file database after the persistence test and closes every database used by both cases.",
+    "Post-run adb package query returned no com.junited31.leftovers or com.junited31.leftovers.test package, and device process query returned no matching process.",
+    "android/gradlew.bat -p android --stop stopped one daemon; --status reported no Gradle daemons running.",
+    "The adb server was absent before device discovery, was started for this run, and was killed afterward; local adb process count is zero.",
+    "Local GradleDaemon process count is zero; no temporary DB, parser script, product-code edit, test edit, plan edit, Boulder edit, ledger edit, or commit was created by this reviewer."
+  ],
+  "risks": [
+    "Blocking: arbitrary strings satisfy the canonical pantry identity contract, so malformed local identity can survive Room and later conflict with the backend UUID boundary.",
+    "The recipe binding list is reduced with associateBy without first rejecting duplicate binding IDs. A malformed snapshot can therefore silently select the last duplicate binding; actual-use duplicates are rejected, but binding duplicates are not. Add an explicit uniqueness check when snapshot input becomes a trusted local record.",
+    "Version increment uses row.version + 1 with no Int.MAX_VALUE guard. This is practically remote but can wrap to Int.MIN_VALUE and weaken stale-state monotonicity if corrupt/imported data reaches the entity.",
+    "The focused tests do not directly cover InventoryNotBound, MissingActualUse, negative actual use, duplicate snapshot bindings, UUID rejection, or version overflow. Source review covers the first three main branches; the latter three remain the important adversarial gaps."
+  ]
+}

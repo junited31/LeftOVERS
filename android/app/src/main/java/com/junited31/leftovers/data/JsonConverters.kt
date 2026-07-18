@@ -13,6 +13,13 @@ class JsonConverters {
         requireNotNull(PantryUnit.parse(value)) { "Unknown pantry unit: $value" }
 
     @TypeConverter
+    fun pantryItemIdToString(id: PantryItemId): String = id.value
+
+    @TypeConverter
+    fun stringToPantryItemId(value: String): PantryItemId =
+        requireNotNull(PantryItemId.parse(value)) { "Invalid pantry UUID: $value" }
+
+    @TypeConverter
     fun pantryBindingsToJson(bindings: PantryBindings): String = bindingArray(bindings).toString()
 
     @TypeConverter
@@ -49,7 +56,7 @@ class JsonConverters {
         uses.values.forEach { use ->
             put(
                 JSONObject()
-                    .put("pantryItemId", use.pantryItemId)
+                    .put("pantryItemId", use.pantryItemId.value)
                     .put("sourceVersion", use.sourceVersion)
                     .put("unit", use.unit.value)
                     .put("actualMilliUnits", use.actualMilliUnits),
@@ -63,7 +70,7 @@ class JsonConverters {
             List(array.length()) { index ->
                 array.getJSONObject(index).let { json ->
                     ActualPantryUse(
-                        pantryItemId = json.getString("pantryItemId"),
+                        pantryItemId = requiredPantryItemId(json.getString("pantryItemId")),
                         sourceVersion = json.getInt("sourceVersion"),
                         unit = requiredUnit(json.getString("unit")),
                         actualMilliUnits = json.getLong("actualMilliUnits"),
@@ -78,7 +85,7 @@ class JsonConverters {
         remaining.values.forEach { row ->
             put(
                 JSONObject()
-                    .put("pantryItemId", row.pantryItemId)
+                    .put("pantryItemId", row.pantryItemId.value)
                     .put("unit", row.unit.value)
                     .put("quantityMilliUnits", row.quantityMilliUnits)
                     .put("version", row.version),
@@ -92,7 +99,7 @@ class JsonConverters {
             List(array.length()) { index ->
                 array.getJSONObject(index).let { json ->
                     PantryRemaining(
-                        pantryItemId = json.getString("pantryItemId"),
+                        pantryItemId = requiredPantryItemId(json.getString("pantryItemId")),
                         unit = requiredUnit(json.getString("unit")),
                         quantityMilliUnits = json.getLong("quantityMilliUnits"),
                         version = json.getInt("version"),
@@ -106,7 +113,7 @@ class JsonConverters {
         bindings.values.forEach { binding ->
             put(
                 JSONObject()
-                    .put("pantryItemId", binding.pantryItemId)
+                    .put("pantryItemId", binding.pantryItemId.value)
                     .put("sourceVersion", binding.sourceVersion)
                     .put("unit", binding.unit.value)
                     .put("proposedMilliUnits", binding.proposedMilliUnits),
@@ -118,7 +125,7 @@ class JsonConverters {
         List(array.length()) { index ->
             array.getJSONObject(index).let { json ->
                 PantryBinding(
-                    pantryItemId = json.getString("pantryItemId"),
+                    pantryItemId = requiredPantryItemId(json.getString("pantryItemId")),
                     sourceVersion = json.getInt("sourceVersion"),
                     unit = requiredUnit(json.getString("unit")),
                     proposedMilliUnits = json.getLong("proposedMilliUnits"),
@@ -133,4 +140,7 @@ class JsonConverters {
 
     private fun requiredUnit(value: String) =
         requireNotNull(PantryUnit.parse(value)) { "Unknown pantry unit: $value" }
+
+    private fun requiredPantryItemId(value: String) =
+        requireNotNull(PantryItemId.parse(value)) { "Invalid pantry UUID: $value" }
 }
