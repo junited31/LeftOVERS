@@ -91,7 +91,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - `curl -i http://127.0.0.1:8000/health` returns 200 JSON and authenticated fake recipe/advice requests match schemas, evidence `task-3-api.json`; failure - 8 MiB+1 and expired token requests return 413/401 with zero stored bytes/model calls, evidence `task-3-boundaries.txt`.
   Commit: Y | `feat(api): add authenticated GPT cooking contracts`
 
-- [ ] 4. Build equipment onboarding and pantry CRUD
+- [x] 4. Build equipment onboarding and pantry CRUD
   What to do / Must NOT do: Implement Compose navigation shell, fixed equipment checklist, pantry list/add/edit forms, canonical units, optional expiry, validation, and Room/DataStore persistence. Include induction, gas burner, microwave, oven, air fryer, blender, rice cooker, toaster, basic cookware. Add debug-source-set-only seed/reset broadcast; no custom equipment CRUD or release receiver.
   Parallelization: Wave 2 | Blocked by: T2 | Blocks: T6,T8,T10 | Can parallelize with: T5
   References: `.omo/drafts/leftovers.md:16-18,31,35-38,49,65-68,73-76`.

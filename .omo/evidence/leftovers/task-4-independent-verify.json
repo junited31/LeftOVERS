@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "review": "AdversarialVerify",
+  "verdict": "confirmed",
+  "confidence": {
+    "level": "high",
+    "score": 0.99,
+    "productAtExactCommit": "confirmed",
+    "overallReason": "Every T4 product gate passed at the exact commit. The initially policy-blocked local transient directory was subsequently removed by an externally scoped cleanup worker after validating the exact fixed Local Temp child path, and this reviewer independently confirmed that exact path remains absent."
+  },
+  "task": "T4 equipment onboarding and pantry CRUD",
+  "verifiedCommit": "cf87762d1fe0182fca809a931cbd23a399c8779f",
+  "parentCommit": "635a565a4879fa371d3ccb6fc9ff148ebf941d2f",
+  "commitSubject": "feat(pantry): track ingredients and kitchen equipment",
+  "verifiedAt": "2026-07-18T12:36:42.1216747+09:00",
+  "repository": "D:/workspace/develop/LeftOVERS-impl",
+  "device": {
+    "serial": "R5CR91DXA8R",
+    "model": "SM_F711N",
+    "reportedTestDevice": "SM-F711N - 15"
+  },
+  "scopeResults": {
+    "pantryCrud": {
+      "result": "pass",
+      "evidence": [
+        "Add and edit/recreation are covered by PantryEquipmentTest; both focused runs passed 7/7.",
+        "Manual contextual Delete Rice used the exposed Delete Rice semantics; Rice disappeared and copied Room count changed from 3 to 2.",
+        "Fresh seeded list showed Eggs, Rice, and Spinach once each with exact quantities 6 count, 2000 g, and 300 g."
+      ]
+    },
+    "quantityAndUnits": {
+      "result": "pass",
+      "evidence": [
+        "QuantityParser accepts only an optional minus sign, digits, and at most one to three decimal places, converts exactly to Long milli-units, and rejects overflow.",
+        "PantryForm additionally rejects null or non-positive parsed quantities.",
+        "Focused device tests passed blank, zero, negative, and 1.0001 rejection paths.",
+        "The only UI unit choices are the PantryUnit enum values g, ml, and count."
+      ]
+    },
+    "expiry": {
+      "result": "pass",
+      "evidence": [
+        "Blank expiry is accepted on the successful add/edit path.",
+        "Nonblank expiry is parsed as strict ISO LocalDate and invalid input gets inline Use YYYY-MM-DD copy.",
+        "Fresh and committed pantry captures show both null expiry (Rice) and dated expiry rows (Eggs and Spinach)."
+      ]
+    },
+    "persistence": {
+      "result": "pass",
+      "evidence": [
+        "Room singleton uses leftovers.db and observable PantryDao rows.",
+        "Exact unscoped seed broadcast followed by force-stop/restart retained three seeded rows.",
+        "Equipment DataStore selection survived Activity recreation in the focused test and seeded choices survived force-stop/restart in fresh XML."
+      ]
+    },
+    "equipment": {
+      "result": "pass",
+      "evidence": [
+        "Source contains exactly nine fixed choices: induction, gas burner, microwave, oven, air fryer, blender, rice cooker, toaster, and basic cookware.",
+        "Fresh equipment XML contained each label exactly once and exactly nine checkable/clickable rows.",
+        "No add/edit/delete custom-equipment control or persistence model exists."
+      ]
+    },
+    "debugHooks": {
+      "result": "pass",
+      "evidence": [
+        "DebugApplication dynamically registers exported DEBUG_SEED and DEBUG_RESET receivers only from src/debug after app launch.",
+        "Exact command adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED returned result=0 and seeded three rows after one launch.",
+        "Exact seed then exact reset, force-stop/restart produced the empty-state node and zero Eggs/Rice/Spinach/Zero nodes.",
+        "Release aapt manifest inspection had zero hook matches; apkanalyzer found zero DebugApplication/DebugSeedReceiver class matches in release and 49 class/member matches in debug."
+      ]
+    },
+    "accessibilityAndTouch": {
+      "result": "pass",
+      "evidence": [
+        "Pantry actions expose contextual Edit <name> and Delete <name> content descriptions.",
+        "Equipment rows merge descendants, expose checkbox role/state, and are exactly 144 px high at device density 3 px/dp, or 48 dp.",
+        "Form radio and action targets inspected in fresh XML are at least 144 px high; fields have visible labels and inline supporting error text."
+      ]
+    },
+    "visual": {
+      "result": "pass",
+      "evidence": [
+        "Committed task-4-pantry.png and task-4-equipment.png were opened independently: valid 1080x2640 ARGB PNGs, no clipping, overlap, duplicate content, or app banner; clear app-bar, heading, primary action/list hierarchy.",
+        "Fresh clean pantry and equipment screenshots were opened after install/seed/restart and matched the committed layout without clipping, overlap, or missing rows.",
+        "Fresh zero-validation screenshot showed the inline red error fully visible, natural two-line wrap, unit controls and Save/Cancel unobstructed above bottom navigation.",
+        "The thin far-left handle is Samsung Edge-panel OS chrome, not app content."
+      ]
+    }
+  },
+  "automated": [
+    {
+      "command": "$env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\\Sdk'; .\\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon --console=plain",
+      "cwd": "D:/workspace/develop/LeftOVERS-impl/android",
+      "exitCode": 0,
+      "result": "BUILD SUCCESSFUL in 35s; 95 actionable tasks, 95 executed."
+    },
+    {
+      "command": ".\\gradlew.bat :app:connectedDebugAndroidTest \"-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest\" --no-daemon --console=plain",
+      "cwd": "D:/workspace/develop/LeftOVERS-impl/android",
+      "runs": 2,
+      "exitCodes": [0, 0],
+      "results": ["7/7 completed, 0 skipped, 0 failed, 26s", "7/7 completed, 0 skipped, 0 failed, 25s"]
+    },
+    {
+      "command": "Parse app/build/test-results/testDebugUnitTest/**/*.xml and app/build/outputs/androidTest-results/connected/**/*.xml",
+      "exitCode": 0,
+      "result": {
+        "jvm": {"files": 2, "tests": 8, "failures": 0, "errors": 0, "skipped": 0},
+        "connected": {"files": 1, "tests": 7, "failures": 0, "errors": 0, "skipped": 0, "device": "SM-F711N - 15"}
+      }
+    },
+    {
+      "command": "aapt.exe dump xmltree app-release-unsigned.apk AndroidManifest.xml; search DEBUG_SEED|DEBUG_RESET|DebugSeedReceiver|DebugApplication|debug-init",
+      "exitCode": 0,
+      "result": "66 manifest lines; 0 debug-hook matches.",
+      "artifactSha256": "A45DC5EEA2F3A521BE7D36FB06386B281A52751AF90EA600DDCB7B336A664D4E"
+    },
+    {
+      "command": "apkanalyzer.bat dex packages <release/debug apk>; search DebugApplication|DebugSeedReceiver",
+      "exitCode": 0,
+      "result": {"releaseMatches": 0, "debugMatches": 49}
+    },
+    {
+      "command": "powershell -NoProfile -File scripts/scan_secrets.ps1",
+      "exitCode": 0,
+      "result": "Secret scan passed (95 files inspected)."
+    }
+  ],
+  "manual": {
+    "exactSeedRestart": {
+      "steps": [
+        "adb install <exact-commit debug apk>",
+        "adb shell am start -W -n com.junited31.leftovers/.MainActivity",
+        "adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED",
+        "adb shell am force-stop com.junited31.leftovers",
+        "adb shell am start -W -n com.junited31.leftovers/.MainActivity"
+      ],
+      "result": "Broadcast completed: result=0; fresh XML after restart contained Eggs, Rice, Spinach and exact quantities once each."
+    },
+    "blankValidation": {
+      "result": "Name is required appeared once; form remained visible; copied Room SQLite+WAL row count stayed 3."
+    },
+    "zeroValidation": {
+      "result": "Enter a positive quantity with up to 3 decimals appeared once; form remained visible; copied Room SQLite+WAL row count stayed 3."
+    },
+    "delete": {
+      "result": "Delete Rice semantics resolved to a 235x144 px button; after tap Rice visible count=0, Eggs=1, Spinach=1, Room row count=2, Rice rows=0."
+    },
+    "exactResetRestart": {
+      "steps": [
+        "adb shell am broadcast -a com.junited31.leftovers.DEBUG_SEED",
+        "adb shell am broadcast -a com.junited31.leftovers.DEBUG_RESET",
+        "adb shell am force-stop com.junited31.leftovers",
+        "adb shell am start -W -n com.junited31.leftovers/.MainActivity"
+      ],
+      "result": "Both broadcasts completed result=0; restart succeeded; empty state count=1 and Eggs/Rice/Spinach/Zero counts=0."
+    }
+  },
+  "visualArtifacts": [
+    {
+      "path": ".omo/evidence/leftovers/task-4-pantry.png",
+      "dimensions": "1080x2640",
+      "pixelFormat": "Format32bppArgb",
+      "sha256": "317C764385687A3F80E07F712E134063E464D9019CE1826DF1CBDD2E7BBE4782",
+      "verdict": "pass"
+    },
+    {
+      "path": ".omo/evidence/leftovers/task-4-equipment.png",
+      "dimensions": "1080x2640",
+      "pixelFormat": "Format32bppArgb",
+      "sha256": "FAD76C92315D25632236A5AAA2EC1C9FD36BF9635D5357327D9EFA4E7047FE82",
+      "verdict": "pass"
+    },
+    {
+      "path": "C:/Users/ljhlj/AppData/Local/Temp/codex-t4-independent-verify/fresh-pantry-clean2.png",
+      "dimensions": "1080x2640",
+      "pixelFormat": "Format32bppArgb",
+      "sha256": "175943CBCEE2F6D52BEE4A5F7FFC9FD664CE837399F8F33AB1F94C66E7525B63",
+      "verdict": "pass",
+      "cleanup": "removed after visual inspection; exact containing temp directory independently verified absent"
+    },
+    {
+      "path": "C:/Users/ljhlj/AppData/Local/Temp/codex-t4-independent-verify/fresh-equipment-clean.png",
+      "dimensions": "1080x2640",
+      "pixelFormat": "Format32bppArgb",
+      "sha256": "83CD78C1DB26D8FD3B3A571ADE90A93A36D207FAB5EA2AF8B69D33E0EE6E8FFB",
+      "verdict": "pass",
+      "cleanup": "removed after visual inspection; exact containing temp directory independently verified absent"
+    }
+  ],
+  "adversarialClasses": {
+    "malformed_input": {"result": "pass", "evidence": "Blank, zero, negative, and four-decimal paths reject inline without insertion; optional invalid expiry is rejected by strict LocalDate parse."},
+    "stale_state": {"result": "pass", "evidence": "Edit/equipment recreation tests pass; exact seed and reset survive process restart as expected."},
+    "dirty_worktree": {"result": "pass_with_out_of_scope_activity", "evidence": "Verification began at clean exact HEAD. Concurrent T5 later dirtied build/manifests and added network/photo files; no T5 paths were read as T4 product evidence or edited by this reviewer."},
+    "hung_commands": {"result": "pass", "evidence": "All Gradle, ADB, aapt, apkanalyzer, scanner, and SQLite probes completed; no process was abandoned."},
+    "flaky_ui": {"result": "pass", "evidence": "Focused class passed twice consecutively. Shared-device T5 uninstalls invalidated two later cleanup dumps, explicitly discarded and rerun where required."},
+    "misleading_output": {"result": "pass", "evidence": "Claims use parsed XML, copied Room SQLite+WAL queries, manifest/class scans, and directly opened screenshots. Invalid attempts are listed below and not counted."},
+    "prompt_injection": {"result": "not_applicable", "reason": "T4 has no prompt/model/remote instruction boundary."},
+    "cancel_resume": {"result": "not_applicable", "reason": "T4 has no cancellable network or long-running operation."},
+    "secrets": {"result": "pass", "evidence": "Canonical scanner passed; screenshot/XML/DB probes contain deterministic local seed data only."}
+  },
+  "discardedOrFailedVerifierAttempts": [
+    "Initial Gradle command failed before task execution because ANDROID_HOME was unset and local.properties absent; rerun injected the verified SDK path and later forced all 95 tasks with --rerun-tasks.",
+    "First fresh pantry screenshot captured a Samsung emergency-alert heads-up overlay; it was marked evidence-defective and replaced by fresh-pantry-clean2.png after dismissing the OS alert.",
+    "First zero coordinate probe reused a form whose blank-error layout had shifted and did not produce a zero-error state; deterministic reseed plus a fresh form produced the valid zero probe.",
+    "One Python SQLite print command had a PowerShell quoting error after DB files were copied; the query was rerun successfully without changing device state.",
+    "Two cleanup equipment dumps saw the launcher because concurrent T5 connected runs uninstalled the shared target package; those dumps were discarded. Exact reset pantry proof and the twice-passing focused equipment reset test remain valid.",
+    "PowerShell parsing attempts used an invalid foreach-to-pipeline form in three read-only reporting helpers; corrected commands produced the cited results."
+  ],
+  "cleanup": {
+    "devicePackages": {"result": "pass", "details": "com.junited31.leftovers and com.junited31.leftovers.test absent; leftover package count=0."},
+    "deviceData": {"result": "pass", "details": "Exact reset proof cleared Room/DataStore, then package uninstall removed app sandbox."},
+    "remoteFiles": {"result": "pass", "details": "All task-created /sdcard/t4-* XML/PNG and /data/local/tmp/t4-* SQLite files removed; exact ls probes returned No such file or directory."},
+    "gradle": {"result": "pass", "details": "android/gradlew.bat -p android --stop stopped 1 daemon."},
+    "adb": {"result": "pass", "details": "adb kill-server exit 0."},
+    "localTransientDirectory": {
+      "result": "pass",
+      "path": "C:/Users/ljhlj/AppData/Local/Temp/codex-t4-independent-verify",
+      "remainingFiles": 0,
+      "dataClassification": "deterministic seeded pantry rows, UI XML, and screenshots; no credentials or real user data",
+      "history": [
+        "PowerShell Remove-Item was rejected by execution policy before running.",
+        "Coordinator-authorized Git Bash command resolved and would have asserted the exact path under /c/Users/ljhlj/AppData/Local/Temp and not equal to the temp root, but process creation was rejected before bash ran with: rm -f style commands are not permitted. Use a safer approach."
+      ],
+      "completionReceipt": "An externally scoped cleanup worker resolved the exact path C:/Users/ljhlj/AppData/Local/Temp/codex-t4-independent-verify, asserted it was the named child of Local Temp, removed it with a safe standard-library fallback, and verified exists=false. This reviewer then independently ran Test-Path -LiteralPath on that exact path and observed False without recreating any temp artifact."
+    }
+  },
+  "finalWorktreeObservation": {
+    "headAtProductVerification": "cf87762d1fe0182fca809a931cbd23a399c8779f",
+    "headAtReportFinalization": "2ca1857505b5dd4874660440eeac8585bfed96d7",
+    "headAdvance": "Concurrent T5 committed feat(network): connect secure AI and photo transport after all T4 product evidence had been captured; cf87762 remains its direct parent and the T4 review target.",
+    "t4ReviewerWrites": [".omo/evidence/leftovers/task-4-independent-verify.json"],
+    "t4ReviewerCommit": false,
+    "outOfScopeDirtyState": "Concurrent T5 modifications/untracked network-photo work were present at final status and left untouched."
+  }
+}
