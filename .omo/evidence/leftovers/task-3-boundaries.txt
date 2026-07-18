@@ -1,0 +1,28 @@
+T3 live boundary probes (localhost:8764, 2026-07-18 Asia/Seoul)
+
+Before probes, the temporary fake state was reset:
+{"modelCalls":0,"storedBytes":0}
+
+8 MiB + 1 photo command:
+curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -F 'context=<.omo/task3-context.json' -F 'photo=@.omo/task3-large.jpg;type=image/jpeg' http://127.0.0.1:8764/v1/cooking/advice
+
+HTTP/1.1 413 Content Too Large
+content-type: application/json
+{"error":{"code":"payload_too_large","message":"Payload exceeds service limit"}}
+
+Expired/invalid token command:
+curl.exe -sS -i -H 'Authorization: Bearer [REDACTED expired token]' -F 'context=<.omo/task3-context.json' -F 'photo=@.omo/task3-recipe.json;type=image/jpeg' http://127.0.0.1:8764/v1/cooking/advice
+
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"error":{"code":"unauthorized","message":"Valid Firebase bearer token required"}}
+
+Independent temporary fake-state inspection after both probes:
+curl.exe -sS -i http://127.0.0.1:8764/__test/state
+HTTP/1.1 200 OK
+{"modelCalls":0,"storedBytes":0}
+
+Cleanup receipts:
+- temporary uvicorn PID 10280 stopped: True
+- localhost port 8764 free: True
+- temporary runner, recipe/context payloads, and 8 MiB+1 payload removed: True

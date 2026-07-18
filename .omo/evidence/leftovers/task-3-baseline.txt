@@ -1,0 +1,24 @@
+T3 baseline captured before production changes (2026-07-18 Asia/Seoul)
+
+Existing T1 pytest characterization:
+Command: cd backend; .venv/Scripts/python.exe -m pytest -q tests
+Result: exit 0
+.                                                                        [100%]
+1 passed in 0.12s
+
+Live T1 health characterization:
+Command: curl.exe -i http://127.0.0.1:8763/health
+Result: HTTP/1.1 200 OK
+content-type: application/json
+
+{"status":"ok"}
+
+Application title contract:
+LeftOVERS API
+
+Cleanup:
+uvicorn PID stopped; port 8763 free: True
+
+Note: the plan's root-relative command initially exposed the pre-existing import-path
+characterization (`ModuleNotFoundError: app`). The unchanged T1 test passes from the
+backend project root as established by T1; T3 will make the required root invocation pass.

@@ -1,0 +1,77 @@
+T3 GREEN verification (2026-07-18 Asia/Seoul)
+
+Required pytest gate:
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests
+Result: exit 0; 31 passed in 1.74s.
+
+Required Docker gate:
+Command: docker build -t leftovers-api:test backend
+Result: exit 0; image leftovers-api:test; manifest list
+sha256:3d0aaec88f625c4c14e267b205268e90cba311cc570ac0065d9f398c0fac7da9.
+The initially stopped Docker Desktop daemon was started, then the exact command
+was rerun successfully.
+
+Docker surface inspection:
+Command: docker run --rm -d -p 127.0.0.1:8765:8080 --name leftovers-api-t3 leftovers-api:test
+Command: curl.exe -sS -i http://127.0.0.1:8765/health
+Result: HTTP/1.1 200 OK; {"status":"ok"}.
+Cleanup: container absent True; port 8765 free True.
+
+Required secret gate:
+Command: powershell -NoProfile -File scripts/scan_secrets.ps1
+Result: exit 0; Secret scan passed (71 files inspected) after evidence capture.
+
+Additional static gates:
+Command: uvx ruff check backend
+Result: exit 0; All checks passed.
+Command: backend/.venv/Scripts/python.exe C:/Users/ljhlj/.codex/plugins/cache/sisyphuslabs/omo/4.18.2/skills/programming/scripts/python/check-no-excuse-rules.py backend
+Result: exit 0; no violations in 15 files.
+
+Concurrency flake probe:
+Command: repeat 5x backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_quota.py -k concurrent
+Result: all five runs exit 0; each run 2 passed, 5 deselected (0.15-0.18s).
+
+Observable behaviors covered by the 31 tests:
+- typed 401/413/422/429/502 responses and UTC Retry-After
+- no quota/model call on invalid auth, invalid JSON schema, or JSON oversize
+- no model call/retained fake bytes on photo oversize or invalid auth
+- atomic per-UID 21st/51st and global 2001st/5001st rejection
+- HMAC-SHA256 UID IDs and one route/day global key
+- strict UUID/version/unit/positive amount/availability bindings
+- duplicate/unknown rows and duplicate/diversity-invalid recipe sets fail closed
+- exactly two validation retries, repair on either retry, no transport retry
+- bounded 64 KiB upload reads and UploadFile close on success/413/422 paths
+- exact gpt-5.6, store=false, structured-output schema, image data URL adapter
+- bearer/request-content log redaction and prompt-injection data isolation
+
+Live manual QA:
+- .omo/evidence/leftovers/task-3-api.json: literal curl 200 for health,
+  authenticated fake recipe generation, and multipart cooking advice.
+- .omo/evidence/leftovers/task-3-boundaries.txt: literal curl 413/401 plus
+  independent fake state {"modelCalls":0,"storedBytes":0}.
+
+Adversarial matrix (all 9 classes):
+1. malformed_input: APPLIES; Pydantic extra-forbid schemas, strict units/UUIDs,
+   256 KiB JSON, 8 MiB photo, and recipe binding failures are tested.
+2. prompt_injection: APPLIES; instruction-like pantry/name/notes remain only in
+   user_data and cannot alter instructions, schema_name, gpt-5.6, or store=false.
+3. cancel_resume: N/A; no long upload was intentionally interrupted. Bounded
+   reads and finally-close behavior cover resource cleanup without auto-resume.
+4. stale_state: APPLIES; UTC day conversion, next-midnight Retry-After, atomic
+   route/day counters, and reset-per-request retry attempts are tested.
+5. dirty_worktree: APPLIES; concurrent T2 lane owns android/**, task-2 evidence,
+   and .debug-journal.md. Only backend/** plus task-3 evidence will be staged.
+6. hung_or_long_commands: APPLIES; Docker readiness/build and uvicorn readiness
+   used bounded loops/timeouts; no unbounded polling remains.
+7. flaky_tests: APPLIES; deterministic concurrent cap tests passed five repeats.
+8. misleading_success_output: APPLIES; HTTP status/bodies, fake state, quota
+   counts, Docker manifest/image, and container /health were inspected directly.
+9. repeated_interruptions: N/A; no implementation or QA pass was intentionally
+   interrupted.
+
+Cleanup receipts:
+- temporary uvicorn PID 10280 stopped; port 8764 free
+- Docker QA container removed; port 8765 free; no leftovers-api-t3 container
+- temporary runner and payload files removed
+- newly created ignored backend/.venv removed after final verification
+- no request content, bearer token, photo, or test secret persisted

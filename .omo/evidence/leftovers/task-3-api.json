@@ -1,0 +1,42 @@
+{
+  "channel": "live localhost uvicorn with temporary dependency overrides",
+  "port": 8764,
+  "authorization": "Bearer [REDACTED]",
+  "requests": [
+    {
+      "command": "curl.exe -sS -i http://127.0.0.1:8764/health",
+      "status": 200,
+      "contentType": "application/json",
+      "body": {"status": "ok"}
+    },
+    {
+      "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -H 'Content-Type: application/json' --data-binary '@.omo/task3-recipe.json' http://127.0.0.1:8764/v1/recipes/generate",
+      "status": 200,
+      "contentType": "application/json",
+      "schema": {
+        "recipeCount": 3,
+        "trackedPantryIds": [
+          "10000000-0000-4000-8000-000000000001",
+          "10000000-0000-4000-8000-000000000002"
+        ],
+        "uniqueTitles": 3,
+        "cuisines": ["Korean", "Japanese"],
+        "primaryTechniques": ["stir-fry", "pan-fry"]
+      }
+    },
+    {
+      "command": "curl.exe -sS -i -H 'Authorization: Bearer [REDACTED]' -F 'context=<.omo/task3-context.json' -F 'photo=@.omo/task3-recipe.json;type=image/jpeg' http://127.0.0.1:8764/v1/cooking/advice",
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "status": "continue",
+        "observations": ["Light browning"],
+        "nextActions": ["Verify center temperature"],
+        "confidence": 0.7,
+        "safetyNote": "A photo cannot prove doneness or food safety; verify time and temperature."
+      }
+    }
+  ],
+  "temporaryRunner": "removed after QA; no production fake mode",
+  "cleanup": {"pidStopped": true, "portFree": true, "payloadsRemoved": true}
+}

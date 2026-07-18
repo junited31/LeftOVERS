@@ -1,0 +1,41 @@
+T3 behavior-first RED (2026-07-18 Asia/Seoul)
+
+Command:
+backend/.venv/Scripts/python.exe -m pytest -q backend/tests
+
+Result: exit 1; 26 failed, 1 passed in 0.21s.
+
+Expected missing-contract failures observed before T3 production changes:
+- invalid bearer token typed 401 / no quota or model call
+- JSON above 256 KiB typed 413 / no model call
+- non-canonical request schema typed 422 / no model call
+- bearer and request-content log redaction
+- upstream typed 502 without retry
+- photo above 8 MiB typed 413 / no retained bytes or model call
+- expired-token photo typed 401 / zero model state
+- UploadFile close after success
+- advice schema exhaustion after exactly two retries
+- GPT-5.6 and store=false provider contract
+- prompt-injection text isolated as delimited data
+- concurrent atomic per-UID 21st and 51st rejection
+- per-route global 2001st and 5001st rejection
+- UTC Retry-After and HMAC-SHA256 UID document ID
+- duplicate/unknown pantry IDs
+- version/unit/amount binding mismatches
+- duplicate recipe set
+- repair on either validation retry
+- no response binding to an unrequested pantry UUID
+
+Representative root causes:
+- AttributeError: module 'app.main' has no attribute 'create_app'
+- ModuleNotFoundError: No module named 'app.models'
+- ModuleNotFoundError: No module named 'app.quota'
+- ModuleNotFoundError: No module named 'app.openai_client'
+
+The unchanged T1 /health characterization remained green (1 passing test).
+
+Additional stale-state RED discovered during implementation:
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_quota.py -k converts_non_utc
+Result: exit 1; expected 2 seconds to UTC midnight, observed 86402 because the
+initial implementation used the caller's local calendar date. The GREEN change
+converts the instant to UTC before deriving the counter-day boundary.
