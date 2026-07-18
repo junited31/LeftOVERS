@@ -6,9 +6,14 @@ import com.junited31.leftovers.data.PantryUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 
+@RunWith(RobolectricTestRunner::class)
 class RecommendationRankerTest {
     private val riceId = pantryId("10000000-0000-4000-8000-000000000001")
     private val eggId = pantryId("10000000-0000-4000-8000-000000000002")
@@ -78,11 +83,31 @@ class RecommendationRankerTest {
     }
 
     @Test
-    fun normalizes_nfkc_whitespace_and_locale_root_before_fingerprinting() {
-        assertEquals("abc 가 나", RecipeNormalizer.normalize("  ＡＢＣ\t가  나  "))
+    fun shared_normalization_fixtures_match_backend_values_and_fingerprint() {
+        // Given: the same fixture file consumed by the backend test.
+        val fixtures = sharedNormalizationFixtures()
+        val cases = fixtures.getJSONArray("normalization")
+
+        // When: Android normalizes every cross-runtime edge value.
+        val normalized = List(cases.length()) { index ->
+            RecipeNormalizer.normalize(cases.getJSONObject(index).getString("input"))
+        }
+        val fingerprint = fixtures.getJSONObject("fingerprint")
+
+        // Then: values and composed SHA-256 exactly match the shared expectations.
         assertEquals(
-            "c94cb7d5943d763bab04fa2a255c1cb5edb833c3779a011296677e7f04d40d6e",
-            RecipeFingerprint.sha256(" Korean ", "PAN  FRY", listOf("Ｒｉｃｅ", "egg")),
+            List(cases.length()) { index -> cases.getJSONObject(index).getString("expected") },
+            normalized,
+        )
+        assertEquals(
+            fingerprint.getString("expectedSha256"),
+            RecipeFingerprint.sha256(
+                fingerprint.getString("cuisine"),
+                fingerprint.getString("primaryTechnique"),
+                List(fingerprint.getJSONArray("ingredientNames").length()) { index ->
+                    fingerprint.getJSONArray("ingredientNames").getString(index)
+                },
+            ),
         )
     }
 
@@ -190,6 +215,37 @@ class RecommendationRankerTest {
         assertEquals(0.5, RecommendationRanker.expiryWeight(today.plusDays(7).toEpochDay(), today), 0.0)
         assertEquals(0.1, RecommendationRanker.expiryWeight(null, today), 0.0)
         assertEquals(1.5 / 1.6, friedRice.expiry, 0.000_001)
+    }
+
+    @Test
+    fun expiry_urgency_includes_every_pantry_item_even_common_staples() {
+        // Given: urgent salt plus two later pantry rows.
+        val rows = pantry().map { row ->
+            when (row.id) {
+                eggId -> row.copy(name = "Salt", expiryEpochDay = today.plusDays(1).toEpochDay())
+                else -> row.copy(expiryEpochDay = null)
+            }
+        }
+
+        // When: a candidate captures the urgent staple and one later row.
+        val friedRice = valid(rank(validCandidates(), pantry = rows)).ranked
+            .single { it.candidate.title == "Egg fried rice" }
+
+        // Then: expiry is captured over all pantry rows, not the coverage-only domain.
+        assertEquals(1.1 / 1.2, friedRice.expiry, 0.000_001)
+    }
+
+    @Test
+    fun coverage_excludes_normalized_korean_common_staples() {
+        // Given: the egg row is actually Korean-labelled salt.
+        val rows = pantry().map { row -> if (row.id == eggId) row.copy(name = "  소금  ") else row }
+
+        // When: a candidate uses rice plus that staple.
+        val friedRice = valid(rank(validCandidates(), pantry = rows)).ranked
+            .single { it.candidate.title == "Egg fried rice" }
+
+        // Then: one of two non-staple rows is covered.
+        assertEquals(0.5, friedRice.coverage, 0.000_001)
     }
 
     @Test
@@ -306,4 +362,11 @@ class RecommendationRankerTest {
     )
 
     private fun pantryId(value: String) = requireNotNull(PantryItemId.parse(value))
+
+    private fun sharedNormalizationFixtures(): JSONObject {
+        val relative = ".omo/evidence/leftovers/task-6-normalization-fixtures.json"
+        val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
+        val fixture = roots.map { File(it, relative) }.first(File::isFile)
+        return JSONObject(fixture.readText())
+    }
 }

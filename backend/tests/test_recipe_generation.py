@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -133,3 +134,40 @@ def test_recipe_prompt_contains_one_compact_schema_valid_three_candidate_example
     assert len(response.recipes) == 3
     assert RECIPE_INSTRUCTIONS.count(RECIPE_EXAMPLE_JSON) == 1
     assert len(RECIPE_EXAMPLE_JSON) < 2_500
+
+
+def test_shared_normalization_fixtures_match_android_values_and_fingerprint() -> None:
+    from app.models import (
+        CanonicalUnit,
+        MissingIngredient,
+        RecipeCandidate,
+        normalize_label,
+        recipe_fingerprint,
+    )
+
+    # Given: one cross-runtime normalization and fingerprint contract.
+    fixture_path = (
+        Path(__file__).resolve().parents[2]
+        / ".omo/evidence/leftovers/task-6-normalization-fixtures.json"
+    )
+    fixtures = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    # When: the backend canonicalizer consumes every shared edge value.
+    normalized = [normalize_label(case["input"]) for case in fixtures["normalization"]]
+    fingerprint = fixtures["fingerprint"]
+    candidate = RecipeCandidate(
+        title="fixture",
+        cuisine=fingerprint["cuisine"],
+        primaryTechnique=fingerprint["primaryTechnique"],
+        requiredEquipment=(),
+        trackedUses=(),
+        missingIngredients=tuple(
+            MissingIngredient(name=name, amountMilliUnits=1, unit=CanonicalUnit.COUNT)
+            for name in fingerprint["ingredientNames"]
+        ),
+        steps=("fixture",),
+    )
+
+    # Then: values and composed SHA-256 exactly match the Android fixture expectations.
+    assert normalized == [case["expected"] for case in fixtures["normalization"]]
+    assert recipe_fingerprint(candidate, {}) == fingerprint["expectedSha256"]

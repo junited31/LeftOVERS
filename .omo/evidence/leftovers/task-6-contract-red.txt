@@ -1,0 +1,30 @@
+Task 6 contract RED - captured before production edits
+Date: 2026-07-18 Asia/Seoul
+Baseline: 9b3768e9ce78434ef3bccb4bf029a579fe0ce026
+
+Shared normalization fixture (backend)
+Command: backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py
+Result: FAIL - 1 failed, 15 passed in 2.19s
+Failure: expected `straße`; backend `casefold()` returned `strasse`.
+
+Shared normalization, expiry, and Korean-staple contracts (Android JVM)
+Command: android/gradlew.bat -p android :app:testDebugUnitTest --tests '*RecommendationRankerTest'
+Result: FAIL - 3 failed of 16 tests
+Failures:
+- shared_normalization_fixtures_match_backend_values_and_fingerprint: expected U+0085 to collapse to `a b`; Android retained U+0085.
+- expiry_urgency_includes_every_pantry_item_even_common_staples: expected 0.9166666666666667; was 0.5.
+- coverage_excludes_normalized_korean_common_staples: expected 0.5; was 0.6666666666666666.
+
+Korean Recipe UI semantics (SM-F711N, Android 15)
+Command: connectedDebugAndroidTest with RecipeScreenTest only
+Result: FAIL - 2 failed of 2 tests
+Failures:
+- production_recipe_screen_displays_exactly_three_complete_ranked_cards_and_saves_snapshot: Korean recipe copy assertion was not displayed.
+- typed_diversity_failure_shows_no_partial_cards_and_preserves_snapshot_count: Korean typed-error assertion was not displayed.
+
+Pantry launch regression exposed by the T6 API integration (SM-F711N, Android 15)
+Command: connectedDebugAndroidTest with PantryEquipmentTest and RecipeScreenTest
+Result: FAIL during pantry flow startup
+Failure: MainActivity eagerly called createRecipeApi(), causing `Default FirebaseApp is not initialized` even when the Recipes tab was never opened.
+
+No production source had been edited when these failures were captured.

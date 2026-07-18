@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 3,
+  "review": "AdversarialVerify",
+  "verdict": "needs-fix",
+  "confidence": {
+    "level": "high",
+    "score": 0.98,
+    "productAtExactCommit": "needs-fix",
+    "overallReason": "Fresh backend, Docker, Android, two-run device, live-curl, Room, and visual checks are green, but the exact algorithm and approved UI contract are not. Backend canonicalization uses Python casefold while Android uses NFKC plus Locale.ROOT lowercase and a narrower whitespace regex; expiry urgency incorrectly reuses the non-staple coverage set; the staple heuristic recognizes only five English labels despite the approved Korean UI; and the new Recipe screen is English rather than Korean."
+  },
+  "task": "T6 generate, validate, rank, save, and display three diverse recipes",
+  "verifiedCommit": "9b3768e9ce78434ef3bccb4bf029a579fe0ce026",
+  "commitSubject": "feat(recipes): recommend diverse pantry-first meals",
+  "verifiedAt": "2026-07-18T16:25:15.1668831+09:00",
+  "repository": "D:/workspace/develop/LeftOVERS-impl",
+  "inputsReviewed": {
+    "plan": ".omo/plans/leftovers.md (full file, including T6 and final gates)",
+    "approvedDraft": ".omo/drafts/leftovers.md (full file, status approved, exact ranking and language decisions)",
+    "state": [
+      ".omo/boulder.json",
+      ".omo/start-work/ledger.jsonl T4-T5 tail and current task state"
+    ],
+    "diff": "Exact 46be24b..9b3768e diff, all 26 changed paths, full post-state source/tests, and every committed task-6 evidence artifact",
+    "priorEvidenceTreatedAsUntrusted": [
+      "task-6-baseline.txt",
+      "task-6-red.txt",
+      "task-6-green.txt",
+      "task-6-diversity-failure.txt",
+      "task-6-recipes.json",
+      "task-6-recipes.png",
+      "task-6-recipes.xml",
+      "task-6-visual-qa.txt"
+    ]
+  },
+  "blockingFindings": [
+    {
+      "id": "T6-NORMALIZATION-DIVERGENCE",
+      "priority": "P1",
+      "contract": ".omo/drafts/leftovers.md:67 requires NFKC, lowercase, trim, and collapsed whitespace; the requested audit explicitly requires Locale.ROOT consistency.",
+      "locations": [
+        "backend/app/models.py:106-107",
+        "android/app/src/main/java/com/junited31/leftovers/recipes/RecommendationRanker.kt:13-19"
+      ],
+      "evidence": [
+        "Fresh Python production-function probe: normalize_label('Straße') returned 'strasse' because casefold expands U+00DF to 'ss'.",
+        "Fresh Java equivalent of the Android implementation with the escaped input Stra\\u00DFe retained code point U+00DF after Locale.ROOT lowercase.",
+        "Fresh whitespace probe: backend normalized A+U+0085+B to code points [0x61,0x20,0x62], while the Android-equivalent Regex(\\s+) path retained U+0085 as [0x61,0x85,0x62]."
+      ],
+      "impact": "Server title/cuisine/technique/fingerprint uniqueness can reject or distinguish a different set than the Android validator/ranker. The same logical candidate domain therefore has no single exact fingerprint/normalization contract.",
+      "requiredFix": "Use one specified canonical algorithm on both sides: NFKC, full intended whitespace collapse, trim, and locale-independent lowercase without casefold expansion; add cross-language edge fixtures."
+    },
+    {
+      "id": "T6-EXPIRY-AND-STAPLE-DOMAIN",
+      "priority": "P1",
+      "contract": ".omo/drafts/leftovers.md:68 excludes staples only from coverage, then defines expiry as captured weight divided by total expiry weight.",
+      "locations": [
+        "android/app/src/main/java/com/junited31/leftovers/recipes/RecommendationRanker.kt:53-54",
+        "android/app/src/main/java/com/junited31/leftovers/recipes/RecommendationRanker.kt:114-123"
+      ],
+      "evidence": [
+        "Production builds available by filtering hardcoded commonStaples before both coverage and expiry calculations.",
+        "expiryTotal and capturedExpiry both use available, so an expiring tracked staple contributes no urgency weight although the approved expiry definition says total expiry weight.",
+        "The only staples recognized are salt, water, oil, cooking oil, and pepper in English. Korean pantry labels such as the approved Korean UI would collect are treated as non-staples and inflate the coverage denominator."
+      ],
+      "impact": "The 0.25 expiry component and 0.45 coverage component can both differ from the approved deterministic algorithm, changing recipe order and explanations.",
+      "requiredFix": "Separate the coverage staple domain from the expiry-weight domain and define a locale-safe deterministic staple rule or explicit pantry property, with boundary fixtures."
+    },
+    {
+      "id": "T6-APP-LANGUAGE",
+      "priority": "P2",
+      "contract": ".omo/drafts/leftovers.md:37 approves Korean app UI and English documentation/submission copy.",
+      "locations": [
+        "android/app/src/main/java/com/junited31/leftovers/recipes/RecipeScreen.kt:64-87",
+        "android/app/src/main/java/com/junited31/leftovers/recipes/RecipeScreen.kt:148-166"
+      ],
+      "evidence": "Fresh production-seam SM_F711N captures show English-only heading, explanation, metrics, missing disclosure, button, loading, and error copy.",
+      "impact": "The newly introduced T6 surface violates an explicit approved product decision.",
+      "requiredFix": "Render the Recipe flow in Korean, retaining content descriptions, stable test tags, and accessible error semantics."
+    }
+  ],
+  "algorithmAudit": {
+    "normalization": "fail; cross-runtime divergence proven with U+00DF and U+0085 probes",
+    "fingerprintComposition": "pass for field composition: normalized cuisine|technique|sorted tracked plus missing ingredient names, SHA-256; blocked overall by normalization divergence",
+    "exactThreeAndDiversity": "pass; backend and Android reject candidate count other than three, duplicate normalized title/fingerprint, fewer than two cuisines, and fewer than two techniques",
+    "equipment": "pass; normalized required equipment is a hard filter on backend and Android",
+    "pantryBinding": "pass for generated tracked uses: unique per candidate, known UUID, exact version/unit, positive amount, and amount not above quantity",
+    "compactPromptExample": "pass; one compact example parses through RecipeGenerateResponse and validate_recipe_bindings and contains exactly three candidates",
+    "scoreWeights": "pass; production score is 0.45 coverage + 0.25 expiry + 0.20 preference + 0.10 novelty",
+    "coverageAndStaples": "fail; coverage excludes only five hardcoded English labels, which is incompatible with approved Korean UI data and lacks an exact locale-safe staple contract",
+    "expiry": "fail; boundary weights are correct (<=3:1.0, <=7:0.5, otherwise/no date:0.1), but numerator and denominator incorrectly exclude coverage staples",
+    "preference": "pass; newest 20 by completedAt, exact clamped signal formula, unseen tag 0.5, candidate mean of cuisine and technique",
+    "novelty": "pass; newest five logs, normalized ingredient-name sets, 1-max Jaccard, no hash-string comparison, no history=1.0",
+    "cooldown": "pass; recommendAgain=false exact fingerprints remain blocked while completedAt+30 days isAfter(now), and expire exactly at the 30*24h UTC instant",
+    "stableOrderingAndIds": "pass; comparator is score, coverage, expiry, normalized title and normalized titles are unique; the same fixture's ordered SHA-256 IDs are stable",
+    "backendRetryCount": "pass; live invalid adapter produced recipe_calls=3 (initial plus two) and HTTP 422 model_validation_failed",
+    "roomOnInvalid": "pass; SM_F711N typed-422 instrumentation asserted zero partial cards and unchanged snapshot count"
+  },
+  "independentFixtureRecomputation": {
+    "fixture": "RecipeScreenTest pantry and three candidates, with all three pantry expiries inside the <=3-day bucket and no history",
+    "manualInputs": "Each candidate uses two of three non-staple pantry rows; all captured and total expiry weights are 2 and 3; preference=0.5; novelty=1.0.",
+    "manualResult": {
+      "coverage": 0.6666666666666666,
+      "expiry": 0.6666666666666666,
+      "preference": 0.5,
+      "novelty": 1.0,
+      "score": 0.6666666666666666,
+      "orderedTitles": [
+        "Crispy spinach rice",
+        "Egg fried rice",
+        "Rice omelette"
+      ],
+      "orderedIds": [
+        "49fe82fecbd38dd996d3f952451ddb39ca20986feadcb4ff70ba30a9ecfb34ec",
+        "2c8a5d0bae158b4ed56bf431585908dcb06e56a86d6301af0350700f98533353",
+        "625886b9d1cb0201e1ebd5de66e4ba2ef7b9f1d58a0852c4ff8af8e4991e4929"
+      ]
+    },
+    "crossCheck": "Matches the connected production-seam first-ranked saved snapshot title and the JVM stable-title fixture."
+  },
+  "automated": [
+    {
+      "command": "%TEMP%/leftovers-t6-verify-9b3768e/Scripts/python.exe -m pytest -q backend/tests",
+      "exitCode": 0,
+      "result": "40 passed in 2.57s"
+    },
+    {
+      "command": "%TEMP%/leftovers-t6-verify-9b3768e/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py",
+      "exitCode": 0,
+      "result": "15 passed in 0.68s"
+    },
+    {
+      "command": "uvx ruff check backend",
+      "exitCode": 0,
+      "result": "All checks passed"
+    },
+    {
+      "command": "programming skill check-no-excuse-rules.py backend",
+      "exitCode": 0,
+      "result": "no violations in 15 files"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1",
+      "exitCode": 0,
+      "result": "Secret scan passed (135 files inspected)"
+    },
+    {
+      "command": "docker build -t leftovers-backend:t6-independent backend",
+      "exitCode": 0,
+      "result": "Python 3.14-slim image built successfully"
+    },
+    {
+      "command": "android/gradlew.bat -p android --rerun-tasks :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin",
+      "exitCode": 0,
+      "result": "BUILD SUCCESSFUL in 48s; 112/112 tasks executed; parsed JVM XML 43 tests, 0 failures, 0 errors, 0 skipped across 7 suites; lint 0 errors and 10 non-blocking target/dependency-version warnings; both APKs exist"
+    },
+    {
+      "command": "android/gradlew.bat -p android --rerun-tasks :app:connectedDebugAndroidTest -P...class=com.junited31.leftovers.ui.RecipeScreenTest",
+      "runs": 2,
+      "exitCodes": [0, 0],
+      "result": "Each fresh run executed 66 tasks and finished 2 tests on SM-F711N Android 15 with 0 failures/errors/skips; final XML time 3.692s"
+    }
+  ],
+  "liveExternalOverride": {
+    "valid": {
+      "server": "Real localhost Uvicorn process on 127.0.0.1:18081 with dependency overrides only for AI/auth/quota",
+      "client": "literal curl.exe POST with Bearer valid-token and seeded pantry/equipment JSON",
+      "result": "HTTP 200; parsed recipeCount=3; distinct titles Egg fried rice|Rice omelette|Crispy rice cakes"
+    },
+    "invalid": {
+      "server": "Separate real localhost Uvicorn process on 127.0.0.1:18082 with an invalid structured-output adapter and observable call counter",
+      "result": "HTTP 422 model_validation_failed; counter endpoint reported recipe_calls=3 exactly"
+    },
+    "portsAfter": 0
+  },
+  "deviceAndVisual": {
+    "serial": "R5CR91DXA8R",
+    "model": "SM_F711N",
+    "productionSeam": "MainActivity plus real Room/DataStore, production RecipeScreen, LeftoversApi, parser, ranker, and saver; only DebugApplication.recipeApiOverride points transport at MockWebServer",
+    "functional": [
+      "Compose semantics count asserted exactly three recipe-card nodes.",
+      "Distinct fixtures and scroll checks exposed Crispy spinach rice, Egg fried rice, and Rice omelette.",
+      "Usage, required equipment, coverage, expiry, preference, novelty, missing ingredients, and Save recipe behavior were exercised.",
+      "Saving rank index 0 inserted one immutable Room snapshot titled Crispy spinach rice.",
+      "Typed 422 showed no cards and left snapshot count unchanged."
+    ],
+    "freshArtifactsBeforeCleanup": [
+      {
+        "path": "%TEMP%/leftovers-t6-fresh/task-6-recipes.png",
+        "sha256": "4B9180BB04FE22D1451C191D490065EF3B911884F17334720B7118531BBF55B9",
+        "signature": "89-50-4E-47-0D-0A-1A-0A"
+      },
+      {
+        "path": "%TEMP%/leftovers-t6-fresh/task-6-recipes.xml",
+        "sha256": "2A40BD25BC5CAF90C7D587CB2D5A4874A40DCAC95034B76B9B9B8FA3830FF0B6"
+      },
+      {
+        "path": "%TEMP%/leftovers-t6-frames2/frame-02.png",
+        "sha256": "A77B2C7624FFF1190F83C6FA79EC1F68F317AB7A084570E5F0347BCC61E801F2"
+      },
+      {
+        "path": "%TEMP%/leftovers-t6-frames2/frame-03.png",
+        "sha256": "71ED581CC5AA6B22F46A6EDFC1F121078CAB3CD5E60E7979F3B6C2B26EA52B06"
+      }
+    ],
+    "visualQa": {
+      "verdict": "revise",
+      "good": "Cards are live Compose components, hierarchy is clear, text does not overlap, rank metrics form two aligned rows, Material icons replace placeholder glyphs, buttons/navigation meet comfortable touch sizes, contrast is legible, and scroll makes every action reachable.",
+      "blocking": "All new Recipe copy is English despite the approved Korean app UI decision.",
+      "qualified": "The test-owned PNG/XML is intentionally captured mid-scroll and therefore shows one complete card plus parts of adjacent cards, not all three simultaneously. Exact three-card presence is proven by Compose semantics and independent scroll frames, not by pretending one viewport contains all cards. The thin left-edge handle is Samsung system UI, not app content."
+    }
+  },
+  "adversarialClasses": {
+    "malformed_input": {
+      "result": "needs_fix",
+      "evidence": "Schema/count/equipment/diversity/binding malformed outputs fail closed, but Unicode normalization edge inputs do not have one cross-runtime decision."
+    },
+    "prompt_injection": {
+      "result": "pass",
+      "evidence": "Injection-shaped pantry, notes, cuisine, technique, and ingredient text remains in Responses API user_data; instructions and schema controls are separate; store is false."
+    },
+    "cancel_resume": {
+      "result": "not_applicable",
+      "reason": "T6 intentionally has no automatic retry/background mutation; transport cancellation behavior belongs to verified T5."
+    },
+    "stale_state": {
+      "result": "pass",
+      "evidence": "Exact pantry versions are revalidated; 30-day UTC boundary is tested; invalid server response leaves Room unchanged; duplicate snapshot ID uses IGNORE."
+    },
+    "dirty_worktree": {
+      "result": "pass",
+      "evidence": "Review began clean at exact SHA and product/tests/plan/Boulder/ledger remained untouched. Only this requested evidence JSON is created."
+    },
+    "hung": {
+      "result": "pass",
+      "evidence": "All pytest, Docker, Gradle, device, curl, and visual-capture commands completed under bounded waits; both Uvicorn listeners were stopped."
+    },
+    "flaky": {
+      "result": "pass",
+      "evidence": "Forced RecipeScreenTest class passed twice consecutively 2/2; additional raw single-method visual runs also passed; stable IDs are recomputed."
+    },
+    "misleading_success_output": {
+      "result": "pass",
+      "evidence": "Gradle console was cross-checked with JVM/connected XML, lint XML, APK existence, live HTTP body/status/call count, Room count, PNG signature/hash, semantics, and direct pixel inspection."
+    },
+    "repeated_interruptions": {
+      "result": "not_applicable",
+      "reason": "No task interruption occurred; one absent cleaned backend venv was replaced outside the repository and all commands then completed."
+    },
+    "secrets": {
+      "result": "pass",
+      "evidence": "Canonical scanner inspected 135 files and found no secret."
+    },
+    "scope_and_language": {
+      "result": "needs_fix",
+      "evidence": "No crawler/corpus/ML/server persistence/partial UI was added, but the approved Korean app UI decision is not implemented on RecipeScreen."
+    }
+  },
+  "cleanup": {
+    "serversAndPorts": "pass; 127.0.0.1:18081 and :18082 have zero listeners",
+    "docker": "pass; leftovers-backend:t6-independent removed and final image count is zero",
+    "device": "pass; Download QA files removed, app and test packages uninstalled, matching package count zero",
+    "gradle": "pass; one daemon stopped and final Gradle daemon count zero",
+    "adb": "pass; server killed and adb process count zero",
+    "localTemp": "pass; verifier venv, fresh screenshots/XML, and frame directories removed after hashes/inspection; final leftovers-t6-* temp match count zero"
+  },
+  "finalWorktreeObservation": {
+    "headAtStartAndFinish": "9b3768e9ce78434ef3bccb4bf029a579fe0ce026",
+    "reviewerWrites": [
+      ".omo/evidence/leftovers/task-6-independent-verify.json"
+    ],
+    "reviewerCommit": false,
+    "productOrTestEdits": false
+  }
+}

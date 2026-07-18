@@ -1,7 +1,10 @@
 package com.junited31.leftovers.ui
 
 import android.database.sqlite.SQLiteDatabase
+import android.graphics.Rect
 import android.os.ParcelFileDescriptor.AutoCloseInputStream
+import android.util.Xml
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -22,6 +25,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.FileOutputStream
 
 @RunWith(AndroidJUnit4::class)
 class PantryEquipmentTest {
@@ -43,7 +48,7 @@ class PantryEquipmentTest {
         compose.onNodeWithTag("quantity-input").performTextInput("1")
         compose.onNodeWithTag("save-pantry").performClick()
 
-        compose.onNodeWithText("Name is required").assertIsDisplayed()
+        compose.onNodeWithText("재료 이름을 입력해 주세요.").assertIsDisplayed()
         assertEquals(countBefore, pantryRowCount())
     }
 
@@ -65,18 +70,18 @@ class PantryEquipmentTest {
     @Test
     fun equipmentSelectionPersistsAcrossActivityRecreation() {
         compose.onNodeWithTag("nav-equipment").performClick()
-        compose.onNodeWithText("Basic cookware").assertIsOff().performClick()
+        compose.onNodeWithText("기본 조리도구").assertIsOff().performClick()
         compose.waitUntil(5_000) {
-            runCatching { compose.onNodeWithText("Basic cookware").assertIsOn() }.isSuccess
+            runCatching { compose.onNodeWithText("기본 조리도구").assertIsOn() }.isSuccess
         }
 
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("nav-equipment").performClick()
         compose.waitUntil(5_000) {
-            runCatching { compose.onNodeWithText("Basic cookware").assertIsOn() }.isSuccess
+            runCatching { compose.onNodeWithText("기본 조리도구").assertIsOn() }.isSuccess
         }
 
-        compose.onNodeWithText("Basic cookware").assertIsOn()
+        compose.onNodeWithText("기본 조리도구").assertIsOn()
     }
 
     @Test
@@ -87,7 +92,7 @@ class PantryEquipmentTest {
         compose.onNodeWithTag("save-pantry").performClick()
         compose.onNodeWithText("Carrot").assertIsDisplayed()
 
-        compose.onNodeWithContentDescription("Edit Carrot").performClick()
+        compose.onNodeWithContentDescription("Carrot 수정").performClick()
         compose.onNodeWithTag("name-input").performTextClearance()
         compose.onNodeWithTag("name-input").performTextInput("Baby carrot")
         compose.onNodeWithTag("save-pantry").performClick()
@@ -109,6 +114,12 @@ class PantryEquipmentTest {
 
         compose.onNodeWithText("Spinach").assertIsDisplayed()
         assertEquals(3, pantryRowCount())
+        compose.onNodeWithText("지금 사용할 수 있는 재료").assertIsDisplayed()
+        captureScreen("task-6-korean-pantry")
+
+        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithText("주방에 있는 조리도구를 선택해 주세요").assertIsDisplayed()
+        captureScreen("task-6-korean-equipment")
     }
 
     private fun assertInvalidQuantity(quantity: String) {
@@ -118,7 +129,7 @@ class PantryEquipmentTest {
         compose.onNodeWithTag("quantity-input").performTextInput(quantity)
         compose.onNodeWithTag("save-pantry").performClick()
 
-        compose.onNodeWithText("Enter a positive quantity with up to 3 decimals").assertIsDisplayed()
+        compose.onNodeWithText("수량은 0보다 큰 값으로 소수점 셋째 자리까지 입력해 주세요.").assertIsDisplayed()
         assertEquals(countBefore, pantryRowCount())
     }
 
@@ -150,4 +161,35 @@ class PantryEquipmentTest {
         AutoCloseInputStream(
             InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command),
         ).bufferedReader().use { it.readText() }
+
+    private fun captureScreen(name: String) {
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+        shell("screencap -p /sdcard/Download/$name.png")
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val appXml = File(requireNotNull(compose.activity.getExternalFilesDir(null)), "$name.xml")
+        FileOutputStream(appXml).use { output ->
+            val serializer = Xml.newSerializer()
+            serializer.setOutput(output, "UTF-8")
+            serializer.startDocument("UTF-8", true)
+            serializer.startTag(null, "hierarchy")
+            writeNode(serializer, requireNotNull(automation.rootInActiveWindow))
+            serializer.endTag(null, "hierarchy")
+            serializer.endDocument()
+        }
+        shell("cp ${appXml.absolutePath} /sdcard/Download/$name.xml")
+    }
+
+    private fun writeNode(serializer: org.xmlpull.v1.XmlSerializer, node: AccessibilityNodeInfo) {
+        val bounds = Rect().also(node::getBoundsInScreen)
+        serializer.startTag(null, "node")
+        serializer.attribute(null, "text", node.text?.toString().orEmpty())
+        serializer.attribute(null, "content-desc", node.contentDescription?.toString().orEmpty())
+        serializer.attribute(null, "class", node.className?.toString().orEmpty())
+        serializer.attribute(null, "clickable", node.isClickable.toString())
+        serializer.attribute(null, "enabled", node.isEnabled.toString())
+        serializer.attribute(null, "bounds", bounds.toShortString())
+        repeat(node.childCount) { index -> node.getChild(index)?.let { writeNode(serializer, it) } }
+        serializer.endTag(null, "node")
+    }
 }

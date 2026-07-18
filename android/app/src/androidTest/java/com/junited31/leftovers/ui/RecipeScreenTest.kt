@@ -17,6 +17,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -92,17 +94,17 @@ class RecipeScreenTest {
         // Then
         compose.onAllNodesWithTag("recipe-card").assertCountEquals(3)
         compose.onNodeWithText("Egg fried rice").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Uses:\nRice 300 g\nEggs 2 count").performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Equipment: Gas burner")[0].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Why this ranks")[0].performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Missing: Salt 1 g").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("사용 재료:\nRice 300 g\nEggs 2 개").performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("조리도구: 가스레인지")[0].performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("추천 이유")[0].performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("부족한 재료: Salt 1 g").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Rice omelette").performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Why this ranks")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Coverage 67%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Expiry 67%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Preference 50%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("Novelty 100%")[1].performScrollTo().assertIsDisplayed()
-        compose.onNodeWithContentDescription("Recipes").assertExists()
+        compose.onAllNodesWithText("추천 이유")[1].performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("재료 활용 67%")[1].performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("유통기한 67%")[1].performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("취향 일치 50%")[1].performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText("새로움 100%")[1].performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("레시피").assertExists()
         captureRecipeEvidence()
         compose.onNodeWithTag("save-recipe-0").performScrollTo().performClick()
         compose.waitUntil(5_000) { runBlocking { database.recipeSnapshotDao().count() } == 1 }
@@ -123,7 +125,7 @@ class RecipeScreenTest {
 
         // When
         compose.onNodeWithTag("generate-recipes").performClick()
-        compose.onNodeWithText("Could not produce three valid, diverse recipes").assertIsDisplayed()
+        compose.onNodeWithText("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.").assertIsDisplayed()
 
         // Then
         compose.onAllNodesWithTag("recipe-card").assertCountEquals(0)
@@ -135,30 +137,41 @@ class RecipeScreenTest {
         scenario = ActivityScenario.launch(MainActivity::class.java)
         compose.onNodeWithTag("nav-recipes").performClick()
         compose.onNodeWithTag("generate-recipes").assertIsDisplayed()
+        compose.onNodeWithText("레시피 생성").assertIsDisplayed()
     }
 
     private fun captureRecipeEvidence() {
         val directory = requireNotNull(context.getExternalFilesDir(null))
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val appScreenshot = File(directory, "task-6-recipes.png")
+        val appScreenshot = File(directory, "task-6-korean-recipes.png")
         FileOutputStream(appScreenshot).use { output ->
             automation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, output)
         }
         shell(automation.executeShellCommand(
-            "cp ${appScreenshot.absolutePath} /sdcard/Download/task-6-recipes.png",
+            "cp ${appScreenshot.absolutePath} /sdcard/Download/task-6-korean-recipes.png",
         ))
-        val appXml = File(directory, "task-6-recipes.xml")
+        val appXml = File(directory, "task-6-korean-recipes.xml")
         FileOutputStream(appXml).use { output ->
+            val recipeCards = compose.onAllNodesWithTag("recipe-card").fetchSemanticsNodes()
             val serializer = Xml.newSerializer()
             serializer.setOutput(output, "UTF-8")
             serializer.startDocument("UTF-8", true)
             serializer.startTag(null, "hierarchy")
+            serializer.attribute(null, "recipe-card-count", recipeCards.size.toString())
+            serializer.startTag(null, "recipe-cards")
+            recipeCards.forEachIndexed { index, node ->
+                serializer.startTag(null, "recipe-card")
+                serializer.attribute(null, "index", index.toString())
+                serializer.attribute(null, "text", semanticsText(node))
+                serializer.endTag(null, "recipe-card")
+            }
+            serializer.endTag(null, "recipe-cards")
             writeNode(serializer, requireNotNull(automation.rootInActiveWindow))
             serializer.endTag(null, "hierarchy")
             serializer.endDocument()
         }
         shell(automation.executeShellCommand(
-            "cp ${appXml.absolutePath} /sdcard/Download/task-6-recipes.xml",
+            "cp ${appXml.absolutePath} /sdcard/Download/task-6-korean-recipes.xml",
         ))
     }
 
@@ -177,6 +190,13 @@ class RecipeScreenTest {
         repeat(node.childCount) { index -> node.getChild(index)?.let { writeNode(serializer, it) } }
         serializer.endTag(null, "node")
     }
+
+    private fun semanticsText(node: SemanticsNode): String = buildList {
+        runCatching { node.config[SemanticsProperties.Text] }
+            .getOrDefault(emptyList())
+            .mapTo(this) { it.text }
+        node.children.forEach { child -> add(semanticsText(child)) }
+    }.filter(String::isNotBlank).joinToString("\n")
 
     private fun pantry() = listOf(
         item("00000000-0000-0000-0000-000000000401", "Rice", 900_000, PantryUnit.GRAM, 1),

@@ -104,7 +104,7 @@ class ModelContractError(Exception):
 
 
 def normalize_label(value: str) -> str:
-    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+    return " ".join(unicodedata.normalize("NFKC", value).split()).lower()
 
 
 def recipe_fingerprint(

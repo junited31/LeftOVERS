@@ -11,12 +11,28 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 object RecipeNormalizer {
-    private val whitespace = Regex("\\s+")
-
     fun normalize(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFKC)
-        .trim()
-        .replace(whitespace, " ")
+        .collapseUnicodeWhitespace()
         .lowercase(Locale.ROOT)
+
+    private fun String.collapseUnicodeWhitespace(): String = buildString {
+        var index = 0
+        var pendingSpace = false
+        while (index < this@collapseUnicodeWhitespace.length) {
+            val codePoint = this@collapseUnicodeWhitespace.codePointAt(index)
+            if (codePoint.isContractWhitespace()) {
+                pendingSpace = isNotEmpty()
+            } else {
+                if (pendingSpace) append(' ')
+                appendCodePoint(codePoint)
+                pendingSpace = false
+            }
+            index += Character.charCount(codePoint)
+        }
+    }
+
+    private fun Int.isContractWhitespace(): Boolean =
+        Character.isWhitespace(this) || Character.isSpaceChar(this) || this == 0x85
 }
 
 object RecipeFingerprint {
@@ -51,7 +67,18 @@ object RecommendationRanker {
     private val cooldown = Duration.ofDays(30)
 
     // ponytail: fixed heuristic until pantry rows gain an explicit user-managed staple flag.
-    private val commonStaples = setOf("salt", "water", "oil", "cooking oil", "pepper")
+    private val commonStaples = setOf(
+        "salt",
+        "water",
+        "oil",
+        "cooking oil",
+        "pepper",
+        "소금",
+        "물",
+        "기름",
+        "식용유",
+        "후추",
+    )
 
     fun rank(
         candidates: List<RecommendationCandidate>,
@@ -111,14 +138,17 @@ object RecommendationRanker {
             return invalid(RecommendationInvalidReason.TECHNIQUE_DIVERSITY)
         }
 
-        val available = pantry.filter { RecipeNormalizer.normalize(it.name) !in commonStaples }
-        val expiryTotal = available.sumOf { expiryWeight(it.expiryEpochDay, today) }
+        val coverageAvailable = pantry.filter { RecipeNormalizer.normalize(it.name) !in commonStaples }
+        val expiryTotal = pantry.sumOf { expiryWeight(it.expiryEpochDay, today) }
         val preferenceHistory = history.sortedByDescending { it.completedAt }.take(20)
         val noveltyHistory = history.sortedByDescending { it.completedAt }.take(5)
         val ranked = candidates.mapIndexed { index, candidate ->
             val usedIds = candidate.trackedUses.mapTo(mutableSetOf()) { it.pantryItemId }
-            val coverage = ratio(available.count { it.id in usedIds }, available.size)
-            val capturedExpiry = available.filter { it.id in usedIds }
+            val coverage = ratio(
+                coverageAvailable.count { it.id in usedIds },
+                coverageAvailable.size,
+            )
+            val capturedExpiry = pantry.filter { it.id in usedIds }
                 .sumOf { expiryWeight(it.expiryEpochDay, today) }
             val expiry = if (expiryTotal == 0.0) 0.0 else capturedExpiry / expiryTotal
             val preference = candidatePreference(candidate, preferenceHistory)

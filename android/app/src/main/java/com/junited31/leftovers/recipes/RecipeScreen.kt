@@ -61,8 +61,8 @@ fun RecipeScreen(
             .padding(20.dp).testTag("recipe-screen"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Three pantry-first ideas", style = MaterialTheme.typography.titleMedium)
-        Text("Only complete equipment-compatible sets are shown.")
+        Text("냉장고 재료로 만드는 세 가지 요리", style = MaterialTheme.typography.titleMedium)
+        Text("선택한 조리도구로 만들 수 있는 완성된 조합만 보여드려요.")
         Button(
             onClick = {
                 state = RecipeUiState.Loading
@@ -80,11 +80,11 @@ fun RecipeScreen(
             enabled = state != RecipeUiState.Loading && pantry.isNotEmpty() && equipment.isNotEmpty(),
             modifier = Modifier.fillMaxWidth().testTag("generate-recipes"),
         ) {
-            Text(if (state == RecipeUiState.Loading) "Generating…" else "Generate recipes")
+            Text(if (state == RecipeUiState.Loading) "생성 중…" else "레시피 생성")
         }
         when (val current = state) {
-            RecipeUiState.Idle -> Text("Generate when your pantry and equipment are ready.")
-            RecipeUiState.Loading -> Text("Checking variety and pantry fit…")
+            RecipeUiState.Idle -> Text("재료와 조리도구를 준비한 뒤 레시피를 생성해 보세요.")
+            RecipeUiState.Loading -> Text("다양성과 재료 활용도를 확인하는 중…")
             is RecipeUiState.Error -> Text(current.message, color = MaterialTheme.colorScheme.error)
             is RecipeUiState.Ready -> current.result.ranked.forEachIndexed { index, ranked ->
                 RecipeCard(ranked, pantryById, index) {
@@ -96,7 +96,7 @@ fun RecipeScreen(
                 }
             }
         }
-        savedTitle?.let { title -> Text("Saved $title") }
+        savedTitle?.let { title -> Text("$title 레시피를 저장했어요.") }
     }
 }
 
@@ -118,19 +118,19 @@ private fun rankedState(
         ) {
             is RecommendationResult.Valid -> RecipeUiState.Ready(ranked)
             is RecommendationResult.Invalid -> RecipeUiState.Error(
-                "Could not produce three valid, diverse recipes",
+                "서로 다른 세 가지 유효한 레시피를 만들지 못했어요.",
             )
         }
-        RecipeDecodeResult.Invalid -> RecipeUiState.Error("Could not produce three valid, diverse recipes")
+        RecipeDecodeResult.Invalid -> RecipeUiState.Error("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.")
     }
-    ApiResult.InvalidRequest -> RecipeUiState.Error("Could not produce three valid, diverse recipes")
-    ApiResult.AuthUnavailable, ApiResult.Unauthorized -> RecipeUiState.Error("Authentication unavailable")
-    is ApiResult.QuotaLimited -> RecipeUiState.Error("Daily recipe limit reached")
-    ApiResult.PayloadTooLarge -> RecipeUiState.Error("Recipe request is too large")
-    ApiResult.UpstreamUnavailable, ApiResult.NetworkFailure -> RecipeUiState.Error("Recipe service unavailable")
-    ApiResult.Cancelled -> RecipeUiState.Error("Recipe request cancelled")
+    ApiResult.InvalidRequest -> RecipeUiState.Error("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.")
+    ApiResult.AuthUnavailable, ApiResult.Unauthorized -> RecipeUiState.Error("인증 정보를 확인할 수 없어요.")
+    is ApiResult.QuotaLimited -> RecipeUiState.Error("오늘의 레시피 생성 횟수를 모두 사용했어요.")
+    ApiResult.PayloadTooLarge -> RecipeUiState.Error("레시피 요청이 너무 커요.")
+    ApiResult.UpstreamUnavailable, ApiResult.NetworkFailure -> RecipeUiState.Error("레시피 서비스에 연결할 수 없어요.")
+    ApiResult.Cancelled -> RecipeUiState.Error("레시피 요청이 취소됐어요.")
     ApiResult.AlreadyExecuted, ApiResult.InvalidPhoto, is ApiResult.UnexpectedHttp ->
-        RecipeUiState.Error("Recipe request failed")
+        RecipeUiState.Error("레시피 요청에 실패했어요.")
 }
 
 @Composable
@@ -148,22 +148,22 @@ private fun RecipeCard(
         ) {
             Text(candidate.title, style = MaterialTheme.typography.titleMedium)
             Text("${candidate.cuisine} · ${candidate.primaryTechnique}")
-            Text("Uses:\n${uses(candidate, pantryById)}")
-            Text("Equipment: ${candidate.requiredEquipment.joinToString { displayEquipment(it) }.ifEmpty { "None" }}")
-            Text("Why this ranks", style = MaterialTheme.typography.labelLarge)
+            Text("사용 재료:\n${uses(candidate, pantryById)}")
+            Text("조리도구: ${candidate.requiredEquipment.joinToString { displayEquipment(it) }.ifEmpty { "없음" }}")
+            Text("추천 이유", style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(metric("Coverage", ranked.coverage), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(metric("Expiry", ranked.expiry), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric("재료 활용", ranked.coverage), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric("유통기한", ranked.expiry), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(metric("Preference", ranked.preference), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(metric("Novelty", ranked.novelty), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric("취향 일치", ranked.preference), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric("새로움", ranked.novelty), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             }
-            Text("Missing: ${missing(candidate)}")
+            Text("부족한 재료: ${missing(candidate)}")
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().testTag("save-recipe-$index"),
-            ) { Text("Save recipe") }
+            ) { Text("레시피 저장") }
         }
     }
 }
@@ -172,15 +172,28 @@ private fun uses(
     candidate: RecommendationCandidate,
     pantryById: Map<PantryItemId, PantryItemEntity>,
 ): String = candidate.trackedUses.joinToString { use ->
-    "${pantryById.getValue(use.pantryItemId).name} ${amount(use.proposedMilliUnits)} ${use.unit.value}"
-}.replace(", ", "\n").ifEmpty { "No pantry items" }
+    "${pantryById.getValue(use.pantryItemId).name} ${amount(use.proposedMilliUnits)} ${displayUnit(use.unit.value)}"
+}.replace(", ", "\n").ifEmpty { "사용한 식재료 없음" }
 
 private fun missing(candidate: RecommendationCandidate): String =
-    candidate.missingIngredients.joinToString { "${it.name} ${amount(it.amountMilliUnits)} ${it.unit.value}" }
-        .ifEmpty { "None" }
+    candidate.missingIngredients.joinToString {
+        "${it.name} ${amount(it.amountMilliUnits)} ${displayUnit(it.unit.value)}"
+    }.ifEmpty { "없음" }
 
-private fun displayEquipment(value: String): String = value.replace('_', ' ')
-    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+private fun displayEquipment(value: String): String = when (RecipeNormalizer.normalize(value.replace('_', ' '))) {
+    "induction" -> "인덕션"
+    "gas burner" -> "가스레인지"
+    "microwave" -> "전자레인지"
+    "oven" -> "오븐"
+    "air fryer" -> "에어프라이어"
+    "blender" -> "블렌더"
+    "rice cooker" -> "전기밥솥"
+    "toaster" -> "토스터"
+    "basic cookware" -> "기본 조리도구"
+    else -> value
+}
+
+private fun displayUnit(value: String): String = if (value == "count") "개" else value
 
 private fun amount(milliUnits: Long): String = BigDecimal.valueOf(milliUnits)
     .movePointLeft(3)

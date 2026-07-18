@@ -1,0 +1,14 @@
+{
+  "normalization": [
+    {"name": "eszett", "input": " Straße ", "expected": "straße"},
+    {"name": "unicode-next-line", "input": "A\u0085B", "expected": "a b"},
+    {"name": "full-width", "input": "  ＡＢＣ　１２３ ", "expected": "abc 123"},
+    {"name": "mixed-whitespace", "input": "\t A\u00a0 \n B \r\n C ", "expected": "a b c"}
+  ],
+  "fingerprint": {
+    "cuisine": " Straße ",
+    "primaryTechnique": "ＰＡＮ\u0085ＦＲＹ",
+    "ingredientNames": [" ＲＩＣＥ ", "\tEgg\n"],
+    "expectedSha256": "9cc38faeb64cc494a161770e471e9b6577c44349ce8f86b8910c75c2ff8af11c"
+  }
+}

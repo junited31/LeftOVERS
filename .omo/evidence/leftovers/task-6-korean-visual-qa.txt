@@ -1,0 +1,25 @@
+Task 6 Korean UI visual QA
+Date: 2026-07-18 Asia/Seoul
+Device: SM-F711N, Android 15, 1080x2640 at 480 dpi
+
+Artifacts reviewed
+- `task-6-korean-pantry.png` and `.xml`
+- `task-6-korean-equipment.png` and `.xml`
+- `task-6-korean-recipes.png` and `.xml`
+
+Revision history
+1. Initial Recipe XML serialized only the visible accessibility viewport. Reviewers passed the product UI but requested exact-three evidence for the off-screen card.
+2. Capture added the Compose semantics card count, then was strengthened to serialize all three actual card semantics subtrees with distinct titles and complete card text.
+3. One Equipment PNG caught a navigation selection-animation frame. Capture now advances the Compose clock by 1,000 ms before screenshotting; the settled recapture visibly contains all three navigation icons and labels.
+
+Final result
+- Final current-artifact reviewer 3A: PASS; raw pixel scan and XML agree.
+- Korean glyphs render cleanly with no tofu, clipping, overlap, or awkward wrapping.
+- All three navigation icons and labels are visible on every final PNG, including center `레시피` on Equipment.
+- Interactive XML bounds are at least 144 px high, equal to 48 dp at 480 dpi.
+- Navigation semantics are `식재료`, `레시피`, and `조리도구`.
+- Pantry contextual semantics use `<재료명> 수정` and `<재료명> 삭제`.
+- Recipe XML records `recipe-card-count="3"` and exactly three `<recipe-card>` elements with distinct titles: Crispy spinach rice, Egg fried rice, and Rice omelette.
+- The Recipe screenshot is intentionally mid-scroll; clipping occurs only at ScrollView viewport boundaries and all actions remain reachable.
+
+Blocking visual or accessibility defects: none.

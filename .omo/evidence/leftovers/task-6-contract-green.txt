@@ -1,0 +1,52 @@
+Task 6 contract GREEN - normalization, scoring, and Korean UI
+Date: 2026-07-18 Asia/Seoul
+
+Shared normalization contract
+- One fixture: `.omo/evidence/leftovers/task-6-normalization-fixtures.json`.
+- Both runtimes consume the same four values: Straße, U+0085 next-line, full-width forms, and mixed whitespace.
+- Expected normalized values: `straße`, `a b`, `abc 123`, `a b c`.
+- Expected and observed composed SHA-256: `9cc38faeb64cc494a161770e471e9b6577c44349ce8f86b8910c75c2ff8af11c`.
+- Backend uses NFKC -> Unicode whitespace split/collapse -> `lower()`; no recipe normalization uses casefold.
+- Android uses NFKC -> explicit Unicode whitespace collapse -> `lowercase(Locale.ROOT)`.
+
+Focused GREEN
+- `backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_recipe_generation.py`: 16 passed.
+- `android/gradlew.bat -p android :app:testDebugUnitTest --tests '*RecommendationRankerTest'`: BUILD SUCCESSFUL; 16 tests passed.
+- English and Korean fixed staples are excluded only from coverage.
+- Expiry numerator and denominator include every pantry row.
+- Independent expiry recomputation: `(1.0 + 0.1) / (1.0 + 0.1 + 0.1) = 0.916666666666667`, matching `1.1 / 1.2`.
+
+Full backend GREEN
+- `backend/.venv/Scripts/python.exe -m pytest -q backend/tests`: 41 passed in 1.55s.
+- `uvx ruff check backend`: all checks passed.
+- Python no-excuse rules: no violations in 15 files.
+- `docker build -t leftovers-backend:t6-fix backend`: image built successfully from `python:3.14-slim`.
+
+Full Android GREEN
+- `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin`: BUILD SUCCESSFUL in 21s; 112 actionable tasks.
+- Parsed JVM XML: 45 tests, 0 failures, 0 errors, 0 skipped across 7 suites.
+- Parsed lint XML: 0 errors.
+- Debug APK and unsigned release APK both exist; Android instrumentation Kotlin compiled.
+
+Physical-device GREEN - SM-F711N, Android 15
+- Final combined `PantryEquipmentTest,RecipeScreenTest` pass 1: parsed XML 9 tests, 0 failures, 0 errors, 0 skipped.
+- Final combined `PantryEquipmentTest,RecipeScreenTest` pass 2: parsed XML 9 tests, 0 failures, 0 errors, 0 skipped.
+- Pantry launches without Firebase because recipe API construction is deferred until the Recipes tab.
+- Recipe flow asserts exactly three ranked cards, Korean metrics/equipment/unit copy, contextual navigation semantics, typed 422 with zero partial cards, and immutable snapshot save.
+
+Literal live HTTP GREEN
+- Authenticated request returned HTTP 200 with exactly 3 schema-valid recipes.
+- Invalid candidate set returned HTTP 422 `model_validation_failed`.
+- Server log recorded invalid attempts 0, 1, and 2 exactly once each.
+- Localhost port 18080 had zero listeners after shutdown.
+
+Korean UI evidence
+- Fresh PNG/XML pairs: Pantry, Equipment, and Recipes.
+- Recipe accessibility XML records `recipe-card-count="3"` plus three distinct complete card semantics subtrees, including the off-screen third card.
+- Stored equipment IDs and API schema values remain unchanged; only display labels and user-visible semantics are localized.
+
+Independent report preservation
+- `.omo/evidence/leftovers/task-6-independent-verify.json` is included unchanged.
+- SHA-256 remains `FD34B0D862E2FFA3C6F959BD6F5D60E33FB094C286C4DF1BECDE57892FB5C225`.
+
+Blocking risks: none.
