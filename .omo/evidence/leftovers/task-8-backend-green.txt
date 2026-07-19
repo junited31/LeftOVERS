@@ -1,0 +1,23 @@
+T8 backend GREEN evidence - 2026-07-19 Asia/Seoul
+
+Focused recipe and adapter tests:
+  backend\.venv\Scripts\python.exe -m pytest -q backend/tests/test_recipe_generation.py backend/tests/test_openai_client.py
+  34 passed in 0.69s
+
+Full backend suite:
+  backend\.venv\Scripts\python.exe -m pytest -q backend/tests
+  66 passed in 0.87s
+
+Secret scan:
+  powershell -NoProfile -File scripts/scan_secrets.ps1
+  Secret scan passed (173 files inspected).
+
+Programming skill structural check:
+  no violations in 5 changed Python files
+  pure LOC: models.py 194; prompts.py 35; conftest.py 183; test_recipe_generation.py 195; test_openai_client.py 140
+
+Ruff:
+  No repository Ruff invocation/configuration was present.
+  backend\.venv\Scripts\python.exe -m ruff check backend -> No module named ruff
+  ruff check backend -> ruff command unavailable
+  No dependency was added for this task.

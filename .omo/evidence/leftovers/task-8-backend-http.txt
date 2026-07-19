@@ -1,0 +1,44 @@
+T8 backend literal HTTP manual QA - 2026-07-19 Asia/Seoul
+
+Temporary server:
+  backend\.venv\Scripts\python.exe -m uvicorn t8_manual_app:app --host 127.0.0.1 --port 8878 --log-level warning
+  PID: 6136
+  Dependencies: in-memory fake verifier, quota, and model adapter
+
+Sanitized literal request:
+  curl.exe --retry 10 --retry-connrefused --retry-delay 0 -i -X POST http://127.0.0.1:8878/v1/recipes/generate -H "Authorization: Bearer <fake-redacted>" -H "Content-Type: application/json" --data-binary "@task-8-backend-http-request.json"
+
+Request measurement hint:
+  {"ingredientName":"rice","unit":"g","preferredAmountMilliUnits":175000,"note":"smaller portion"}
+
+Observed HTTP response:
+  HTTP/1.1 200 OK
+  content-type: application/json
+  typed body contained exactly three schema-valid recipes
+
+Observed in-memory fake capture:
+  modelCalls=1
+  quotaCalls=1
+  promptUserData.measurementHints=[{"ingredientName":"rice","unit":"g","preferredAmountMilliUnits":175000,"note":"smaller portion"}]
+  persisted=false
+
+Cleanup receipt:
+  Stop-Process -Id 6136 -Force -ErrorAction Stop succeeded.
+  Temporary backend/t8_manual_app.py and task-8-backend-http-request.json were deleted.
+  No manual-QA process or request-content file was intentionally retained.
+
+Blank-note Android-to-FastAPI boundary repair - 2026-07-19 Asia/Seoul
+
+Sanitized dependency-overridden request hint:
+  {"ingredientName":"rice","preferredAmountMilliUnits":125000,"unit":"g"}
+  requestNoteKeyPresent=false
+
+Observed real FastAPI endpoint result through ASGI HTTP transport:
+  status=200
+  modelCalls=1
+  recipes=3
+  Backend typed model represented the omitted optional note as None before prompt serialization.
+
+Cleanup receipt:
+  The bounded reproduction was piped to the existing venv interpreter through stdin.
+  No server, network listener, paid/cloud call, request file, or temporary script was created.

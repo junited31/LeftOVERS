@@ -1,0 +1,27 @@
+T8 Android GREEN evidence - 2026-07-19 Asia/Seoul
+
+Requested Android gate
+Command: cd android; .\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --console=plain
+Result after the blank-note serialization repair: BUILD SUCCESSFUL in 25s; final post-evidence-test rerun BUILD SUCCESSFUL in 3s.
+Parsed JVM XML totals: 68 tests, 0 failures, 0 errors, 0 skipped, 3.758 seconds.
+Lint XML: 0 errors; 10 existing warnings (target/dependency updates) and 1 informational AutoboxingStateCreation item.
+
+Focused connected completion gate on SM_F711N
+Command: cd android; .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.MealCompletionFlowTest" --console=plain
+Result after evidence-only bottom-form and explicit stable-success recapture: BUILD SUCCESSFUL in 30s.
+Parsed XML: 2 tests, 0 failures, 0 errors, 0 skipped, 20.48 seconds.
+Cases: offline exact-use/feedback/hint/final-photo success; competing quantity-version stale rollback with zero log/cache/retained-photo mutation; rating-group, heading, and live-region accessibility semantics.
+
+Fresh device artifacts
+- task-8-feedback.json: exact zero remaining, one log, rating 5, recommendAgain false, local notes, one real mapped history row, normalized 4000-milli-unit hint, final photo exists, zero completion network calls.
+- task-8-completion.png: stable full-frame SM_F711N success screenshot after a 5-second UI wait and three repeated system captures; SHA-256 04F96D22D33EBEBE44C4397105056D4A2B355171351F6ECA29FFC14A622D3CFC.
+- task-8-completion-form.png: scrolled-bottom SM_F711N form showing photo-ready status and both completion actions; SHA-256 04498F0797E330FEF8F769072FE97A8E3782150780B20B64D01CFCBDECE63C6F.
+- task-8-stale.txt: StaleInventory, inventory 9000 unchanged by completion, zero logs, zero cache photos, zero retained photos.
+
+Blank-note DTO repair
+- RED: `RecipeJsonTest.requestOmitsBlankMeasurementHintNotes` failed at line 102 because blank notes were serialized as `note:""`.
+- Focused GREEN: RecipeJsonTest + PreferenceProfileTest, 10 tests, 0 failures/errors/skips, BUILD SUCCESSFUL in 6s.
+- Production behavior: RecipeJson omits `note` only when `MeasurementHint.note.isBlank()`; nonblank note text is unchanged.
+- Backend regression: 66 tests passed in 0.92s.
+- Secret scan: passed, 189 files inspected.
+- Cross-boundary dependency-overridden FastAPI request: Android-equivalent measurement hint omitted `note`; HTTP 200, modelCalls=1, three recipes.

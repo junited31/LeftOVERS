@@ -15,6 +15,7 @@ from pydantic import (
     StringConstraints,
     field_validator,
 )
+from pydantic_core import PydanticCustomError
 
 
 AdviceText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1_000)]
@@ -52,10 +53,50 @@ class RecipeHistoryHint(ApiModel):
     completed_at: AwareDatetime = Field(alias="completedAt")
 
 
+class MeasurementHint(ApiModel):
+    ingredient_name: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=200,
+            pattern=r"^[^<>\x00-\x1f\x7f]+$",
+        ),
+    ] = Field(alias="ingredientName")
+    unit: CanonicalUnit
+    preferred_amount_milli_units: int = Field(
+        alias="preferredAmountMilliUnits",
+        gt=0,
+        strict=True,
+    )
+    note: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=500,
+            pattern=r"^[^<>\x00-\x1f\x7f]+$",
+        ),
+    ] | None = None
+
+    @field_validator("ingredient_name")
+    @classmethod
+    def require_normalized_ingredient_name(cls, value: str) -> str:
+        if normalize_label(value) != value:
+            raise PydanticCustomError(
+                "normalized_ingredient_name",
+                "ingredientName must be NFKC-normalized, lowercase, and whitespace-collapsed",
+            )
+        return value
+
+
 class RecipeGenerateRequest(ApiModel):
     pantry: tuple[PantryRow, ...] = Field(min_length=1, max_length=200)
     equipment: tuple[str, ...] = Field(min_length=1, max_length=32)
     history: tuple[RecipeHistoryHint, ...] = Field(default=(), max_length=20)
+    measurement_hints: tuple[MeasurementHint, ...] = Field(
+        default=(), alias="measurementHints", max_length=20
+    )
     notes: str | None = Field(default=None, max_length=32_000)
 
 

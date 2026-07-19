@@ -1,0 +1,5 @@
+result=StaleInventory
+inventoryMilliUnits=9000
+mealLogCount=0
+cachePhotoCount=0
+retainedPhotoCount=0

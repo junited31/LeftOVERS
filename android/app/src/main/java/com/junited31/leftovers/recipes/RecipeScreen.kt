@@ -25,6 +25,7 @@ import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.RecipeSnapshotDao
 import com.junited31.leftovers.data.CookSessionDao
+import com.junited31.leftovers.data.MealLogDao
 import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
@@ -52,6 +53,7 @@ fun RecipeScreen(
     api: LeftoversApi,
     snapshotDao: RecipeSnapshotDao,
     cookSessionDao: CookSessionDao,
+    mealLogDao: MealLogDao,
     onCookingStarted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,13 +76,19 @@ fun RecipeScreen(
                 state = RecipeUiState.Loading
                 savedTitle = null
                 scope.launch {
-                    val apiResult = withContext(Dispatchers.IO) {
-                        api.executeJson(
+                    val (profile, apiResult) = withContext(Dispatchers.IO) {
+                        val loadedProfile = loadPreferenceProfile(mealLogDao)
+                        loadedProfile to api.executeJson(
                             "/v1/recipes/generate",
-                            RecipeJson.request(pantry, equipment, emptyList()),
+                            RecipeJson.request(
+                                pantry,
+                                equipment,
+                                loadedProfile.history,
+                                loadedProfile.measurementHints,
+                            ),
                         )
                     }
-                    state = rankedState(apiResult, pantry, equipment)
+                    state = rankedState(apiResult, pantry, equipment, profile.history)
                 }
             },
             enabled = state != RecipeUiState.Loading && pantry.isNotEmpty() && equipment.isNotEmpty(),
@@ -95,7 +103,7 @@ fun RecipeScreen(
             is RecipeUiState.Ready -> current.result.ranked.forEachIndexed { index, ranked ->
                 RecipeCard(ranked, pantryById, index) {
                     scope.launch {
-                        val saved = saver.save(current.result, ranked.id, System.currentTimeMillis()) ||
+                        val saved = saver.save(current.result, ranked.id, pantryById, System.currentTimeMillis()) ||
                             snapshotDao.get(ranked.id) != null
                         if (saved) {
                             savedTitle = ranked.candidate.title
@@ -118,6 +126,7 @@ private fun rankedState(
     apiResult: ApiResult,
     pantry: List<PantryItemEntity>,
     equipment: Set<String>,
+    history: List<RecommendationHistory>,
 ): RecipeUiState = when (apiResult) {
     is ApiResult.Success -> when (val decoded = RecipeJson.response(apiResult.body)) {
         is RecipeDecodeResult.Success -> when (
@@ -125,7 +134,7 @@ private fun rankedState(
                 decoded.candidates,
                 pantry,
                 equipment,
-                emptyList(),
+                history,
                 Instant.now(),
                 LocalDate.now(ZoneOffset.UTC),
             )
@@ -146,6 +155,9 @@ private fun rankedState(
     ApiResult.AlreadyExecuted, ApiResult.InvalidPhoto, is ApiResult.UnexpectedHttp ->
         RecipeUiState.Error("레시피 요청에 실패했어요.")
 }
+
+internal suspend fun loadPreferenceProfile(mealLogDao: MealLogDao): PreferenceProfile =
+    PreferenceProfile.from(mealLogDao.latest())
 
 @Composable
 private fun RecipeCard(

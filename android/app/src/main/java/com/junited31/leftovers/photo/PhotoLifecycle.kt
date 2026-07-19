@@ -12,6 +12,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.time.Duration
+import java.security.MessageDigest
+import java.util.Locale
 
 object PhotoContracts {
     val pick = ActivityResultContracts.PickVisualMedia()
@@ -20,6 +22,7 @@ object PhotoContracts {
 
 class PhotoLifecycle(private val context: Context) {
     private val cacheDirectory = File(context.cacheDir, CACHE_DIRECTORY).apply { mkdirs() }
+    private val finalPhotoDirectory = File(context.filesDir, FINAL_DIRECTORY).apply { mkdirs() }
 
     class ManagedPhoto private constructor(
         internal val file: File,
@@ -48,6 +51,25 @@ class PhotoLifecycle(private val context: Context) {
     fun createManagedPhoto(): ManagedPhoto = ManagedPhoto.create(this)
 
     fun discard(photo: ManagedPhoto) = photo.delete()
+
+    fun retainFinal(photo: ManagedPhoto, mealLogId: String): String {
+        val destination = File(finalPhotoDirectory, "$FINAL_PREFIX${sha256(mealLogId)}.jpg")
+        check(!destination.exists()) { "Final photo already exists" }
+        return try {
+            photo.file.copyTo(destination)
+            photo.delete()
+            destination.absolutePath
+        } catch (error: Exception) {
+            destination.delete()
+            throw error
+        }
+    }
+
+    fun discardRetained(path: String) {
+        ownedFinalFile(File(path))?.delete()
+    }
+
+    fun retainedFinalPhotos(): List<File> = finalPhotoDirectory.listFiles()?.mapNotNull(::ownedFinalFile).orEmpty()
 
     fun fileProviderUri(photo: ManagedPhoto): Uri = FileProvider.getUriForFile(
         context,
@@ -138,6 +160,19 @@ class PhotoLifecycle(private val context: Context) {
         }
     }
 
+    private fun ownedFinalFile(file: File): File? {
+        val candidate = file.canonicalFile
+        return candidate.takeIf {
+            candidate.isFile &&
+                candidate.parentFile == finalPhotoDirectory.canonicalFile &&
+                candidate.name.startsWith(FINAL_PREFIX)
+        }
+    }
+
+    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(Locale.ROOT, it.toInt() and 0xff) }
+
     private fun open(source: Uri) = context.contentResolver.openInputStream(source)
         ?: throw InvalidPhotoException()
 
@@ -206,6 +241,8 @@ class PhotoLifecycle(private val context: Context) {
         const val MAX_SOURCE_BYTES = 64L * 1024 * 1024
         const val CACHE_PREFIX = "leftovers-photo-"
         private const val CACHE_DIRECTORY = "leftovers-photos"
+        private const val FINAL_DIRECTORY = "leftovers-final-photos"
+        private const val FINAL_PREFIX = "leftovers-final-"
         private val MAX_CACHE_AGE = Duration.ofHours(24)
     }
 }

@@ -18,6 +18,7 @@ object RecipeJson {
         pantry: List<PantryItemEntity>,
         equipment: Set<String>,
         history: List<RecommendationHistory>,
+        measurementHints: List<MeasurementHint> = emptyList(),
     ): String = JSONObject()
         .put("pantry", JSONArray().apply { pantry.forEach { put(pantryRow(it)) } })
         .put(
@@ -29,6 +30,10 @@ object RecipeJson {
             JSONArray().apply {
                 history.sortedByDescending { it.completedAt }.take(20).forEach { put(historyRow(it)) }
             },
+        )
+        .put(
+            "measurementHints",
+            JSONArray().apply { measurementHints.forEach { put(measurementHint(it)) } },
         )
         .toString()
 
@@ -60,6 +65,12 @@ object RecipeJson {
         .put("rating", log.rating)
         .put("recommendAgain", log.recommendAgain)
         .put("completedAt", log.completedAt.toString())
+
+    private fun measurementHint(hint: MeasurementHint) = JSONObject()
+        .put("ingredientName", hint.ingredientName)
+        .put("preferredAmountMilliUnits", hint.preferredAmountMilliUnits)
+        .put("unit", hint.unit.value)
+        .apply { if (hint.note.isNotBlank()) put("note", hint.note) }
 
     private fun candidate(json: JSONObject) = RecommendationCandidate(
         title = json.getString("title"),

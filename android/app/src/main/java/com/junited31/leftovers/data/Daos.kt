@@ -69,6 +69,9 @@ interface MealLogDao {
 
     @Query("SELECT COUNT(*) FROM meal_logs")
     suspend fun count(): Int
+
+    @Query("SELECT * FROM meal_logs ORDER BY completedAtEpochMillis DESC, id DESC")
+    suspend fun latest(): List<MealLogEntity>
 }
 
 @Dao
@@ -93,6 +96,9 @@ abstract class InventoryCompletionDao {
 
     @Transaction
     open suspend fun complete(command: CompleteCookSessionCommand): CompletionResult {
+        if (!command.feedback.isValid(command.completedAtEpochMillis)) {
+            return CompletionResult.InvalidFeedback
+        }
         val uses = command.actualUses.values
         val duplicateId = uses.groupingBy { it.pantryItemId }
             .eachCount()
@@ -147,9 +153,10 @@ abstract class InventoryCompletionDao {
                     id = recipeSnapshot.id,
                     title = recipeSnapshot.title,
                     pantryBindings = recipeSnapshot.pantryBindings,
-                    steps = recipeSnapshot.steps,
-                    createdAtEpochMillis = recipeSnapshot.createdAtEpochMillis,
-                ),
+                steps = recipeSnapshot.steps,
+                createdAtEpochMillis = recipeSnapshot.createdAtEpochMillis,
+                feedback = command.feedback,
+            ),
                 actualUses = command.actualUses,
                 remainingPantry = PantryRemainingSnapshots(
                     updatedRows.map {
@@ -161,5 +168,20 @@ abstract class InventoryCompletionDao {
         )
         updateSession(cookSession.copy(completedAtEpochMillis = command.completedAtEpochMillis))
         return CompletionResult.Success(command.mealLogId)
+    }
+
+    private fun MealFeedback.isValid(completedAtEpochMillis: Long): Boolean =
+        rating in 1..5 &&
+            notes.length <= MAX_MEAL_NOTES_LENGTH &&
+            measurementAdjustments.all {
+                it.ingredientName.isNotBlank() &&
+                    it.preferredAmountMilliUnits > 0 &&
+                    it.note.length <= MAX_ADJUSTMENT_NOTE_LENGTH &&
+                    it.completedAtEpochMillis == completedAtEpochMillis
+            }
+
+    private companion object {
+        const val MAX_MEAL_NOTES_LENGTH = 1_000
+        const val MAX_ADJUSTMENT_NOTE_LENGTH = 200
     }
 }

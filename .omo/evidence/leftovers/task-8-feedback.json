@@ -1,0 +1,13 @@
+{
+  "inventoryMilliUnits": 0,
+  "mealLogCount": 1,
+  "rating": 5,
+  "recommendAgain": false,
+  "notes": "덜 짜게",
+  "historyCount": 1,
+  "historyFingerprint": "task-8-recipe",
+  "measurementHintName": "쌀",
+  "measurementHintMilliUnits": 4000,
+  "finalPhotoExists": true,
+  "networkCallsDuringCompletion": 0
+}

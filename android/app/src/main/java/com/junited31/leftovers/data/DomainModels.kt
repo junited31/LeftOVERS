@@ -36,7 +36,32 @@ data class PantryBinding(
 
 data class PantryBindings(val values: List<PantryBinding>)
 
-data class RecipeSteps(val values: List<String>)
+data class RecipePreferenceMetadata(
+    val cuisine: String,
+    val primaryTechnique: String,
+    val ingredientNames: Set<String>,
+)
+
+data class RecipeSteps(
+    val values: List<String>,
+    val metadata: RecipePreferenceMetadata? = null,
+)
+
+data class MeasurementAdjustment(
+    val ingredientName: String,
+    val preferredAmountMilliUnits: Long,
+    val unit: PantryUnit,
+    val note: String,
+    val completedAtEpochMillis: Long,
+)
+
+data class MealFeedback(
+    val rating: Int = 3,
+    val notes: String = "",
+    val recommendAgain: Boolean = true,
+    val measurementAdjustments: List<MeasurementAdjustment> = emptyList(),
+    val finalPhotoPath: String? = null,
+)
 
 data class RecipeSnapshotRecord(
     val id: String,
@@ -44,6 +69,7 @@ data class RecipeSnapshotRecord(
     val pantryBindings: PantryBindings,
     val steps: RecipeSteps,
     val createdAtEpochMillis: Long,
+    val feedback: MealFeedback = MealFeedback(),
 )
 
 data class ActualPantryUse(
@@ -69,6 +95,7 @@ data class CompleteCookSessionCommand(
     val mealLogId: String,
     val completedAtEpochMillis: Long,
     val actualUses: ActualPantryUses,
+    val feedback: MealFeedback = MealFeedback(),
 )
 
 sealed interface CompletionResult {
@@ -80,6 +107,15 @@ sealed interface CompletionResult {
     data class UnitMismatch(val pantryItemId: PantryItemId) : CompletionResult
     data class StaleInventory(val pantryItemId: PantryItemId) : CompletionResult
     data class InvalidActualUse(val pantryItemId: PantryItemId) : CompletionResult
+    data object InvalidFeedback : CompletionResult
     data object UnknownCookSession : CompletionResult
     data object UnknownRecipeSnapshot : CompletionResult
+}
+
+object PantryEditVersion {
+    fun next(existing: PantryItemEntity?, quantityMilliUnits: Long, unit: PantryUnit): Int = when {
+        existing == null -> 1
+        existing.quantityMilliUnits != quantityMilliUnits || existing.unit != unit -> existing.version + 1
+        else -> existing.version
+    }
 }

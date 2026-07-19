@@ -7,6 +7,7 @@ import com.junited31.leftovers.data.LeftoversDatabase
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
+import com.junited31.leftovers.data.RecipePreferenceMetadata
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -49,11 +50,12 @@ class RecipeSnapshotSaverTest {
         val saver = RecipeSnapshotSaver(database.recipeSnapshotDao())
 
         // When
-        val first = saver.save(valid, "one", 1_000)
-        val duplicate = saver.save(valid, "one", 2_000)
+        val first = saver.save(valid, "one", pantry.associateBy { it.id }, 1_000)
+        val duplicate = saver.save(valid, "one", pantry.associateBy { it.id }, 2_000)
         val invalid = saver.save(
             RecommendationResult.Invalid(RecommendationInvalidReason.CANDIDATE_COUNT),
             "two",
+            pantry.associateBy { it.id },
             3_000,
         )
 
@@ -66,6 +68,10 @@ class RecipeSnapshotSaverTest {
         assertEquals("A", snapshot?.title)
         assertEquals(1_000L, snapshot?.createdAtEpochMillis)
         assertEquals(pantry.single().id, snapshot?.pantryBindings?.values?.single()?.pantryItemId)
+        assertEquals(
+            RecipePreferenceMetadata("Korean", "stir fry", setOf("Rice")),
+            snapshot?.steps?.metadata,
+        )
     }
 
     private fun ranked(id: String, title: String): RankedRecommendation {

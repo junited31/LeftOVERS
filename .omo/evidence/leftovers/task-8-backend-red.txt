@@ -1,0 +1,27 @@
+T8 backend RED evidence - 2026-07-19 Asia/Seoul
+
+Baseline characterization before feature tests:
+  backend\.venv\Scripts\python.exe -m pytest -q backend/tests/test_recipe_generation.py -k without_measurement_hints
+  1 passed, 16 deselected in 1.17s
+
+Feature RED command:
+  backend\.venv\Scripts\python.exe -m pytest -q backend/tests/test_recipe_generation.py backend/tests/test_openai_client.py -k "measurement_hints or prompt_injection"
+
+Expected failures before production edits:
+  test_valid_measurement_hints_reach_the_recipe_model_as_user_data
+    assert 422 == 200
+  test_prompt_injection_remains_user_data_without_instruction_authority
+    measurementHints: Extra inputs are not permitted [type=extra_forbidden]
+
+Summary:
+  2 failed, 10 passed, 20 deselected in 0.75s
+
+Strict integer RED command after removing the untested strict boundary:
+  backend\.venv\Scripts\python.exe -m pytest -q backend/tests/test_recipe_generation.py -k invalid_measurement_hints
+
+Expected failures:
+  string amount: assert 200 == 422
+  floating amount: assert 200 == 422
+
+Summary:
+  2 failed, 9 passed, 18 deselected in 0.76s

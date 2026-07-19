@@ -62,10 +62,12 @@ import com.junited31.leftovers.data.PantryDao
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
+import com.junited31.leftovers.data.PantryEditVersion
 import com.junited31.leftovers.data.QuantityParser
 import com.junited31.leftovers.data.leftoversDataStore
 import com.junited31.leftovers.cooking.CookingScreen
 import com.junited31.leftovers.cooking.CookingSessionStore
+import com.junited31.leftovers.cooking.MealCompletionStore
 import com.junited31.leftovers.recipes.RecipeScreen
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.launch
@@ -84,6 +86,8 @@ class MainActivity : ComponentActivity() {
                 database.pantryDao(),
                 database.recipeSnapshotDao(),
                 database.cookSessionDao(),
+                database.mealLogDao(),
+                database.inventoryCompletionDao(),
                 applicationContext.leftoversDataStore,
                 recipeApiProvider,
                 (application as LeftoversApplication)::consumePhotoPickerFixture,
@@ -115,6 +119,8 @@ private fun LeftoversApp(
     pantryDao: PantryDao,
     snapshotDao: com.junited31.leftovers.data.RecipeSnapshotDao,
     cookSessionDao: com.junited31.leftovers.data.CookSessionDao,
+    mealLogDao: com.junited31.leftovers.data.MealLogDao,
+    completionDao: com.junited31.leftovers.data.InventoryCompletionDao,
     dataStore: DataStore<Preferences>,
     recipeApiProvider: () -> com.junited31.leftovers.network.LeftoversApi,
     pickerFixture: () -> android.net.Uri?,
@@ -219,15 +225,19 @@ private fun LeftoversApp(
                         api = recipeApi,
                         snapshotDao = snapshotDao,
                         cookSessionDao = cookSessionDao,
+                        mealLogDao = mealLogDao,
                         onCookingStarted = { screen = AppScreen.COOKING },
                         modifier = Modifier.padding(padding),
                     )
                 } ?: Text("레시피를 불러오는 중…", modifier = Modifier.padding(padding).padding(20.dp))
                 screen == AppScreen.COOKING -> {
+                    val photos = remember(context) { PhotoLifecycle(context) }
                     CookingScreen(
                         store = remember { CookingSessionStore(snapshotDao, cookSessionDao) },
                         apiProvider = recipeApiProvider,
-                        photos = remember(context) { PhotoLifecycle(context) },
+                        photos = photos,
+                        pantry = pantryItems,
+                        completionStore = remember(photos) { MealCompletionStore(completionDao, photos) },
                         pickerFixture = pickerFixture,
                         modifier = Modifier.padding(padding),
                     )
@@ -416,7 +426,11 @@ private fun PantryForm(
                                     quantityMilliUnits = checkNotNull(parsedQuantity),
                                     unit = unit,
                                     expiryEpochDay = parsedExpiry?.toEpochDay(),
-                                    version = (existingItem?.version ?: 0) + 1,
+                                    version = PantryEditVersion.next(
+                                        existingItem,
+                                        checkNotNull(parsedQuantity),
+                                        unit,
+                                    ),
                                 ),
                             )
                         }

@@ -1,0 +1,36 @@
+T8 Android RED evidence - 2026-07-19 Asia/Seoul
+
+Baseline characterization (unchanged production behavior)
+Command: cd android; .\gradlew.bat :app:testDebugUnitTest --tests '*CompleteCookSessionTest' --tests '*RecipeJsonTest' --console=plain
+Result: BUILD SUCCESSFUL in 5s; 10 tests, 0 failures, 0 errors, 0 skipped.
+Characterized: atomic full-consumption keeps a zero-quantity pantry row and one immutable log; empty caller history remains an empty request history.
+
+Domain/repository/photo/version RED
+Command: cd android; .\gradlew.bat :app:testDebugUnitTest --tests '*CompleteMealFlowTest' --tests '*PreferenceProfileTest' --tests '*PantryEditVersionTest' --tests '*RecipeJsonTest' --console=plain
+Result: BUILD FAILED in 2s at :app:compileDebugUnitTestKotlin.
+Expected first failures:
+- Unresolved reference 'MealFeedback' (CompleteMealFlowTest.kt:12)
+- Unresolved reference 'MeasurementAdjustment' (CompleteMealFlowTest.kt:13)
+- Unresolved reference 'RecipePreferenceMetadata' (CompleteMealFlowTest.kt:19)
+- Unresolved reference 'retainedFinalPhotos' (CompleteMealFlowTest.kt:47)
+- Unresolved reference 'MealCompletionStore' (CompleteMealFlowTest.kt:62)
+- Unresolved reference 'PantryEditVersion' (PantryEditVersionTest.kt:12)
+- Unresolved reference 'PreferenceProfile' (PreferenceProfileTest.kt:59)
+- Unresolved reference 'MeasurementHint' and too many RecipeJson.request arguments (RecipeJsonTest.kt:80-82)
+
+Connected Compose RED on SM_F711N
+Command: cd android; .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.MealCompletionFlowTest" --console=plain
+Result: BUILD FAILED in 18s; 2 tests, 2 failures.
+Exact first failure: Action performScrollTo() failed. Expected exactly 1 node but found none satisfying TestTag = 'start-completion'.
+
+Accessibility review RED on SM_F711N
+Command: cd android; .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.MealCompletionFlowTest" --console=plain
+Result: BUILD FAILED in 14s; 2 tests, 2 failures.
+Exact failures:
+- Failed to assert LiveRegion = Assertive on completion-error.
+- No completion-form-title node existed to assert Heading = kotlin.Unit.
+
+Blank-note DTO repair RED
+Command: cd android; .\gradlew.bat :app:testDebugUnitTest --tests '*RecipeJsonTest.requestOmitsBlankMeasurementHintNotes' --console=plain
+Result: BUILD FAILED in 7s; 1 test completed, 1 failed.
+Exact failure: RecipeJsonTest.requestOmitsBlankMeasurementHintNotes failed with AssertionError at RecipeJsonTest.kt:102 because the blank note key was present.

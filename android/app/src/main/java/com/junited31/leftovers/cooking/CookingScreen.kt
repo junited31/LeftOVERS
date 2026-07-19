@@ -28,7 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.network.ApiResult
@@ -38,6 +40,7 @@ import com.junited31.leftovers.photo.InvalidPhotoException
 import com.junited31.leftovers.photo.PhotoContracts
 import com.junited31.leftovers.photo.PhotoLifecycle
 import com.junited31.leftovers.photo.PhotoTooLargeException
+import com.junited31.leftovers.data.PantryItemEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,6 +73,8 @@ fun CookingScreen(
     store: CookingSessionStore,
     apiProvider: () -> LeftoversApi,
     photos: PhotoLifecycle,
+    pantry: List<PantryItemEntity>,
+    completionStore: MealCompletionStore,
     pickerFixture: () -> Uri?,
     modifier: Modifier = Modifier,
 ) {
@@ -82,6 +87,8 @@ fun CookingScreen(
     var attached by remember { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var cameraInput by remember { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var adviceCall by remember { mutableStateOf<PhotoAdviceCall?>(null) }
+    var showCompletion by remember { mutableStateOf(false) }
+    var completedMealId by remember { mutableStateOf<String?>(null) }
 
     fun changeStep(load: suspend () -> ActiveCookingSession?) {
         photoEpoch.invalidate()
@@ -175,11 +182,39 @@ fun CookingScreen(
     }
 
     val current = active
+    completedMealId?.let {
+        Column(
+            modifier.fillMaxSize().padding(20.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite }
+                .testTag("completion-success"),
+        ) {
+            Text(
+                "요리를 완료했어요.",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() }.testTag("completion-success-title"),
+            )
+            Text("남은 재료와 다음 추천 취향을 기기에 저장했어요.")
+        }
+        return
+    }
     if (current == null) {
         Column(modifier.fillMaxSize().padding(20.dp)) {
             Text("진행 중인 요리가 없어요.", style = MaterialTheme.typography.titleMedium)
             Text("레시피에서 요리 시작을 눌러 주세요.")
         }
+        return
+    }
+    if (showCompletion) {
+        MealCompletionForm(
+            active = current,
+            pantry = pantry,
+            store = completionStore,
+            photos = photos,
+            pickerFixture = pickerFixture,
+            onCancel = { showCompletion = false },
+            onSuccess = { completedMealId = it },
+            modifier = modifier,
+        )
         return
     }
     val index = current.session.currentStepIndex
@@ -210,6 +245,19 @@ fun CookingScreen(
                 enabled = index < current.recipe.steps.values.lastIndex,
                 modifier = Modifier.weight(1f).testTag("next-step"),
             ) { Text("다음 단계") }
+        }
+        if (index == current.recipe.steps.values.lastIndex) {
+            Button(
+                onClick = {
+                    adviceCall?.cancel()
+                    adviceCall = null
+                    attached?.let(photos::discard)
+                    attached = null
+                    state = AdviceUiState.Idle
+                    showCompletion = true
+                },
+                modifier = Modifier.fillMaxWidth().testTag("start-completion"),
+            ) { Text("요리 완료 입력") }
         }
         Text("사진 조언", style = MaterialTheme.typography.titleMedium)
         Text("사진은 현재 상태를 참고하는 용도이며 익음이나 안전을 판정하지 않아요.")

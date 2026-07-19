@@ -53,13 +53,14 @@ class FakeAI:
         self.recipe_outputs = recipe_outputs or [valid_recipe_json()]
         self.advice_outputs = advice_outputs or [valid_advice_json()]
         self.recipe_calls = 0
+        self.recipe_request_jsons: list[str] = []
         self.advice_calls = 0
         self.photo_bytes: list[bytes] = []
 
     async def generate_recipes(self, request_json: str, attempt: int) -> str:
-        del request_json
         index = min(attempt, len(self.recipe_outputs) - 1)
         self.recipe_calls += 1
+        self.recipe_request_jsons.append(request_json)
         return self.recipe_outputs[index]
 
     async def cooking_advice(

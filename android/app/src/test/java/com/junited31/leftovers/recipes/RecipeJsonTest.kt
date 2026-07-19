@@ -5,6 +5,7 @@ import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,5 +63,43 @@ class RecipeJsonTest {
         assertEquals("Salt", candidate.missingIngredients.single().name)
         assertEquals(listOf("Mix", "Serve"), candidate.steps)
         assertTrue(malformed is RecipeDecodeResult.Invalid)
+    }
+
+    @Test
+    fun requestCharacterizationKeepsHistoryEmptyWhenCallerHasNoLogs() {
+        val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
+
+        val request = JSONObject(RecipeJson.request(pantry, setOf("gas burner"), emptyList()))
+
+        assertEquals(0, request.getJSONArray("history").length())
+        assertEquals("gas burner", request.getJSONArray("equipment").getString(0))
+    }
+
+    @Test
+    fun nextRequestSerializesMeasurementHintsWithBackendFieldNames() {
+        val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
+        val hints = listOf(MeasurementHint("rice", 125_000, PantryUnit.GRAM, "half cup"))
+
+        val request = JSONObject(RecipeJson.request(pantry, setOf("gas burner"), emptyList(), hints))
+
+        val hint = request.getJSONArray("measurementHints").getJSONObject(0)
+        assertEquals("rice", hint.getString("ingredientName"))
+        assertEquals(125_000L, hint.getLong("preferredAmountMilliUnits"))
+        assertEquals("g", hint.getString("unit"))
+        assertEquals("half cup", hint.getString("note"))
+    }
+
+    @Test
+    fun requestOmitsBlankMeasurementHintNotes() {
+        val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
+        val hints = listOf(
+            MeasurementHint("rice", 125_000, PantryUnit.GRAM, ""),
+            MeasurementHint("water", 250_000, PantryUnit.MILLILITER, "   \t"),
+        )
+
+        val request = JSONObject(RecipeJson.request(pantry, emptySet(), emptyList(), hints))
+
+        assertFalse(request.getJSONArray("measurementHints").getJSONObject(0).has("note"))
+        assertFalse(request.getJSONArray("measurementHints").getJSONObject(1).has("note"))
     }
 }

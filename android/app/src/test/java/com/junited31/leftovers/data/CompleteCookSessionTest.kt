@@ -139,6 +139,25 @@ class CompleteCookSessionTest {
         )
     }
 
+    @Test
+    fun successfulCompletionRetainsFullyConsumedRowsAndWritesOneImmutableLog() = runTest {
+        // Characterization: T8 builds on the existing transaction semantics.
+        givenSession()
+
+        val result = database.inventoryCompletionDao().complete(
+            command(
+                ActualPantryUse(flourId, 1, PantryUnit.GRAM, 10_000),
+                ActualPantryUse(milkId, 1, PantryUnit.MILLILITER, 0),
+            ),
+        )
+
+        assertEquals(CompletionResult.Success("meal"), result)
+        assertEquals(0L, database.pantryDao().get(flourId)?.quantityMilliUnits)
+        assertEquals(20_000L, database.pantryDao().get(milkId)?.quantityMilliUnits)
+        assertEquals(1, database.mealLogDao().count())
+        assertEquals(0L, database.mealLogDao().get("meal")?.remainingPantry?.values?.first()?.quantityMilliUnits)
+    }
+
     private suspend fun givenSession(flourVersion: Int = 1) {
         database.pantryDao().insertAll(
             listOf(
