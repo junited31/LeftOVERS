@@ -1,0 +1,5 @@
+Command: cd android && ./gradlew.bat :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.history.HistoryScreenTest --console=plain
+Device: SM-F711N - 15 (R5CR91DXA8R)
+Result: RED, 4 tests completed, 4 failed
+Expected failure: HistoryScreenTest could not find TestTag = 'nav-history' because the history UI/navigation did not exist yet.
+

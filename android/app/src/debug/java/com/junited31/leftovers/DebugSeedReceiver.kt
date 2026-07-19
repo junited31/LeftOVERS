@@ -14,14 +14,20 @@ import com.junited31.leftovers.data.RecipeSnapshotEntity
 import com.junited31.leftovers.data.RecipeSteps
 import com.junited31.leftovers.data.CookSessionEntity
 import com.junited31.leftovers.data.leftoversDataStore
+import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.time.LocalDate
 
 class DebugSeedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) = runBlocking(Dispatchers.IO) {
         val database = LeftoversDatabase.get(context)
         database.clearAllTables()
+        PhotoLifecycle(context).apply {
+            ownedCacheFiles().forEach(File::delete)
+            retainedFinalPhotos().forEach(File::delete)
+        }
         context.leftoversDataStore.edit { preferences -> preferences.clear() }
         if (intent.action == DEBUG_SEED) {
             database.pantryDao().insertAll(seedPantry())

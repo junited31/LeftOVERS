@@ -119,6 +119,7 @@ class MealCompletionFlowTest {
 
         assertEquals(0L, runBlocking { database.pantryDao().get(riceId) }?.quantityMilliUnits)
         val log = requireNotNull(runBlocking { database.mealLogDao().latest() }.single())
+        assertEquals("쌀", log.actualUses.values.single().displayName)
         assertEquals(5, log.recipeSnapshot.feedback.rating)
         assertFalse(log.recipeSnapshot.feedback.recommendAgain)
         assertEquals("덜 짜게", log.recipeSnapshot.feedback.notes)

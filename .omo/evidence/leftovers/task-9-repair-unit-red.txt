@@ -1,0 +1,5 @@
+Command: cd android && ./gradlew.bat :app:testDebugUnitTest --tests '*HistoryRepositoryTest' --console=plain
+Result: RED, BUILD FAILED in 4s
+HistoryRepositoryTest: 8 tests completed, 1 failed
+Expected failure: persistedIngredientDisplayNameSurvivesRepositoryReload expected the saved name "김치", but the existing ActualPantryUse JSON converter discarded the additive displayName member.
+

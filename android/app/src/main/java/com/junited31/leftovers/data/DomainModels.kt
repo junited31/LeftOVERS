@@ -77,6 +77,7 @@ data class ActualPantryUse(
     val sourceVersion: Int,
     val unit: PantryUnit,
     val actualMilliUnits: Long,
+    val displayName: String? = null,
 )
 
 data class ActualPantryUses(val values: List<ActualPantryUse>)

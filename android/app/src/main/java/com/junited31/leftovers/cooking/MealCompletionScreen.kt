@@ -251,6 +251,9 @@ internal fun MealCompletionForm(
                                     sourceVersion = binding.sourceVersion,
                                     unit = binding.unit,
                                     actualMilliUnits = checkNotNull(actual[index]),
+                                    displayName = pantryById[binding.pantryItemId]?.name
+                                        ?.trim()
+                                        ?.takeIf(String::isNotEmpty),
                                 )
                             },
                         ),

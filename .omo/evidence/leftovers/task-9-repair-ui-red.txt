@@ -1,0 +1,6 @@
+Command: cd android && ./gradlew.bat :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.history.HistoryScreenTest' --console=plain
+Device: SM-F711N - Android 15 (R5CR91DXA8R)
+Result: RED, BUILD FAILED in 15s
+HistoryScreenTest: 4 tests completed, 1 failed
+Expected failure: newestMealDetailSurvivesActivityRestartAndShowsEverySavedField could not find the exact row "김치 · 5 g" because history rendered the generic UUID-suffix label instead of the persisted display name.
+

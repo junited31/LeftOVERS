@@ -1,0 +1,34 @@
+Device: SM-F711N, Android 15, serial R5CR91DXA8R
+Offline proof: airplane mode setting 1, Wi-Fi disabled, ping received 0 packets; restored to airplane mode 0 and Wi-Fi enabled.
+
+Focused unit command: ./gradlew.bat :app:testDebugUnitTest --tests '*HistoryRepositoryTest' --console=plain
+Result: BUILD SUCCESSFUL in 7s
+HistoryRepositoryTest XML: tests=8, failures=0, errors=0, skipped=0
+
+Full local gate command: ./gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --console=plain
+Result: BUILD SUCCESSFUL in 12s
+Full unit XML aggregate: tests=76, failures=0, errors=0, skipped=0 across 12 suites
+
+History device command: ./gradlew.bat :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.history.HistoryScreenTest' --console=plain
+Result: BUILD SUCCESSFUL in 17s
+HistoryScreenTest XML: tests=4, failures=0, errors=0, skipped=0
+Exact device assertions: 김치 · 5 g; 김치 · 7 g
+
+Completion device command: ./gradlew.bat :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.MealCompletionFlowTest' --console=plain
+Result: 2 tests completed, failures=0, errors=0, skipped=0
+Exact persistence assertion: ActualPantryUse.displayName = 쌀 after real completion UI flow
+
+Fresh artifact: task-9-history.png
+Type: PNG 1080x2640 8-bit RGBA
+SHA-256: 2e3f7b93e7f1e94cecdad2bd3bf26bbde6fa29251d2d09451ed053ddb5acb4ce
+
+Fresh artifact: task-9-history-bottom.png
+Type: PNG 1080x2640 8-bit RGBA
+SHA-256: 2d46c89e1e857efb61bb9bb08b8aff541f6e5cc43ab13440a41869e95fc7c9d1
+Readback: 김치 · 5 g, 김치 · 7 g, and 김치 · 4 g · 한 숟갈 적게 are fully visible above bottom navigation.
+
+Fresh artifact: task-9-missing-photo.xml
+Type: UTF-8 XML
+SHA-256: c856620b6572bf6eb4711d0322aa8a2538ec139ac78088dd8beb879feaf7ea92
+Readback: missing-photo fallback and both exact persisted-name rows are present without database mutation.
+

@@ -1,0 +1,5 @@
+Command: cd android && ./gradlew.bat :app:compileDebugAndroidTestKotlin --console=plain
+Result: RED, BUILD FAILED in 1s
+Expected failure: MealCompletionFlowTest.kt asserted the stored ActualPantryUse display name "쌀", but ActualPantryUse did not yet expose displayName.
+Compiler evidence: MealCompletionFlowTest.kt:122:58 Unresolved reference 'displayName'.
+

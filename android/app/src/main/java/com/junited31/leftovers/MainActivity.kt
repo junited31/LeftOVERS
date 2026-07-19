@@ -22,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Kitchen
 import androidx.compose.material.icons.outlined.RestaurantMenu
@@ -68,6 +69,8 @@ import com.junited31.leftovers.data.leftoversDataStore
 import com.junited31.leftovers.cooking.CookingScreen
 import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.cooking.MealCompletionStore
+import com.junited31.leftovers.history.HistoryRepository
+import com.junited31.leftovers.history.HistoryScreen
 import com.junited31.leftovers.recipes.RecipeScreen
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.launch
@@ -96,7 +99,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class AppScreen { PANTRY, RECIPES, COOKING, EQUIPMENT }
+private enum class AppScreen { PANTRY, RECIPES, COOKING, HISTORY, EQUIPMENT }
 
 private data class EquipmentChoice(val id: String, val label: String)
 
@@ -178,6 +181,18 @@ private fun LeftoversApp(
                         },
                     )
                     NavigationBarItem(
+                        selected = screen == AppScreen.HISTORY,
+                        onClick = {
+                            screen = AppScreen.HISTORY
+                            showForm = false
+                        },
+                        icon = { Icon(Icons.Outlined.History, contentDescription = "기록") },
+                        label = { Text("기록") },
+                        modifier = Modifier.testTag("nav-history").semantics {
+                            contentDescription = "기록"
+                        },
+                    )
+                    NavigationBarItem(
                         selected = screen == AppScreen.EQUIPMENT,
                         onClick = {
                             screen = AppScreen.EQUIPMENT
@@ -242,6 +257,10 @@ private fun LeftoversApp(
                         modifier = Modifier.padding(padding),
                     )
                 }
+                screen == AppScreen.HISTORY -> HistoryScreen(
+                    repository = remember(mealLogDao) { HistoryRepository(mealLogDao) },
+                    modifier = Modifier.padding(padding),
+                )
                 else -> preferences?.let { loadedPreferences ->
                     EquipmentChecklist(
                         selected = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
@@ -268,6 +287,7 @@ private val AppScreen.title: String
         AppScreen.PANTRY -> "식재료"
         AppScreen.RECIPES -> "레시피"
         AppScreen.COOKING -> "요리"
+        AppScreen.HISTORY -> "기록"
         AppScreen.EQUIPMENT -> "조리도구"
     }
 

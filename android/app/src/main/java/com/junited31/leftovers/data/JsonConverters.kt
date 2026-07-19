@@ -70,7 +70,12 @@ class JsonConverters {
                     .put("pantryItemId", use.pantryItemId.value)
                     .put("sourceVersion", use.sourceVersion)
                     .put("unit", use.unit.value)
-                    .put("actualMilliUnits", use.actualMilliUnits),
+                    .put("actualMilliUnits", use.actualMilliUnits)
+                    .apply {
+                        use.displayName?.trim()?.takeIf(String::isNotEmpty)?.let {
+                            put("displayName", it)
+                        }
+                    },
             )
         }
     }.toString()
@@ -85,6 +90,9 @@ class JsonConverters {
                         sourceVersion = json.getInt("sourceVersion"),
                         unit = requiredUnit(json.getString("unit")),
                         actualMilliUnits = json.getLong("actualMilliUnits"),
+                        displayName = (json.opt("displayName") as? String)
+                            ?.trim()
+                            ?.takeIf(String::isNotEmpty),
                     )
                 }
             },
@@ -191,25 +199,31 @@ class JsonConverters {
             }
         })
 
-    private fun feedback(json: JSONObject) = MealFeedback(
-        rating = json.getInt("rating"),
-        notes = json.getString("notes"),
-        recommendAgain = json.getBoolean("recommendAgain"),
-        measurementAdjustments = json.getJSONArray("measurementAdjustments").let { array ->
+    private fun feedback(json: JSONObject): MealFeedback {
+        val defaults = MealFeedback()
+        val adjustments = json.optJSONArray("measurementAdjustments")?.let { array ->
             List(array.length()) { index ->
-                array.getJSONObject(index).let { adjustment ->
-                    MeasurementAdjustment(
-                        ingredientName = adjustment.getString("ingredientName"),
-                        preferredAmountMilliUnits = adjustment.getLong("preferredAmountMilliUnits"),
-                        unit = requiredUnit(adjustment.getString("unit")),
-                        note = adjustment.getString("note"),
-                        completedAtEpochMillis = adjustment.getLong("completedAtEpochMillis"),
-                    )
-                }
-            }
-        },
-        finalPhotoPath = if (json.isNull("finalPhotoPath")) null else json.getString("finalPhotoPath"),
-    )
+                runCatching {
+                    array.getJSONObject(index).let { adjustment ->
+                        MeasurementAdjustment(
+                            ingredientName = adjustment.getString("ingredientName"),
+                            preferredAmountMilliUnits = adjustment.getLong("preferredAmountMilliUnits"),
+                            unit = requiredUnit(adjustment.getString("unit")),
+                            note = adjustment.getString("note"),
+                            completedAtEpochMillis = adjustment.getLong("completedAtEpochMillis"),
+                        )
+                    }
+                }.getOrNull()
+            }.filterNotNull()
+        }.orEmpty()
+        return MealFeedback(
+            rating = (json.opt("rating") as? Number)?.toInt()?.takeIf { it in 1..5 } ?: defaults.rating,
+            notes = json.opt("notes") as? String ?: defaults.notes,
+            recommendAgain = json.opt("recommendAgain") as? Boolean ?: defaults.recommendAgain,
+            measurementAdjustments = adjustments,
+            finalPhotoPath = json.opt("finalPhotoPath") as? String,
+        )
+    }
 
     private fun requiredUnit(value: String) =
         requireNotNull(PantryUnit.parse(value)) { "Unknown pantry unit: $value" }
