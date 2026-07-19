@@ -131,7 +131,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - complete seeded recipe and assert exact inventory, one immutable log, retained photo, and next ranking boost, evidence `task-8-feedback.json`; failure - change pantry in a competing transaction before completion, PASS when UI reports stale inventory and no row/log/photo mutation occurs, evidence `task-8-stale.txt`.
   Commit: Y | `feat(feedback): update leftovers and future ranking`
 
-- [ ] 9. Present persistent cooking history and details
+- [x] 9. Present persistent cooking history and details
   What to do / Must NOT do: Implement reverse-chronological history timeline and detail with final photo, recipe snapshot, actual use, remaining-after values, rating, adjustments, notes, and recommend-again state. Ensure app restart/offline access and debug-reset cascade cleanup. Do not add sharing, analytics, or cloud sync.
   Parallelization: Wave 2 | Blocked by: T2,T8 | Blocks: T10
   References: `.omo/drafts/leftovers.md:21,32,55-56,61,65,69-76`.

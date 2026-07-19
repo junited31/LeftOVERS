@@ -1,0 +1,43 @@
+{
+  "task": "T9",
+  "verdict": "confirmed",
+  "confidence": 0.99,
+  "verifiedAt": "2026-07-19T21:30:27+09:00",
+  "commands": {
+    "androidFull": "76 tests, 0 failures, 0 errors, 0 skipped across 12 suites",
+    "historyRepository": "8 tests, 0 failures, 0 errors, 0 skipped",
+    "historyConnected": "SM-F711N Android 15 offline: 4 tests, 0 failures, 0 errors, 0 skipped",
+    "completionConnected": "SM-F711N Android 15 offline: 2 tests, 0 failures, 0 errors, 0 skipped",
+    "androidBuild": "lintDebug, assembleDebug, and AndroidTest compilation passed; lint errors 0",
+    "secretScan": "206 files inspected",
+    "diffCheck": "passed"
+  },
+  "repair": {
+    "finding": "History rendered actual-use and remaining-after rows with internal UUID suffixes instead of meaningful ingredient names.",
+    "resolution": "ActualPantryUse stores an optional displayName in its existing JSON column; completion persists the pantry name and history maps it by pantry ID.",
+    "legacyBehavior": "Absent, blank, or malformed displayName values decode to null and keep the generic legacy fallback without database mutation."
+  },
+  "artifacts": {
+    "topScreenshot": ".omo/evidence/leftovers/task-9-history.png",
+    "topScreenshotSha256": "2e3f7b93e7f1e94cecdad2bd3bf26bbde6fa29251d2d09451ed053ddb5acb4ce",
+    "bottomScreenshot": ".omo/evidence/leftovers/task-9-history-bottom.png",
+    "bottomScreenshotSha256": "2d46c89e1e857efb61bb9bb08b8aff541f6e5cc43ab13440a41869e95fc7c9d1",
+    "missingPhotoXml": ".omo/evidence/leftovers/task-9-missing-photo.xml",
+    "missingPhotoXmlSha256": "c856620b6572bf6eb4711d0322aa8a2538ec139ac78088dd8beb879feaf7ea92"
+  },
+  "adversarialClasses": {
+    "malformedInput": "pass: legacy optional fields and display names fail safe without rewriting stored rows",
+    "cancelResume": "pass within T9 restart and offline contract",
+    "staleState": "pass: missing photos render a fallback without database mutation",
+    "dirtyWorktree": "pass: T9 scope and workflow records preserved",
+    "hungOrLongCommands": "pass: bounded Android and device gates completed",
+    "flakyTests": "pass: focused physical-device history flow repeated",
+    "misleadingSuccessOutput": "pass after repair: exact ingredient names are asserted in stored JSON, device UI, screenshots, and accessibility XML",
+    "repeatedInterruptions": "pass: restart and debug reset paths verified"
+  },
+  "minorRisks": [
+    "The authentically failing intermediate file task-9-repository-green.txt has a misleading name; task-9-repair-green.txt and current XML are authoritative.",
+    "The supplemental bottom PNG has partial fixed-chrome compositing loss, while required content reachability is independently established by connected assertions and accessibility XML.",
+    "Legacy rows created before displayName persistence intentionally retain the generic ID-suffix fallback."
+  ]
+}
