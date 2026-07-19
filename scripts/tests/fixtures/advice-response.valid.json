@@ -1,0 +1,7 @@
+{
+  "status": "continue",
+  "observations": ["surface_browned"],
+  "nextActions": ["check_center_temperature"],
+  "confidence": 0.72,
+  "safetyNote": "A photo cannot confirm doneness or food safety; verify time and temperature."
+}

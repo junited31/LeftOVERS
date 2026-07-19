@@ -1,0 +1,13 @@
+{
+  "project_info": { "project_id": "leftovers-019f706b" },
+  "client": [
+    {
+      "client_info": {
+        "android_client_info": {
+          "package_name": "com.junited31.leftovers"
+        }
+      },
+      "api_key": [{ "current_key": "fixture-key" }]
+    }
+  ]
+}

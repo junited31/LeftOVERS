@@ -1,0 +1,21 @@
+{
+  "pantry": [
+    {
+      "pantryItemId": "10000000-0000-4000-8000-000000000001",
+      "version": 2,
+      "name": "Rice",
+      "unit": "g",
+      "quantityMilliUnits": 500000,
+      "expiryDate": "2026-07-20"
+    },
+    {
+      "pantryItemId": "10000000-0000-4000-8000-000000000002",
+      "version": 4,
+      "name": "Egg",
+      "unit": "count",
+      "quantityMilliUnits": 6000,
+      "expiryDate": null
+    }
+  ],
+  "equipment": ["gas burner", "basic cookware"]
+}

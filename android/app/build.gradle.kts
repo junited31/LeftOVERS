@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -6,6 +7,18 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
+
+if (file("google-services.json").isFile) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use(::load)
+}
+val apiBaseUrl = providers.gradleProperty("LEFTOVERS_API_BASE_URL")
+    .orElse(providers.environmentVariable("LEFTOVERS_API_BASE_URL"))
+    .orElse(localProperties.getProperty("LEFTOVERS_API_BASE_URL", ""))
+    .get()
 
 android {
     namespace = "com.junited31.leftovers"
@@ -18,6 +31,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "LEFTOVERS_API_BASE_URL", "\"${apiBaseUrl.replace("\"", "\\\"")}\"")
     }
 
     compileOptions {
@@ -27,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {

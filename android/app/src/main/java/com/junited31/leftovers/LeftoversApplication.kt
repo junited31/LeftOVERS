@@ -13,7 +13,9 @@ open class LeftoversApplication : Application() {
     }
 
     open fun createRecipeApi(): LeftoversApi = LeftoversApi(
-        baseUrl = "http://127.0.0.1:8080/",
+        baseUrl = BuildConfig.LEFTOVERS_API_BASE_URL.ifBlank {
+            error("LEFTOVERS_API_BASE_URL must be injected by deploy_backend.ps1")
+        },
         tokenProvider = AnonymousFirebaseTokenProvider(),
     )
 
