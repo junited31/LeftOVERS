@@ -1,0 +1,32 @@
+T7 airplane-mode cooking verification — SM-F711N / Android 15
+
+Setup:
+  adb shell cmd connectivity airplane-mode enable
+  adb shell settings get global airplane_mode_on -> 1
+  Installed the current debug APK, launched it, seeded a persisted recipe/session, force-stopped, and relaunched.
+  Used the production Cooking destination and Android system photo picker; no test-only UI was substituted.
+
+Before the advice action:
+  Visible persisted state: 채소 달걀 볶음밥, 2 / 3 단계.
+  Native picker photo compressed into cache/leftovers-photos (1 file, 1210 bytes).
+  leftovers.db SHA-256:     94772575633b6f43be37fdc3bc98e81d25f0b53e7098b5f21d547a0f415a894c
+  leftovers.db-wal SHA-256: 4e1f730540148b3d236fd87e095b68b2e07626a23116dab8b073ece93abe141a
+
+After one advice-button press:
+  Explicit retry UI: "네트워크 연결을 확인하고 다시 시도해 주세요." and "다시 시도".
+  Persisted step remained 2 / 3.
+  HTTP request count remained 0 because the offline/unconfigured token provider could not construct the client.
+  Focused device regression independently asserts MockWebServer requestCount == 0.
+  cache/leftovers-photos became empty; the failed boundary consumed/discarded the temporary photo.
+  leftovers.db SHA-256 unchanged:     94772575633b6f43be37fdc3bc98e81d25f0b53e7098b5f21d547a0f415a894c
+  leftovers.db-wal SHA-256 unchanged: 4e1f730540148b3d236fd87e095b68b2e07626a23116dab8b073ece93abe141a
+  Filtered logcat contained no app FATAL EXCEPTION or AndroidRuntime crash.
+  Airplane mode was still 1 during all assertions.
+
+Evidence:
+  task-7-offline-after.png
+  task-7-offline-after.xml
+  task-7-offline-red.txt
+  android connected result: CookingPhotoFlowTest, 2 tests, 0 failures, 0 errors, 0 skipped.
+
+Cleanup receipt is recorded after the verification gates in task-7-green.txt.

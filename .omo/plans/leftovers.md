@@ -115,7 +115,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - authenticated seeded pantry request returns exactly three candidates and the app screenshot exposes usage/equipment/rank reasons, evidence `task-6-recipes.json` and `task-6-recipes.png`; failure - backend fake returns an invalid/duplicate set on the initial attempt and both retries, PASS on typed 422 and unchanged Room snapshot count, evidence `task-6-diversity-failure.txt`.
   Commit: Y | `feat(recipes): recommend diverse pantry-first meals`
 
-- [ ] 7. Implement step-by-step cooking and safe photo coaching
+- [x] 7. Implement step-by-step cooking and safe photo coaching
   What to do / Must NOT do: Add active-session resume, step navigation/timers as display-only durations, camera/gallery attachment, cooking-advice request, structured advice UI, confidence, and mandatory safety note. Preserve active steps offline. Never claim doneness/safety from the image or silently move to the next step.
   Parallelization: Wave 2 | Blocked by: T2,T3,T5,T6 | Blocks: T8,T10
   References: `.omo/drafts/leftovers.md:19,56-57,61-64,70-76`.

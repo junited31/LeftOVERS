@@ -1,0 +1,19 @@
+T7 RED captured before production edits on 2026-07-18.
+
+Android command:
+  android/gradlew.bat :app:testDebugUnitTest --tests '*CookingSessionTest'
+Exit: 1
+Expected failure:
+  compileDebugUnitTestKotlin reports unresolved CookingSessionStore, CookingAdviceJson,
+  CookingStep, and CookingAdviceDecodeResult. These are the wished-for behavior APIs.
+
+Backend command:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_cooking_advice.py
+Exit: 1
+Result:
+  3 failed, 8 passed in 2.21s.
+Expected failures:
+  blank observation, blank next action, and whitespace-only safetyNote each returned HTTP 200
+  instead of the required typed HTTP 422 after bounded validation retries.
+
+The RED failures are feature-contract failures, not import, launcher, or fixture errors.

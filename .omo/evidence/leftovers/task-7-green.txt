@@ -1,0 +1,55 @@
+T7 fresh verification and cleanup receipt — 2026-07-19, SM-F711N / Android 15.
+
+Focused contracts:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_cooking_advice.py
+  11 passed in 1.41s.
+
+  android/gradlew.bat :app:testDebugUnitTest --tests '*CookingSessionTest'
+  BUILD SUCCESSFUL.
+
+  android/gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.CookingPhotoFlowTest" --rerun-tasks
+  Current post-fix build: 2 tests, 0 failures; BUILD SUCCESSFUL in 25s.
+  The same current tests also ran inside the full 17-test connected gate with 0 failures.
+
+Full gates:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests
+  46 passed in 1.48s.
+
+  uvx ruff check backend
+  All checks passed.
+
+  backend/.venv/Scripts/python.exe check-no-excuse-rules.py backend
+  No violations in 15 files.
+
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1
+  Secret scan passed; 161 files inspected.
+
+  docker build -t leftovers-api:t7 backend
+  Exit 0; image built successfully. The image was removed and Docker Desktop stopped afterward.
+
+  android/gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin :app:connectedDebugAndroidTest --rerun-tasks
+  BUILD SUCCESSFUL in 53s; 131 tasks executed.
+  XML totals: 51 unit tests and 17 connected tests; 0 failures, 0 errors, 0 skipped.
+
+Boundary probes:
+  Malformed/blank safety, malformed schema, and prompt-injection routing subset: 6 passed, 5 deselected.
+  Cancellation and stale-photo epoch regressions passed twice with no retry, step advance, or cache residue.
+  Fresh literal curl fixture returned HTTP 200 with status, observations, nextActions, confidence, and safetyNote in task-7-cooking-advice.json.
+
+Manual offline QA:
+  Process recreation resumed the persisted recipe at step 2 with display-only "약 7분" guidance.
+  Explicit step 2 -> 3 -> 2 navigation worked; no advice path advanced the step.
+  Airplane mode photo failure rendered explicit retry; the cache changed from one managed JPEG to empty.
+  Database SHA-256 stayed 94772575633b6f43be37fdc3bc98e81d25f0b53e7098b5f21d547a0f415a894c.
+  WAL SHA-256 stayed 5a02d7b6a280c7e10f0486acc4a82b7c75f82d6536a1654618feb00786bf3172 before/after the failed advice action.
+
+Visual QA:
+  Independent final Pass A: PASS / HIGH, no findings.
+  Independent final Pass B: PASS / HIGH, all prior CJK/fold findings resolved.
+  Fresh 1080x2640 states: task-7-cooking-base.png, task-7-cooking.png, task-7-offline-after.png.
+
+Cleanup:
+  Airplane mode 0; live network restored.
+  No com.junited31.leftovers packages or task-7 Download artifacts remain on the device.
+  No listeners remain on ports 8080 or 8097; no matching Java/Python service process remains.
+  Gradle daemon stopped; Docker verification image removed; Docker Desktop stopped.

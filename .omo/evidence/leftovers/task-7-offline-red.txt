@@ -1,0 +1,21 @@
+RED — offline cooking steps must not require the photo client
+
+Command:
+  android/gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.CookingPhotoFlowTest#offline_cooking_steps_open_without_initializing_the_photo_client"
+
+Device:
+  SM-F711N - Android 15
+
+Observed failure before the fix:
+  java.lang.IllegalStateException: Default FirebaseApp is not initialized in this process com.junited31.leftovers.
+  at com.google.firebase.FirebaseApp.getInstance(FirebaseApp.java:179)
+
+Result:
+  1 test, 1 failure; BUILD FAILED in 13s.
+
+The expanded retry regression also failed before the boundary fix:
+  offline_cooking_steps_and_retry_survive_an_unavailable_photo_client
+  1 test, 1 failure; BUILD FAILED in 12s with the same FirebaseApp exception after the photo action.
+
+Root cause:
+  Selecting the Cooking destination eagerly constructed LeftoversApi and its Firebase token provider, even though reading persisted cooking steps does not need the network. After making destination entry lazy, the request action still allowed provider initialization failure to escape instead of rendering the explicit retry state and discarding its temporary photo.

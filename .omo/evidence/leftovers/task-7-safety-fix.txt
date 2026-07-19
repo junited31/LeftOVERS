@@ -1,0 +1,45 @@
+T7-SAFETY-001 follow-up evidence
+
+Reviewed base: 83ff348e677c2d02219e56fb8d98ef85d8d75bd9
+
+Root cause reproduction
+- CookingAdviceResponse.model_validate accepted and echoed the exact unsafe English payload.
+- CookingAdviceJson.response accepted arbitrary nonblank English/Korean strings and AdviceCard rendered them.
+- Constructor/caller search found no production bypass around those two seams.
+
+RED 1
+- Backend focused: 6 failed; unsafe English/Korean observation/action payloads returned 200 instead of 422 and hostile safetyNote values were echoed.
+- Android focused: 2 tests completed, 2 failed; unsafe claims decoded as Success and hostile safety copy stayed verbatim.
+
+Rejected intermediate design
+- Bilingual phrase filtering reached focused GREEN but was discarded before commit because semantic rephrasing could bypass it.
+
+RED 2
+- Backend: 1 failed, 2 passed; plausible unapproved free prose returned 200 instead of 422.
+- Android: 2 tests completed, 2 failed; unapproved prose decoded and structured codes were not mapped to app-owned copy.
+
+Final focused GREEN
+- Backend safety boundary: 7 passed, 11 deselected in 0.60s.
+- Android safety boundary: 3 tests passed; BUILD SUCCESSFUL in 4s.
+
+Final backend gates
+- pytest: 53 passed in 0.81s.
+- Ruff: All checks passed.
+- no-excuse audit: no violations in 15 files.
+- secret scan: 171 files inspected, passed.
+
+Final Android gates
+- testDebugUnitTest + lintDebug + assembleDebug + assembleRelease + compileDebugAndroidTestKotlin: BUILD SUCCESSFUL in 15s, 112 tasks executed.
+- Unit XML: 54 tests, 0 failures/errors/skips.
+- CookingPhotoFlowTest on SM_F711N Android 15, final pass 1: 2/2, BUILD SUCCESSFUL in 19s.
+- CookingPhotoFlowTest on SM_F711N Android 15, final pass 2: 2/2, BUILD SUCCESSFUL in 18s.
+
+Fresh real HTTP probe
+- A temporary local uvicorn server returned the exact reported malicious model payload on all three attempts.
+- curl POST /v1/cooking/advice result:
+  {"error":{"code":"model_validation_failed","message":"Model response failed validation"}}
+  http_status=422
+
+Rendered copy
+- Connected fixture now uses approved codes, but Android-owned Korean observation/action/safety copy remains unchanged.
+- No rendered copy or layout changed, so visual QA was not re-triggered.

@@ -1,0 +1,194 @@
+{
+  "artifactType": "AdversarialVerify",
+  "task": "T7",
+  "plan": ".omo/plans/leftovers.md",
+  "reviewedAt": "2026-07-19T11:22:56.1144644+09:00",
+  "reviewedSha": "8174435c9eaa7af673962502e93699a236d0df22",
+  "verdict": "confirmed",
+  "confidence": 0.995,
+  "summary": "T7 is confirmed on exact SHA 8174435c9eaa7af673962502e93699a236d0df22. Backend and Android reject arbitrary model prose and unknown codes, every approved code maps to app-owned Korean copy, and hostile safety notes are canonicalized. Fresh backend, Android host, repeated device, full connected, targeted visual, and recovered Docker no-cache build/runtime health gates all passed.",
+  "integrity": {
+    "headAtStart": "8174435c9eaa7af673962502e93699a236d0df22",
+    "commitObject": "8174435c9eaa7af673962502e93699a236d0df22",
+    "headBeforeEvidenceWrite": "8174435c9eaa7af673962502e93699a236d0df22",
+    "branch": "feat/leftovers-mvp",
+    "trackedModifiedAtStart": [],
+    "stagedAtStart": [],
+    "trackedModifiedBeforeEvidenceWrite": [],
+    "fixDiff": "8174435 fix(cooking): reject unsafe photo safety claims; 6 files changed, 246 insertions, 16 deletions",
+    "executorEvidenceTreatment": "Existing untracked task-7 evidence was used only to recover command shapes. Every important safety, test, device, and visual claim was reproduced independently on the reviewed SHA."
+  },
+  "findings": [],
+  "dockerRecovery": {
+    "report": ".omo/evidence/leftovers/task-7-docker-engine-debug.txt",
+    "reportSha256": "0d27fe7c74aab1a4f65850698e2281ced8473b2ecaeaa440f561af0248ff45d2",
+    "reviewedSha": "8174435c9eaa7af673962502e93699a236d0df22",
+    "build": "pass: docker build --no-cache -f backend/Dockerfile -t leftovers-task7-backend-smoke:8174435 backend exited 0; image digest sha256:44dc20bcf7300921067ec32eaaf4ef79c498c5280c4bfc55b349eb9ab06740de",
+    "runtime": "pass: canonical image was running with restart count 0 and GET http://127.0.0.1:18087/health returned HTTP 200 with {\"status\":\"ok\"}; startup and HTTP logs were clean",
+    "independentValidation": "report hash/content matched; current HEAD and tracked clean state matched; recovered engine returned server 29.6.1; target container and image tag were absent; loopback port 18087 bind succeeded; Docker Desktop was returned to stopped state",
+    "lifecycleCaveat": "backend/Dockerfile uses shell-form behavior via JSON sh -c. Canonical docker stop command succeeds but application exit is 137 because the wrapper does not forward the stop signal; direct uvicorn PID1 exits 0. Startup and health acceptance remain valid; track this separately under T10/release hardening."
+  },
+  "safetyBoundary": {
+    "backend": {
+      "originalUnsafePayload": "rejected",
+      "englishSemanticRephrase": "rejected: This chicken can be eaten now / Eat it now",
+      "koreanEquivalent": "rejected: 이 닭고기는 지금 먹어도 됩니다 / 지금 드세요",
+      "arbitraryUnknownCodes": "rejected: surface_brownedish / verify_temperature_somehow",
+      "hostileSafetyNote": "accepted only with approved codes and replaced by canonical English safety guidance",
+      "allApprovedCodes": "all 5 CookingObservation and all 6 CookingAction enum values accepted"
+    },
+    "android": {
+      "method": "Independent external temporary Robolectric test source set; no product or repository test source was edited; temporary source was deleted after execution.",
+      "originalUnsafePayload": "rejected",
+      "englishSemanticRephrase": "rejected: This chicken can be eaten now / Eat it now",
+      "koreanEquivalent": "rejected: 이 닭고기는 지금 먹어도 됩니다 / 지금 드세요",
+      "arbitraryUnknownCodes": "rejected: surface_brownedish / verify_temperature_somehow",
+      "hostileSafetyNote": "replaced by app-owned Korean safety guidance",
+      "allApprovedCodes": "all 11 codes mapped exactly to nonblank app-owned Korean strings",
+      "result": "2 tests passed after a harness-only missing Robolectric runner was corrected"
+    },
+    "callTrace": [
+      "backend/app/models.py constrains observations and nextActions to StrEnum values and canonicalizes every nonblank safetyNote",
+      "the OpenAI adapter parses model output through CookingAdviceResponse before the HTTP response boundary",
+      "CookingAdviceJson.response performs exact map lookup, rejects the entire payload when any code is unknown, and discards server safety copy",
+      "CookingScreen AdviceCard receives and renders only decoded app-owned observation/action/safety strings",
+      "no regex/free-prose bypass and no alternate dynamic-string route to the advice UI were found"
+    ]
+  },
+  "commands": [
+    {
+      "command": "git rev-parse HEAD; git rev-parse 8174435...^{commit}; git status --short --untracked-files=no; inspect full fix diff and callers",
+      "result": "Exact SHA and commit object matched; no staged or modified tracked files; full 6-file fix and all relevant callers inspected",
+      "exitCode": 0
+    },
+    {
+      "command": "independent CookingAdviceResponse boundary probe",
+      "result": "Original unsafe, English rephrase, Korean equivalent, and unknown codes rejected; all approved codes accepted; hostile note canonicalized",
+      "exitCode": 0
+    },
+    {
+      "command": "backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_cooking_advice.py",
+      "result": "18 passed in 0.67s",
+      "exitCode": 0
+    },
+    {
+      "command": "backend/.venv/Scripts/python.exe -m pytest -q backend/tests",
+      "result": "53 passed in 0.83s",
+      "exitCode": 0
+    },
+    {
+      "command": "uvx ruff check backend",
+      "result": "All checks passed",
+      "exitCode": 0
+    },
+    {
+      "command": "Python programming skill check-no-excuse-rules.py backend",
+      "result": "no violations in 15 files",
+      "exitCode": 0
+    },
+    {
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1",
+      "result": "Secret scan passed; 172 files inspected",
+      "exitCode": 0
+    },
+    {
+      "command": "docker info/version/ps bounded startup probes",
+      "result": "Initial environment block: Docker engine HTTP 500 at API 1.54 and forced 1.45; superseded by the independently validated recovery report below",
+      "exitCode": 1
+    },
+    {
+      "command": "validate task-7-docker-engine-debug.txt, then independently start recovered engine, inspect scoped resources, bind port 18087, and stop Desktop",
+      "result": "Report SHA256 matched; exact-SHA no-cache build and canonical HTTP 200 health evidence accepted; target container/image absent; port free; Docker restored stopped",
+      "exitCode": 0
+    },
+    {
+      "command": "android/gradlew.bat :app:testDebugUnitTest --tests '*CookingSessionTest' --rerun-tasks --no-daemon",
+      "result": "BUILD SUCCESSFUL",
+      "exitCode": 0
+    },
+    {
+      "command": "android/gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin --rerun-tasks --no-daemon",
+      "result": "BUILD SUCCESSFUL; 112 tasks executed; unit XML 54 tests with 0 failures/errors/skips; lint gate passed with 10 update warnings and 0 errors",
+      "exitCode": 0
+    },
+    {
+      "command": "external temporary T7IndependentBoundaryTest via Gradle init source set",
+      "result": "2 passed; exact Android attack and approved-code matrices passed",
+      "exitCode": 0
+    },
+    {
+      "command": "CookingPhotoFlowTest connectedDebugAndroidTest --rerun-tasks (run 1)",
+      "result": "2/2 passed on SM-F711N Android 15",
+      "exitCode": 0
+    },
+    {
+      "command": "CookingPhotoFlowTest connectedDebugAndroidTest --rerun-tasks (run 2)",
+      "result": "2/2 passed on SM-F711N Android 15",
+      "exitCode": 0
+    },
+    {
+      "command": "android/gradlew.bat :app:connectedDebugAndroidTest --rerun-tasks --no-daemon",
+      "result": "17/17 passed on SM-F711N Android 15; XML 0 failures/errors/skips",
+      "exitCode": 0
+    },
+    {
+      "command": "canonical android/gradlew.bat :app:testDebugUnitTest --rerun-tasks --no-daemon after temporary source removal from build model",
+      "result": "54/54 passed; canonical XML restored",
+      "exitCode": 0
+    }
+  ],
+  "acceptanceCriteria": {
+    "structuredAdvice": "pass: fresh connected success rendered app-owned observation, next action, confidence 72%, and complete canonical safety guidance",
+    "validExternalCheckAdvice": "pass: approved center-temperature and continue/adjust codes remain usable",
+    "noAutomaticStepAdvance": "pass: connected test retained step 2 after advice and advanced only after explicit next; advice cleared at step 3",
+    "neverClaimDonenessOrSafetyFromImage": "pass: exact original unsafe payload, semantic rephrase, Korean equivalent, arbitrary prose, and unknown codes were independently rejected at both backend and Android boundaries",
+    "allApprovedCodesOwnedByApp": "pass: 5 observation and 6 action codes map to exact app-owned Korean copy",
+    "hostileSafetyNoteCannotRender": "pass: server/model note is replaced by canonical guidance at backend and Android boundaries",
+    "cancelResumeAndCleanup": "pass: focused/full unit and 17-test connected suites cover cancellation, one-request behavior, process/session persistence, and cache cleanup",
+    "dockerBuildRuntime": "pass: exact-SHA no-cache canonical backend image built successfully; canonical container returned HTTP 200 {\"status\":\"ok\"} with clean startup/HTTP logs; scoped resources were removed"
+  },
+  "visualQa": {
+    "method": "Targeted fresh capture inspection was used because git diff from 83ff348e to 8174435 for CookingScreen.kt was byte-empty and the rendered fixture strings map to the same app-owned Korean copy.",
+    "capture": "1080x2640 fresh SM-F711N success screen",
+    "result": "pass: no clipping, overlap, tofu, or broken Korean; observation, action, confidence, and complete safety note are readable; far-left Samsung Edge handle is an OS overlay",
+    "freshPngSha256": "75b1583518cc37e4bb448a886d666b1849bf156511504f403068ec6ef04338d2",
+    "freshHierarchySha256": "eef20772e2d680d5b1fff56f74c62b395026c92dc4804f0e40ef8eaad1b8c62d"
+  },
+  "artifactHashes": {
+    "debugApkSha256": "bc8dd8c850ea3dabbc777e0d44ad74c6d296d2058817af88638ae6969e03cc52",
+    "releaseUnsignedApkSha256": "88f58ca07a3037e6800413ec3d01a1a0e289298942cf5698bad85f28244ee21c",
+    "unitXmlBundleSha256": "05acd16e411d235bcf0d1e7f2700e8f0cb61d1b10ead89a36e492325d6cc4dba",
+    "connectedAggregateXmlSha256": "ef84e03dbebe5aa5838be30337bf854d8101a0718bcdd747ee1575f30a03be65"
+  },
+  "adversarialClasses": {
+    "malformed_input": "pass: malformed JSON, blank required fields, unsafe free prose, semantic rephrases, Korean equivalents, unknown codes, and hostile notes were exercised",
+    "prompt_injection": "pass: routing remains fixed and neither prompt-injected nor model-invented prose can cross the enum/map output boundary",
+    "cancel_resume": "pass: focused/full regressions and connected suite passed cancellation, one-request, cleanup, and persisted-session behavior",
+    "stale_state": "pass: step changes invalidate preparation, clear advice, and require explicit navigation",
+    "dirty_worktree": "pass: staged and modified tracked files were empty at start and before evidence write; evidence/temp artifacts were declared separately",
+    "hung_or_long_commands": "pass: initial Docker retries were bounded; recovery used one scoped cold start and completed; all Gradle/device commands completed within bounds",
+    "flaky_tests": "pass: CookingPhotoFlowTest passed two independent rerun-tasks invocations and again inside the full 17-test connected suite",
+    "misleading_success_output": "pass: HTTP/model boundaries, XML totals, exact decoder probes, fresh device screenshot, code ownership, Docker report hash/content, resource absence, and port availability were checked independently",
+    "repeated_interruptions": "pass: parent status requests were answered between bounded gates without changing the reviewed SHA or cancelling active verification"
+  },
+  "cleanup": {
+    "airplaneModeAfter": 0,
+    "networkRestored": "pass: fresh device ping to 8.8.8.8 received 1/1",
+    "deviceTask7DownloadFixturesRemaining": 0,
+    "deviceAppPackageRemaining": false,
+    "deviceTestPackageRemaining": false,
+    "gradleDaemonsStopped": true,
+    "adbServerStopped": true,
+    "dockerContainerRemaining": false,
+    "dockerImageTagRemaining": false,
+    "dockerDesktopStopped": true,
+    "listenersOnPorts18087_8080_8097": 0,
+    "temporaryLocalQaArtifactsRemaining": 0,
+    "trackedWorktreeCleanAfterCleanup": true
+  },
+  "residualRisks": [
+    "The shell-wrapped Dockerfile CMD makes canonical docker stop end with application exit 137; direct uvicorn PID1 exits 0. This does not contradict T7 startup/health acceptance and is a T10/release-hardening follow-up.",
+    "Successful advice UI used the reviewed debug fixture and MockWebServer rather than the future production Firebase/OpenAI deployment; real-cloud validation belongs to T11.",
+    "Device coverage is limited to SM-F711N on Android 15."
+  ]
+}

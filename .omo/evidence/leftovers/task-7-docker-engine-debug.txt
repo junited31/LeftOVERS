@@ -1,0 +1,79 @@
+Task 7 Docker Desktop engine debug and independent backend smoke
+Date: 2026-07-19 Asia/Seoul
+Target worktree: D:/workspace/develop/LeftOVERS-impl
+Target Git SHA: 8174435c9eaa7af673962502e93699a236d0df22 (rechecked before build)
+
+OUTCOME
+- Docker Desktop engine blocker recovered with one scoped cold start; no reset, prune, data deletion, global WSL shutdown, unrelated service restart, or persistent configuration change.
+- Docker environment/build/HTTP-health gate can move from BLOCKED to PASS for this exact SHA.
+- Separate canonical-image lifecycle caveat: health/startup pass, but `docker stop --timeout 10` forces exit 137 because the Dockerfile command is shell-wrapped. A direct-uvicorn PID1 runtime-only toggle exits 0 cleanly. No repository files were edited.
+
+INITIAL REPRODUCTION AND STATE
+- Fresh reproduction 1: `docker version` exit 1 and `docker ps` exit 1.
+- Fresh reproduction 2: `docker version` exit 1 and `docker ps` exit 1.
+- Both fresh reproductions occurred after the prior wedged Desktop instance had already transitioned to a clean stopped state, so their verbatim error was missing pipe rather than HTTP 500:
+  `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine ... The system cannot find the file specified.`
+- Client: Docker 29.6.1, API 1.55, context `desktop-linux`.
+- Context endpoint: `npipe:////./pipe/dockerDesktopLinuxEngine`.
+- `DOCKER_HOST`, `DOCKER_CONTEXT`, and `DOCKER_API_VERSION` were all unset.
+- No Docker named pipes or Docker processes existed. `com.docker.service` was Stopped/Manual. WSL `docker-desktop` was Stopped/v2. `docker desktop status` reported Desktop not running.
+
+PRIOR HTTP 500 EVIDENCE AND ROOT CAUSE
+- Docker host logs captured the earlier live failure repeatedly, so the HTTP 500 report is corroborated even though the instance was stopped before this debug pass began.
+- At 10:47:10+09:00 the API proxy created `dockerDesktopLinuxEngine`, but `HEAD /_ping` returned Internal Server Error from `context canceled` / `context deadline exceeded`.
+- WSL engine init `GET /ping` then timed out each second.
+- At 10:48:11+09:00 `wsl-bootstrap` logged:
+  `timeout waiting for previous bootstrap process`
+  `preparing environment: running pre-start cleanup: waiting for shutdown: context deadline exceeded`
+- `com.docker.build.log` independently recorded repeated HTTP 500 responses on `/v1.54/events` every 30 seconds from 10:48 through 10:56.
+- Root cause: Docker Desktop exposed its API named pipe while the WSL engine control API was unavailable because a previous WSL bootstrap had not completed shutdown. The proxy converted backend cancellation/deadline failures into HTTP 500. The API-version wording was downstream boilerplate, not the mechanism.
+
+HYPOTHESIS DISPOSITION
+- H1 client/server API negotiation mismatch: refuted. After recovery client and server are both 29.6.1/API 1.55; no API override existed.
+- H2 Docker Desktop WSL engine wedged/not ready: confirmed by timeout logs and recovery toggle.
+- H3 wrong context or stale endpoint configuration: refuted. `desktop-linux` targets the expected Desktop Linux pipe; it works unchanged after recovery.
+- H4 host resource/service failure: unsupported. The WSL engine reached running state after the scoped start without a service or resource change.
+
+RECOVERY TOGGLE
+- Minimal action: `docker desktop start` once from the confirmed clean stopped Desktop/WSL state; exit 0.
+- Within about four seconds logs changed from engine `stopped -> starting` to `starting -> running`; Docker API proxy reported serving requests.
+- Two consecutive post-recovery `docker version` calls exited 0 and returned the complete server section.
+- Two consecutive post-recovery `docker ps` calls exited 0.
+- Desktop status: running. WSL `docker-desktop`: Running/v2. `dockerDesktopLinuxEngine` pipe: present.
+- No HTTP 500 log entries appeared after recovery.
+
+EXACT-SHA BACKEND DOCKER BUILD
+- Canonical source: `backend/Dockerfile`, build context `backend`.
+- Fresh command: `docker build --no-cache -f backend/Dockerfile -t leftovers-task7-backend-smoke:8174435 backend`
+- Result: exit 0, BuildKit `FINISHED`.
+- First fresh image digest: `sha256:44dc20bcf7300921067ec32eaaf4ef79c498c5280c4bfc55b349eb9ab06740de`.
+- First fresh image size: 80202803 bytes.
+
+CANONICAL RUNTIME HEALTH SMOKE
+- Preflight: container/image names absent; host port 18087 had no listener.
+- Run used only placeholder test values for required application settings; no real secret was supplied or recorded.
+- Published only `127.0.0.1:18087 -> 8080`.
+- Canonical command observed:
+  `sh -c 'uvicorn app.main:app --host 0.0.0.0 --port ${PORT}'`
+- Container state before curl: running, restart count 0.
+- Curl command: `curl.exe --fail-with-body --silent --show-error --include http://127.0.0.1:18087/health`
+- Curl exit: 0.
+- Response:
+  `HTTP/1.1 200 OK`
+  `content-type: application/json`
+  `{"status":"ok"}`
+- Logs: Uvicorn server started, application startup completed, and both readiness/final health requests logged `200 OK`; no traceback was present.
+
+SILENT-FAILURE / EXIT CHECK
+- Canonical `docker stop --timeout 10` returned command exit 0, but the container ended with state `exited`, application exit code 137, restart count 0, and no Uvicorn shutdown log.
+- Runtime-only isolation toggle: the same image with direct `uvicorn` as PID1 answered health 200, then stopped with application exit code 0 and logged `Shutting down`, `Application shutdown complete`, and `Finished server process [1]`.
+- Interpretation: the image's `sh -c` wrapper does not forward Docker's stop signal to Uvicorn. This does not invalidate startup/health evidence, but it is not a clean lifecycle shutdown. It was not changed because this task authorized environment recovery only.
+
+CLEANUP AND FINAL STATE
+- Removed only container `leftovers-task7-backend-smoke` and image tag `leftovers-task7-backend-smoke:8174435` after canonical QA and again after the isolation toggle.
+- Container inspect: absent. Image inspect: absent. Filtered `docker ps`: empty.
+- Port 18087: no listener; explicit loopback bind test succeeded. Transient TIME_WAIT sockets may remain briefly and do not hold the port.
+- No global images, volumes, networks, caches, or containers were pruned.
+- No repository product/test files were edited and no commit was made.
+- Before restoring state, the final live checks showed client/server 29.6.1 API 1.55 on `desktop-linux` and `docker ps` exit 0.
+- `docker desktop stop` then exited 0 to restore the initial host state. Final Desktop/WSL/process/pipe checks confirm Docker Desktop stopped, `docker-desktop` stopped, and no Docker engine pipe remains. The verifier can repeat the single successful `docker desktop start` before using the recovered engine.

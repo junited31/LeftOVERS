@@ -1,0 +1,11 @@
+T7 visual-layout RED captured on SM-F711N before the production layout fix on 2026-07-19.
+
+Command:
+  android/gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.cooking.CookingPhotoFlowTest"
+
+Result:
+  2 tests, 2 failures; BUILD FAILED in 17s.
+  Safety note expected final line "시간과 온도를 확인하세요." but rendered only "확인하세요.".
+  Offline error expected final line "다시 시도해 주세요." but rendered only "주세요.".
+
+The failures reproduce the two blocking CJK wrap findings from the first independent visual review.

@@ -1,0 +1,18 @@
+T7 baseline captured before production edits on 2026-07-18.
+
+Android command:
+  android/gradlew.bat :app:testDebugUnitTest --tests '*RecipeSnapshotSaverTest' --tests '*PhotoLifecycleTest'
+Result:
+  BUILD SUCCESSFUL in 7s; 29 actionable tasks: 1 executed, 28 up-to-date.
+Observable baseline:
+  T6 immutable recipe snapshot save test passes.
+  T5 compression, ownership, stale sweep, camera cleanup, malformed/oversize handling tests pass.
+
+Environment note:
+  Initial invocation failed before task configuration because ANDROID_HOME was absent.
+  Re-run used the observed installed SDK <USER_HOME>/AppData/Local/Android/Sdk.
+
+Backend command attempted:
+  backend/.venv/Scripts/python.exe -m pytest -q backend/tests/test_cooking_advice.py
+Environment result:
+  backend/.venv was absent in this worktree; no product-code conclusion was drawn from that launcher failure.
