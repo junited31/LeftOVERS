@@ -11,7 +11,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -39,6 +38,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -92,18 +92,19 @@ class RecipeScreenTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("recipe-card").fetchSemanticsNodes().size == 3 }
 
         // Then
-        compose.onAllNodesWithTag("recipe-card").assertCountEquals(3)
+        val recipeCards = compose.onAllNodesWithTag("recipe-card")
+        recipeCards.assertCountEquals(3)
+        val cardContent = recipeCards.fetchSemanticsNodes().map(::semanticsText)
+        assertEquals(2, cardContent.count { "조리도구: 가스레인지" in it })
+        assertTrue(cardContent.all { content ->
+            listOf("추천 이유", "재료 활용 67%", "취향 일치 50%", "새로움 100%").all(content::contains)
+        })
+        assertEquals(1, cardContent.count { "유통기한 80%" in it })
+        assertEquals(2, cardContent.count { "유통기한 60%" in it })
         compose.onNodeWithText("Egg fried rice").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("사용 재료:\nRice 300 g\nEggs 2 개").performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("조리도구: 가스레인지")[0].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("추천 이유")[0].performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("부족한 재료: Salt 1 g").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Rice omelette").performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("추천 이유")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("재료 활용 67%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("유통기한 67%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("취향 일치 50%")[1].performScrollTo().assertIsDisplayed()
-        compose.onAllNodesWithText("새로움 100%")[1].performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("레시피").assertExists()
         captureRecipeEvidence()
         compose.onNodeWithTag("save-recipe-0").performScrollTo().performClick()

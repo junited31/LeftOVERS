@@ -94,8 +94,7 @@ class HistoryScreenTest {
         compose.onNodeWithText("김치볶음밥 newer").assertIsDisplayed()
 
         scenario?.recreate()
-        compose.onNodeWithTag("nav-history").performClick()
-        compose.onNodeWithTag("history-row-newer").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("history-detail").assertIsDisplayed()
 
         compose.onNodeWithTag("history-photo").assertIsDisplayed()
         scrollTo("평점 5 / 5")

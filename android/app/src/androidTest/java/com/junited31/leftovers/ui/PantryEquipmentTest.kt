@@ -8,13 +8,17 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.AnnotatedString
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -100,6 +104,32 @@ class PantryEquipmentTest {
 
         compose.onNodeWithText("Baby carrot").assertIsDisplayed()
         assertEquals(1, pantryRowCount())
+    }
+
+    @Test
+    fun unsavedPantryDraftAndScreenSurviveActivityRecreation() {
+        openAddForm()
+        compose.onNodeWithTag("name-input").performTextInput("Draft carrot")
+        compose.onNodeWithTag("quantity-input").performTextInput("2.5")
+
+        compose.activityRule.scenario.recreate()
+
+        compose.onNodeWithTag("name-input").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Draft carrot")),
+        )
+        compose.onNodeWithTag("quantity-input").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("2.5")),
+        )
+    }
+
+    @Test
+    fun pantryAndEquipmentTitlesExposeHeadingSemantics() {
+        compose.onNodeWithText("지금 사용할 수 있는 재료")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+
+        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithText("주방에 있는 조리도구를 선택해 주세요")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
 
     @Test

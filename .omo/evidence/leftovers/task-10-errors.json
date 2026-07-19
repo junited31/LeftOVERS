@@ -1,0 +1,82 @@
+{
+  "recipeEndpoint": "\/v1\/recipes\/generate",
+  "recipeResults": [
+    {
+      "status": 401,
+      "copy": "인증 정보를 확인할 수 없어요.",
+      "requestDelta": 1,
+      "automaticRetry": false
+    },
+    {
+      "status": 413,
+      "copy": "레시피 요청이 너무 커요.",
+      "requestDelta": 1,
+      "automaticRetry": false
+    },
+    {
+      "status": 422,
+      "copy": "서로 다른 세 가지 유효한 레시피를 만들지 못했어요.",
+      "requestDelta": 1,
+      "automaticRetry": false
+    },
+    {
+      "status": 429,
+      "copy": "오늘의 레시피 생성 횟수를 모두 사용했어요.",
+      "requestDelta": 1,
+      "automaticRetry": false
+    },
+    {
+      "status": 502,
+      "copy": "레시피 서비스에 연결할 수 없어요.",
+      "requestDelta": 1,
+      "automaticRetry": false
+    }
+  ],
+  "recipeDatabaseHashBefore": "85b68b2193f8e339a0b6498f7667bf9d20387985b3a59e5af3d7beceb3ecd9b7",
+  "recipeDatabaseHashAfter": "85b68b2193f8e339a0b6498f7667bf9d20387985b3a59e5af3d7beceb3ecd9b7",
+  "recipePhotoCacheHashBefore": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "recipePhotoCacheHashAfter": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "adviceEndpoint": "\/v1\/cooking\/advice",
+  "adviceResults": [
+    {
+      "status": 401,
+      "copy": "인증 정보를 확인할 수 없어요.",
+      "requestDelta": 1,
+      "automaticRetry": false,
+      "manualRetryOffered": true
+    },
+    {
+      "status": 413,
+      "copy": "사진을 처리할 수 없어요.",
+      "requestDelta": 1,
+      "automaticRetry": false,
+      "manualRetryOffered": false
+    },
+    {
+      "status": 422,
+      "copy": "조언 형식을 확인할 수 없어요.",
+      "requestDelta": 1,
+      "automaticRetry": false,
+      "manualRetryOffered": true
+    },
+    {
+      "status": 429,
+      "copy": "오늘의 사진 조언 횟수를 모두 사용했어요.",
+      "requestDelta": 1,
+      "automaticRetry": false,
+      "manualRetryOffered": false
+    },
+    {
+      "status": 502,
+      "copy": "네트워크 연결을 확인하고\n다시 시도해 주세요.",
+      "requestDelta": 1,
+      "automaticRetry": false,
+      "manualRetryOffered": true
+    }
+  ],
+  "adviceDatabaseHashBefore": "8a595e1de64ff80ceb073cd2c2617e7110a189cc8325946203686220c2730c0d",
+  "adviceDatabaseHashAfter": "8a595e1de64ff80ceb073cd2c2617e7110a189cc8325946203686220c2730c0d",
+  "advicePhotoCacheHashBefore": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "advicePhotoCacheHashAfter": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "localStateMutated": false
+}

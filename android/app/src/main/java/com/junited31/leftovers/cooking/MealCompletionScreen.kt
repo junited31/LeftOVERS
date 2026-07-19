@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,14 +74,14 @@ internal fun MealCompletionForm(
     val bindings = active.recipe.pantryBindings.values
     val pantryById = pantry.associateBy { it.id }
     val scope = rememberCoroutineScope()
-    var actualAmounts by remember(active.session.id) {
+    var actualAmounts by rememberSaveable(active.session.id) {
         mutableStateOf(bindings.map { formatAmount(it.proposedMilliUnits) })
     }
-    var adjustmentAmounts by remember(active.session.id) { mutableStateOf(List(bindings.size) { "" }) }
-    var adjustmentNotes by remember(active.session.id) { mutableStateOf(List(bindings.size) { "" }) }
-    var rating by remember(active.session.id) { mutableStateOf(3) }
-    var notes by remember(active.session.id) { mutableStateOf("") }
-    var recommendAgain by remember(active.session.id) { mutableStateOf(true) }
+    var adjustmentAmounts by rememberSaveable(active.session.id) { mutableStateOf(List(bindings.size) { "" }) }
+    var adjustmentNotes by rememberSaveable(active.session.id) { mutableStateOf(List(bindings.size) { "" }) }
+    var rating by rememberSaveable(active.session.id) { mutableStateOf(3) }
+    var notes by rememberSaveable(active.session.id) { mutableStateOf("") }
+    var recommendAgain by rememberSaveable(active.session.id) { mutableStateOf(true) }
     var finalPhoto by remember(active.session.id) { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var photoPreparing by remember(active.session.id) { mutableStateOf(false) }
     var submitting by remember(active.session.id) { mutableStateOf(false) }

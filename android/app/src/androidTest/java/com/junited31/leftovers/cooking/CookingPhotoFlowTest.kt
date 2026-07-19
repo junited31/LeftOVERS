@@ -7,14 +7,16 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
-import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.util.Xml
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -37,17 +39,26 @@ import com.junited31.leftovers.data.RecipeSteps
 import com.junited31.leftovers.network.LeftoversApi
 import com.junited31.leftovers.network.TokenProvider
 import com.junited31.leftovers.photo.PhotoContracts
+import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.runBlocking
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class CookingPhotoFlowTest {
@@ -158,6 +169,58 @@ class CookingPhotoFlowTest {
         context.contentResolver.delete(fixture, null, null)
     }
 
+    @Test
+    fun recreatingActivityCancelsInFlightAdviceAndClearsTransientPhotoWithoutReupload() {
+        val firstRequest = CountDownLatch(1)
+        val unexpectedSecondRequest = CountDownLatch(1)
+        val requestCount = AtomicInteger()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                if (requestCount.incrementAndGet() == 1) {
+                    firstRequest.countDown()
+                } else {
+                    unexpectedSecondRequest.countDown()
+                }
+                return MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)
+            }
+        }
+        val fixture = mediaStoreFixture()
+        val photos = PhotoLifecycle(context)
+
+        try {
+            scenario = ActivityScenario.launch(MainActivity::class.java)
+            compose.onNodeWithTag("nav-cooking").performClick()
+            application.photoPickerFixtureOverride = fixture
+            compose.onNodeWithTag("attach-gallery").performScrollTo().performClick()
+            compose.waitUntil(10_000) {
+                runCatching { compose.onNodeWithTag("request-advice").assertIsEnabled() }.isSuccess
+            }
+            compose.onNodeWithTag("request-advice").performScrollTo().performClick()
+            assertTrue(firstRequest.await(10, TimeUnit.SECONDS))
+            compose.onNodeWithText("사진을 한 번 전송해 확인하는 중…")
+                .performScrollTo().assertIsDisplayed()
+            assertTrue(photos.ownedCacheFiles().isNotEmpty())
+
+            scenario?.recreate()
+
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithTag("cooking-screen").fetchSemanticsNodes().size == 1
+            }
+            assertEquals(
+                0,
+                compose.onAllNodesWithText("사진을 한 번 전송해 확인하는 중…").fetchSemanticsNodes().size,
+            )
+            assertEquals(0, compose.onAllNodesWithText("사진이 준비됐어요.").fetchSemanticsNodes().size)
+            compose.onNodeWithTag("request-advice").performScrollTo().assertIsNotEnabled()
+            compose.waitUntil(10_000) { photos.ownedCacheFiles().isEmpty() }
+            assertFalse(unexpectedSecondRequest.await(1, TimeUnit.SECONDS))
+            assertEquals(1, requestCount.get())
+            assertEquals(1, server.requestCount)
+        } finally {
+            context.contentResolver.delete(fixture, null, null)
+        }
+    }
+
     private fun mediaStoreFixture() = checkNotNull(
         context.contentResolver.insert(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -173,26 +236,7 @@ class CookingPhotoFlowTest {
         context.contentResolver.openOutputStream(uri).use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, checkNotNull(it))
         }
-        copyToDownloads(uri, "task-7-cooking-fixture.png")
         bitmap.recycle()
-    }
-
-    private fun copyToDownloads(source: android.net.Uri, name: String) {
-        val output = checkNotNull(
-            context.contentResolver.insert(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, name)
-                    put(MediaStore.Downloads.MIME_TYPE, "image/png")
-                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                },
-            ),
-        )
-        context.contentResolver.openInputStream(source).use { input ->
-            context.contentResolver.openOutputStream(output).use { target ->
-                checkNotNull(input).copyTo(checkNotNull(target))
-            }
-        }
     }
 
     private fun captureEvidence() {

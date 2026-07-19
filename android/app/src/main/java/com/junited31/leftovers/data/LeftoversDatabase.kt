@@ -13,8 +13,8 @@ import androidx.room.TypeConverters
         CookSessionEntity::class,
         MealLogEntity::class,
     ],
-    version = 1,
-    exportSchema = false,
+    version = LeftoversDatabase.VERSION,
+    exportSchema = true,
 )
 @TypeConverters(JsonConverters::class)
 abstract class LeftoversDatabase : RoomDatabase() {
@@ -25,6 +25,7 @@ abstract class LeftoversDatabase : RoomDatabase() {
     abstract fun inventoryCompletionDao(): InventoryCompletionDao
 
     companion object {
+        const val VERSION = 1
         const val NAME = "leftovers.db"
 
         @Volatile

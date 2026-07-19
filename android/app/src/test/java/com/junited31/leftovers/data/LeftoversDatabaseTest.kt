@@ -82,6 +82,18 @@ class LeftoversDatabaseTest {
         )
     }
 
+    @Test
+    fun publishedSchemaVersionMatchesReopenedDatabase() {
+        val database = openDatabase()
+        val version = database.openHelper.readableDatabase.query("PRAGMA user_version").use { cursor ->
+            cursor.moveToFirst()
+            cursor.getInt(0)
+        }
+
+        assertEquals(LeftoversDatabase.VERSION, version)
+        database.close()
+    }
+
     private fun openDatabase() = Room.databaseBuilder(
         context,
         LeftoversDatabase::class.java,

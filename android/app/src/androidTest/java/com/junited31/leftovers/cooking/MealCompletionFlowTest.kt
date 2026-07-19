@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import android.os.ParcelFileDescriptor
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.text.AnnotatedString
 import androidx.room.Room
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -151,6 +153,27 @@ class MealCompletionFlowTest {
             "task-8-stale.txt",
             "result=StaleInventory\ninventoryMilliUnits=9000\nmealLogCount=0\ncachePhotoCount=0\nretainedPhotoCount=0\n",
         )
+    }
+
+    @Test
+    fun completionDraftSurvivesActivityRecreationWithoutSubmitting() {
+        launchCompletion()
+        compose.onNodeWithTag("actual-use-0").performTextReplacement("4.5")
+        compose.onNodeWithTag("rating-5").performClick()
+        compose.onNodeWithTag("meal-notes").performTextReplacement("Keep this draft")
+
+        scenario?.recreate()
+        compose.onNodeWithTag("nav-cooking").performClick()
+        compose.onNodeWithTag("completion-form").assertIsDisplayed()
+
+        compose.onNodeWithTag("actual-use-0").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("4.5")),
+        )
+        compose.onNodeWithTag("meal-notes").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Keep this draft")),
+        )
+        compose.onNodeWithTag("rating-5").assertIsSelected()
+        assertEquals(0, runBlocking { database.mealLogDao().count() })
     }
 
     private fun launchCompletion() {

@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -303,7 +304,7 @@ private fun PantryList(
         Text(
             text = "지금 사용할 수 있는 재료",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = 16.dp).semantics { heading() },
         )
         Button(
             onClick = onAdd,
@@ -314,7 +315,10 @@ private fun PantryList(
         if (pantryItems.isEmpty()) {
             Text("아직 등록한 재료가 없어요. 재료를 추가해 주세요.")
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 items(pantryItems, key = { it.id.value }) { item ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
@@ -353,17 +357,17 @@ private fun PantryForm(
     onCancel: () -> Unit,
     onSave: (PantryItemEntity) -> Unit,
 ) {
-    var name by remember(existingItem?.id) { mutableStateOf(existingItem?.name.orEmpty()) }
-    var quantity by remember(existingItem?.id) {
+    var name by rememberSaveable(existingItem?.id?.value) { mutableStateOf(existingItem?.name.orEmpty()) }
+    var quantity by rememberSaveable(existingItem?.id?.value) {
         mutableStateOf(existingItem?.let { formatQuantity(it.quantityMilliUnits) }.orEmpty())
     }
-    var unit by remember(existingItem?.id) { mutableStateOf(existingItem?.unit ?: PantryUnit.GRAM) }
-    var expiry by remember(existingItem?.id) {
+    var unit by rememberSaveable(existingItem?.id?.value) { mutableStateOf(existingItem?.unit ?: PantryUnit.GRAM) }
+    var expiry by rememberSaveable(existingItem?.id?.value) {
         mutableStateOf(existingItem?.expiryEpochDay?.let { LocalDate.ofEpochDay(it).toString() }.orEmpty())
     }
-    var nameError by remember { mutableStateOf(false) }
-    var quantityError by remember { mutableStateOf(false) }
-    var expiryError by remember { mutableStateOf(false) }
+    var nameError by rememberSaveable { mutableStateOf(false) }
+    var quantityError by rememberSaveable { mutableStateOf(false) }
+    var expiryError by rememberSaveable { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
@@ -473,7 +477,7 @@ private fun EquipmentChecklist(
             Text(
                 text = "주방에 있는 조리도구를 선택해 주세요",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 16.dp),
+                modifier = Modifier.padding(vertical = 16.dp).semantics { heading() },
             )
         }
         items(equipmentChoices, key = { it.id }) { equipment ->

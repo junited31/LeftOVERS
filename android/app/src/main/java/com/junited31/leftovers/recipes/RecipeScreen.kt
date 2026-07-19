@@ -20,6 +20,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
@@ -69,7 +73,11 @@ fun RecipeScreen(
             .padding(20.dp).testTag("recipe-screen"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("냉장고 재료로 만드는 세 가지 요리", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "냉장고 재료로 만드는 세 가지 요리",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         Text("선택한 조리도구로 만들 수 있는 완성된 조합만 보여드려요.")
         Button(
             onClick = {
@@ -99,7 +107,12 @@ fun RecipeScreen(
         when (val current = state) {
             RecipeUiState.Idle -> Text("재료와 조리도구를 준비한 뒤 레시피를 생성해 보세요.")
             RecipeUiState.Loading -> Text("다양성과 재료 활용도를 확인하는 중…")
-            is RecipeUiState.Error -> Text(current.message, color = MaterialTheme.colorScheme.error)
+            is RecipeUiState.Error -> Text(
+                current.message,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
+                    .testTag("recipe-error"),
+            )
             is RecipeUiState.Ready -> current.result.ranked.forEachIndexed { index, ranked ->
                 RecipeCard(ranked, pantryById, index) {
                     scope.launch {

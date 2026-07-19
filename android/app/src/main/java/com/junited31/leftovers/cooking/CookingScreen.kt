@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -87,8 +88,8 @@ fun CookingScreen(
     var attached by remember { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var cameraInput by remember { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var adviceCall by remember { mutableStateOf<PhotoAdviceCall?>(null) }
-    var showCompletion by remember { mutableStateOf(false) }
-    var completedMealId by remember { mutableStateOf<String?>(null) }
+    var showCompletion by rememberSaveable { mutableStateOf(false) }
+    var completedMealId by rememberSaveable { mutableStateOf<String?>(null) }
 
     fun changeStep(load: suspend () -> ActiveCookingSession?) {
         photoEpoch.invalidate()
@@ -305,7 +306,12 @@ fun CookingScreen(
             AdviceUiState.PreparingPhoto -> Text("사진을 준비하는 중…")
             AdviceUiState.Loading -> Text("사진을 한 번 전송해 확인하는 중…")
             is AdviceUiState.Error -> {
-                Text(adviceState.message, color = MaterialTheme.colorScheme.error)
+                Text(
+                    adviceState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
+                        .testTag("advice-error"),
+                )
                 if (adviceState.retryable) {
                     Button(onClick = ::pickPhoto, modifier = Modifier.testTag("retry-advice")) {
                         Text("사진 다시 선택해 재시도")
