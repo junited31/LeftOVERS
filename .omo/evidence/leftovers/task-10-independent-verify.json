@@ -1,0 +1,54 @@
+{
+  "task": "T10",
+  "verdict": "confirmed",
+  "confidence": 0.99,
+  "verifiedAt": "2026-07-20T06:13:36+09:00",
+  "commands": {
+    "androidUnit": "77 tests, 0 failures, 0 errors, 0 skipped",
+    "androidConnected": "SM-F711N Android 15 API 35: two consecutive final-tree runs of 30 tests, all passed",
+    "lint": "0 errors, 11 warnings",
+    "dependencies": "app dependencies and debugRuntimeClasspath dependencyInsight resolved successfully",
+    "secretScan": "212 files inspected",
+    "diffCheck": "passed"
+  },
+  "repairs": [
+    {
+      "finding": "Advice typed errors lacked an assertive live region, the fresh connected gate was red, and the screenshot evidence was stale.",
+      "resolution": "Recipe and advice errors use stable tagged assertive live regions, the E2E waits for published semantics while retaining request and hash assertions, an in-flight recreation latch proves cancellation and cleanup, and device evidence is pulled from the final passing run."
+    },
+    {
+      "finding": "Viewport-sensitive ordinal recipe assertions and a response-state race made the full connected gate unstable.",
+      "resolution": "Recipe-card semantics are verified order-independently, the shared error assertion waits deterministically, and an unused fixed-name Downloads fixture helper was removed."
+    }
+  ],
+  "artifacts": {
+    "e2eScreenshot": ".omo/evidence/leftovers/task-10-e2e.png",
+    "e2eScreenshotSha256": "fb36a844f98a3ffba920a18bf0bb2e78733a41ed9a3ad6a0e768def375ae8c10",
+    "errorMatrix": ".omo/evidence/leftovers/task-10-errors.json",
+    "errorMatrixSha256": "391d233cf1e8716fb7628ee931ce6dbe425d17e8045e2647a84cb24a5b561dbe",
+    "connectedXmlSha256": "66f71a5a3f12caaaa9c27e3f7165f399a6e1c5bcfbbfd64a2989e5cf72c1295d",
+    "releaseApkSha256": "f61fd50c4a295c6d43d9e4439f88bd4b1522be4ece34e45578235ca0a69957f5",
+    "roomSchemaSha256": "89cd3eb32a260d928e4c8eb45224d6bf52e0bb0b3bd42dabbfa25f88ee4bb52e"
+  },
+  "adversarialClasses": {
+    "malformedInput": "pass: recipe and advice typed error matrices cover 401, 413, 422, 429, and 502",
+    "cancelResume": "pass: recreation cancels in-flight advice, removes managed photo state and cache, and causes no second request",
+    "staleState": "pass: all error rows preserve database and photo-cache hashes",
+    "dirtyWorktree": "pass: only T10 product, test, evidence, and workflow records are present",
+    "hungOrLongCommands": "pass: bounded device gates completed",
+    "flakyTests": "pass after stable semantics and fixture cleanup; two consecutive final-tree connected runs passed",
+    "misleadingSuccessOutput": "pass: fresh XML, original PNG pixels, JSON invariants, release artifact, and hashes were independently inspected",
+    "repeatedInterruptions": "pass: resumed evidence was revalidated rather than assumed"
+  },
+  "releaseBoundary": {
+    "application": "com.junited31.leftovers.LeftoversApplication",
+    "debugHookMatches": 0,
+    "onlyReceiver": "androidx.profileinstaller.ProfileInstallReceiver"
+  },
+  "minorRisks": [
+    "Physical-device coverage is limited to one SM-F711N running Android 15/API 35.",
+    "Lint retains 11 non-blocking warnings.",
+    "Gradle's aggregate metadata report can show a metadata-only ui-test-manifest FAILED marker even though runtime dependency resolution, builds, and tests succeed.",
+    "Only the latest full-run connected XML is retained; the immediately preceding 30/30 run was observed in authentic output before being overwritten."
+  ]
+}

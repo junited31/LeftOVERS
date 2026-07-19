@@ -139,7 +139,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - seed two completed meals, restart offline, open newest detail, capture timeline/detail, evidence `task-9-history.png`; failure - delete the referenced test photo outside the app, PASS when fallback renders without crash or DB rewrite, evidence `task-9-missing-photo.xml`.
   Commit: Y | `feat(history): show completed cooking records`
 
-- [ ] 10. Harden full Android behavior, accessibility, offline states, and release boundaries
+- [x] 10. Harden full Android behavior, accessibility, offline states, and release boundaries
   What to do / Must NOT do: Add content descriptions/semantics, short-screen scrolling, state restoration, typed error copy, debug-vs-release source-set checks, database migration/version tests, dependency/security scan, and one focused E2E with fake backend. Do not broaden product scope or add generic design-system/framework layers.
   Parallelization: Wave 3 | Blocked by: T4-T9 | Blocks: T11,T12
   References: all draft components/scope; `.omo/drafts/leftovers.md:16-21,66-92`.
