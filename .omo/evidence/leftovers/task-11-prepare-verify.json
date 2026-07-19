@@ -1,0 +1,43 @@
+{
+  "task": "T11-prepare",
+  "verdict": "confirmed-prepare",
+  "confidence": 0.99,
+  "verifiedAt": "2026-07-20T06:55:09+09:00",
+  "externalWrites": 0,
+  "commands": {
+    "cloudHarness": "passed all guarded bootstrap, deploy, restriction, preflight, and idempotency fixtures",
+    "secretScan": "229 files inspected",
+    "backend": "66 passed",
+    "android": "77 tests passed; lint 0 errors; debug, release, and AndroidTest compilation passed",
+    "docker": "no-cache backend image build passed and image was removed",
+    "signingReport": "debug variant SHA-1 extracted without printing the full value",
+    "diffCheck": "passed"
+  },
+  "guards": {
+    "bootstrap": "exact active project, exact target describe, trimmed case-insensitive billing true, then mutations",
+    "deploy": "exact active project, exact target describe, trimmed case-insensitive billing true, then deploy and preflights",
+    "billingFalseOutput": "gcloud billing projects link leftovers-019f706b --billing-account=<CALLER_SUPPLIED_ID>",
+    "projectSelection": "fail closed; no automatic project creation or active-project switch",
+    "keyRestriction": "exact Android package plus debug SHA-1 and exact identitytoolkit/securetoken API set",
+    "secretHandling": "file-based inputs, no value echo, and missing enabled versions heal on rerun"
+  },
+  "preflights": [
+    "HTTPS Cloud Run health returns 200",
+    "invalid token returns 401",
+    "authenticated gpt-5.6 Structured Outputs response validates against RecipeGenerateResponse",
+    "authenticated synthetic PNG response validates against CookingAdviceResponse"
+  ],
+  "blockedOn": [
+    "Google Cloud CLI installation",
+    "manual target project creation and active selection",
+    "caller-selected billing account link if billing is disabled",
+    "Firebase API key resource ID",
+    "file-based OPENAI_API_KEY and QUOTA_HASH_KEY values",
+    "Firebase ID token and request fixtures",
+    "action-time approval for bootstrap and deploy execution"
+  ],
+  "minorRisks": [
+    "local.properties is rewritten as ASCII, which could corrupt a future non-ASCII SDK path; the current host path is ASCII.",
+    "Live Firebase, Cloud Run, GPT, quota, and device verification remain pending by design."
+  ]
+}
