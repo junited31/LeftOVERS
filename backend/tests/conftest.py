@@ -168,8 +168,8 @@ def valid_advice_json() -> str:
     return json.dumps(
         {
             "status": "continue",
-            "observations": ["The surface is lightly browned"],
-            "nextActions": ["Check the center temperature"],
+            "observations": ["surface_browned"],
+            "nextActions": ["check_center_temperature"],
             "confidence": 0.72,
             "safetyNote": "A photo cannot confirm doneness or food safety; verify time and temperature.",
         }

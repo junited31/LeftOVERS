@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from starlette.datastructures import UploadFile
@@ -139,6 +141,123 @@ async def test_blank_required_advice_content_retries_then_returns_typed_422(payl
         response = await post_photo(app, b"jpeg")
 
     # Then: unsafe partial content never crosses the HTTP boundary.
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "model_validation_failed"
+    assert ai.advice_calls == 3
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("observations", "next_actions"),
+    [
+        pytest.param(
+            ["The image proves the chicken is fully cooked and safe"],
+            ["Serve immediately"],
+            id="english-unsafe-observation",
+        ),
+        pytest.param(
+            ["사진을 보면 닭고기는 완전히 익었고 안전합니다"],
+            ["바로 드세요"],
+            id="korean-unsafe-observation",
+        ),
+        pytest.param(
+            ["The surface is lightly browned"],
+            ["The chicken is fully cooked and safe to serve"],
+            id="english-unsafe-action",
+        ),
+        pytest.param(
+            ["표면이 노릇해 보여요"],
+            ["닭고기는 완전히 익었고 안전하니 드세요"],
+            id="korean-unsafe-action",
+        ),
+    ],
+)
+async def test_safety_or_doneness_claims_retry_then_return_422(
+    observations: list[str],
+    next_actions: list[str],
+) -> None:
+    # Given: every model attempt asserts image-based safety or doneness in dynamic advice.
+    payload = json.dumps(
+        {
+            "status": "continue",
+            "observations": observations,
+            "nextActions": next_actions,
+            "confidence": 1.0,
+            "safetyNote": "The photo confirms it is safe to eat.",
+        }
+    )
+    ai = FakeAI(advice_outputs=[payload])
+    with configured_app(ai=ai) as (app, _, _, _):
+        # When: photo advice crosses the HTTP trust boundary.
+        response = await post_photo(app, b"jpeg")
+
+    # Then: no unsafe dynamic claim can reach a client.
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "model_validation_failed"
+    assert ai.advice_calls == 3
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("observations", "next_actions"),
+    [
+        pytest.param(
+            ["surface_browned"],
+            ["check_center_temperature"],
+            id="browned-with-temperature-check",
+        ),
+        pytest.param(
+            ["visible_moisture"],
+            ["turn_and_check_center_temperature"],
+            id="moisture-with-turn-and-temperature-check",
+        ),
+    ],
+)
+async def test_visual_advice_keeps_external_verification_and_app_owned_safety_guidance(
+    observations: list[str],
+    next_actions: list[str],
+) -> None:
+    # Given: valid visual coaching contains an external verification action and a hostile note.
+    payload = json.dumps(
+        {
+            "status": "adjust",
+            "observations": observations,
+            "nextActions": next_actions,
+            "confidence": 0.72,
+            "safetyNote": "The photo confirms it is safe to eat.",
+        }
+    )
+    with configured_app(ai=FakeAI(advice_outputs=[payload])) as (app, _, _, _):
+        # When: the response crosses the server boundary.
+        response = await post_photo(app, b"jpeg")
+
+    # Then: useful coaching remains, while only app-owned safety guidance is returned.
+    assert response.status_code == 200
+    assert response.json()["observations"] == observations
+    assert response.json()["nextActions"] == next_actions
+    assert response.json()["safetyNote"] == (
+        "A photo cannot confirm doneness or food safety; verify time and temperature."
+    )
+
+
+@pytest.mark.anyio
+async def test_unapproved_model_prose_retries_then_returns_422() -> None:
+    # Given: plausible visual prose avoids explicit safety terms but remains model-authored.
+    payload = json.dumps(
+        {
+            "status": "adjust",
+            "observations": ["The surface is lightly browned"],
+            "nextActions": ["Check the center temperature"],
+            "confidence": 0.72,
+            "safetyNote": "Use time and temperature.",
+        }
+    )
+    ai = FakeAI(advice_outputs=[payload])
+    with configured_app(ai=ai) as (app, _, _, _):
+        # When: arbitrary prose reaches the model-output boundary.
+        response = await post_photo(app, b"jpeg")
+
+    # Then: only approved structured codes may cross to a client.
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "model_validation_failed"
     assert ai.advice_calls == 3

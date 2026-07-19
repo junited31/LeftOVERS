@@ -250,6 +250,6 @@ class CookingPhotoFlowTest {
     }
 
     private fun validAdvice() = """
-        {"status":"adjust","observations":["표면이 노릇해졌어요"],"nextActions":["뒤집고 중심 온도를 확인하세요"],"confidence":0.72,"safetyNote":"사진만으로 익음과 안전을 확인할 수 없어요. 시간과 온도를 확인하세요."}
+        {"status":"adjust","observations":["surface_browned"],"nextActions":["turn_and_check_center_temperature"],"confidence":0.72,"safetyNote":"사진만으로 익음과 안전을 확인할 수 없어요. 시간과 온도를 확인하세요."}
     """.trimIndent()
 }

@@ -4,13 +4,23 @@ import hashlib
 import unicodedata
 from datetime import date
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Final, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+)
 
 
 AdviceText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1_000)]
+COOKING_SAFETY_GUIDANCE: Final = (
+    "A photo cannot confirm doneness or food safety; verify time and temperature."
+)
 
 
 class ApiModel(BaseModel):
@@ -81,12 +91,34 @@ class AdviceContext(ApiModel):
     notes: str | None = Field(default=None, max_length=4_000)
 
 
+class CookingObservation(StrEnum):
+    SURFACE_BROWNED = "surface_browned"
+    SURFACE_PALE = "surface_pale"
+    VISIBLE_MOISTURE = "visible_moisture"
+    VISIBLE_SMOKE = "visible_smoke"
+    UNEVEN_BROWNING = "uneven_browning"
+
+
+class CookingAction(StrEnum):
+    CHECK_CENTER_TEMPERATURE = "check_center_temperature"
+    TURN_AND_CHECK_CENTER_TEMPERATURE = "turn_and_check_center_temperature"
+    TURN_OR_STIR = "turn_or_stir"
+    LOWER_HEAT = "lower_heat"
+    CONTINUE_COOKING = "continue_cooking"
+    TURN_OFF_HEAT = "turn_off_heat"
+
+
 class CookingAdviceResponse(ApiModel):
     status: Literal["continue", "adjust", "stop"]
-    observations: tuple[AdviceText, ...] = Field(min_length=1, max_length=12)
-    next_actions: tuple[AdviceText, ...] = Field(alias="nextActions", min_length=1, max_length=12)
+    observations: tuple[CookingObservation, ...] = Field(min_length=1, max_length=12)
+    next_actions: tuple[CookingAction, ...] = Field(alias="nextActions", min_length=1, max_length=12)
     confidence: float = Field(ge=0, le=1)
     safety_note: AdviceText = Field(alias="safetyNote")
+
+    @field_validator("safety_note")
+    @classmethod
+    def replace_model_safety_note(cls, _: str) -> str:
+        return COOKING_SAFETY_GUIDANCE
 
 
 class ErrorDetail(ApiModel):

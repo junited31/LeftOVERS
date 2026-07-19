@@ -110,8 +110,65 @@ class CookingSessionTest {
         )
         assertEquals(
             CookingAdviceDecodeResult.Invalid,
-            CookingAdviceJson.response(validAdvice().replace("표면이 노릇해요", "")),
+            CookingAdviceJson.response(validAdvice().replace("surface_browned", "")),
         )
+    }
+
+    @Test
+    fun safety_or_doneness_claims_are_invalid_before_ui_rendering() {
+        // Given: English and Korean dynamic fields claim the photo proves safety or doneness.
+        val unsafeAdvice = listOf(
+            """
+                {"status":"continue","observations":["The image proves the chicken is fully cooked and safe"],"nextActions":["Serve immediately"],"confidence":1.0,"safetyNote":"The photo confirms it is safe to eat."}
+            """.trimIndent(),
+            """
+                {"status":"continue","observations":["사진을 보면 닭고기는 완전히 익었고 안전합니다"],"nextActions":["바로 드세요"],"confidence":1.0,"safetyNote":"사진으로 안전함을 확인했습니다."}
+            """.trimIndent(),
+            """
+                {"status":"continue","observations":["표면이 노릇해 보여요"],"nextActions":["닭고기는 완전히 익었고 안전하니 드세요"],"confidence":1.0,"safetyNote":"사진으로 안전함을 확인했습니다."}
+            """.trimIndent(),
+        )
+
+        // When / Then: each response is rejected by the decoder seam.
+        unsafeAdvice.forEach { payload ->
+            assertEquals(CookingAdviceDecodeResult.Invalid, CookingAdviceJson.response(payload))
+        }
+    }
+
+    @Test
+    fun external_verification_stays_valid_and_server_note_cannot_control_safety_copy() {
+        // Given: approved visual and verification codes carry hostile server notes.
+        val validAdvice = listOf(
+            """
+                {"status":"adjust","observations":["surface_browned"],"nextActions":["check_center_temperature"],"confidence":0.72,"safetyNote":"The photo confirms it is safe to eat."}
+            """.trimIndent(),
+            """
+                {"status":"adjust","observations":["visible_moisture"],"nextActions":["turn_and_check_center_temperature"],"confidence":0.72,"safetyNote":"사진으로 안전함을 확인했습니다."}
+            """.trimIndent(),
+        )
+
+        // When / Then: useful advice survives, but rendered safety guidance is app-owned.
+        validAdvice.forEachIndexed { index, payload ->
+            val decoded = CookingAdviceJson.response(payload)
+            assertTrue(decoded is CookingAdviceDecodeResult.Success)
+            val advice = (decoded as CookingAdviceDecodeResult.Success).advice
+            assertEquals(
+                "사진만으로 익음과 안전을 확인할 수 없어요. 시간과 온도를 확인하세요.",
+                advice.safetyNote,
+            )
+            if (index == 0) assertEquals(listOf("표면이 노릇해졌어요"), advice.observations)
+        }
+    }
+
+    @Test
+    fun unapproved_model_prose_is_invalid_before_ui_rendering() {
+        // Given: plausible visual prose avoids explicit safety and doneness terms.
+        val payload = """
+            {"status":"adjust","observations":["The surface is lightly browned"],"nextActions":["Check the center temperature"],"confidence":0.72,"safetyNote":"Use time and temperature."}
+        """.trimIndent()
+
+        // When / Then: arbitrary model prose cannot become UI copy.
+        assertEquals(CookingAdviceDecodeResult.Invalid, CookingAdviceJson.response(payload))
     }
 
     @Test
@@ -198,6 +255,6 @@ class CookingSessionTest {
     }
 
     private fun validAdvice() = """
-        {"status":"adjust","observations":["표면이 노릇해요"],"nextActions":["중심 온도를 확인하세요"],"confidence":0.72,"safetyNote":"사진만으로 익음이나 식품 안전을 확인할 수 없어요. 시간과 온도를 확인하세요."}
+        {"status":"adjust","observations":["surface_browned"],"nextActions":["check_center_temperature"],"confidence":0.72,"safetyNote":"사진만으로 익음이나 식품 안전을 확인할 수 없어요. 시간과 온도를 확인하세요."}
     """.trimIndent()
 }
