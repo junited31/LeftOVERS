@@ -4,10 +4,13 @@ import hashlib
 import unicodedata
 from datetime import date
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+
+
+AdviceText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1_000)]
 
 
 class ApiModel(BaseModel):
@@ -80,10 +83,10 @@ class AdviceContext(ApiModel):
 
 class CookingAdviceResponse(ApiModel):
     status: Literal["continue", "adjust", "stop"]
-    observations: tuple[str, ...] = Field(min_length=1, max_length=12)
-    next_actions: tuple[str, ...] = Field(alias="nextActions", min_length=1, max_length=12)
+    observations: tuple[AdviceText, ...] = Field(min_length=1, max_length=12)
+    next_actions: tuple[AdviceText, ...] = Field(alias="nextActions", min_length=1, max_length=12)
     confidence: float = Field(ge=0, le=1)
-    safety_note: str = Field(alias="safetyNote", min_length=1, max_length=1_000)
+    safety_note: AdviceText = Field(alias="safetyNote")
 
 
 class ErrorDetail(ApiModel):

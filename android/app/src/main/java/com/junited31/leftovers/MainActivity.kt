@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Kitchen
 import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.outlined.SoupKitchen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,10 @@ import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
 import com.junited31.leftovers.data.QuantityParser
 import com.junited31.leftovers.data.leftoversDataStore
+import com.junited31.leftovers.cooking.CookingScreen
+import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.recipes.RecipeScreen
+import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -76,16 +80,19 @@ class MainActivity : ComponentActivity() {
         val recipeApiProvider = { (application as LeftoversApplication).createRecipeApi() }
         setContent {
             LeftoversApp(
+                applicationContext,
                 database.pantryDao(),
                 database.recipeSnapshotDao(),
+                database.cookSessionDao(),
                 applicationContext.leftoversDataStore,
                 recipeApiProvider,
+                (application as LeftoversApplication)::consumePhotoPickerFixture,
             )
         }
     }
 }
 
-private enum class AppScreen { PANTRY, RECIPES, EQUIPMENT }
+private enum class AppScreen { PANTRY, RECIPES, COOKING, EQUIPMENT }
 
 private data class EquipmentChoice(val id: String, val label: String)
 
@@ -104,10 +111,13 @@ private val equipmentChoices = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LeftoversApp(
+    context: android.content.Context,
     pantryDao: PantryDao,
     snapshotDao: com.junited31.leftovers.data.RecipeSnapshotDao,
+    cookSessionDao: com.junited31.leftovers.data.CookSessionDao,
     dataStore: DataStore<Preferences>,
     recipeApiProvider: () -> com.junited31.leftovers.network.LeftoversApi,
+    pickerFixture: () -> android.net.Uri?,
 ) {
     val pantryItems by pantryDao.observeAll().collectAsState(initial = emptyList())
     val preferences by dataStore.data.collectAsState(initial = null)
@@ -147,6 +157,18 @@ private fun LeftoversApp(
                         label = { Text("레시피") },
                         modifier = Modifier.testTag("nav-recipes").semantics {
                             contentDescription = "레시피"
+                        },
+                    )
+                    NavigationBarItem(
+                        selected = screen == AppScreen.COOKING,
+                        onClick = {
+                            screen = AppScreen.COOKING
+                            showForm = false
+                        },
+                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = "요리") },
+                        label = { Text("요리") },
+                        modifier = Modifier.testTag("nav-cooking").semantics {
+                            contentDescription = "요리"
                         },
                     )
                     NavigationBarItem(
@@ -196,9 +218,20 @@ private fun LeftoversApp(
                         equipment = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
                         api = recipeApi,
                         snapshotDao = snapshotDao,
+                        cookSessionDao = cookSessionDao,
+                        onCookingStarted = { screen = AppScreen.COOKING },
                         modifier = Modifier.padding(padding),
                     )
                 } ?: Text("레시피를 불러오는 중…", modifier = Modifier.padding(padding).padding(20.dp))
+                screen == AppScreen.COOKING -> {
+                    CookingScreen(
+                        store = remember { CookingSessionStore(snapshotDao, cookSessionDao) },
+                        apiProvider = recipeApiProvider,
+                        photos = remember(context) { PhotoLifecycle(context) },
+                        pickerFixture = pickerFixture,
+                        modifier = Modifier.padding(padding),
+                    )
+                }
                 else -> preferences?.let { loadedPreferences ->
                     EquipmentChecklist(
                         selected = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
@@ -224,6 +257,7 @@ private val AppScreen.title: String
     get() = when (this) {
         AppScreen.PANTRY -> "식재료"
         AppScreen.RECIPES -> "레시피"
+        AppScreen.COOKING -> "요리"
         AppScreen.EQUIPMENT -> "조리도구"
     }
 

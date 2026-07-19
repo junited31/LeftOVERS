@@ -51,6 +51,15 @@ interface CookSessionDao {
 
     @Query("SELECT * FROM cook_sessions WHERE id = :id")
     suspend fun get(id: String): CookSessionEntity?
+
+    @Query("SELECT * FROM cook_sessions WHERE completedAtEpochMillis IS NULL ORDER BY startedAtEpochMillis DESC, id DESC LIMIT 1")
+    suspend fun active(): CookSessionEntity?
+
+    @Query("SELECT * FROM cook_sessions WHERE completedAtEpochMillis IS NULL ORDER BY startedAtEpochMillis DESC, id DESC LIMIT 1")
+    fun observeActive(): Flow<CookSessionEntity?>
+
+    @Query("UPDATE cook_sessions SET currentStepIndex = :stepIndex WHERE id = :id AND completedAtEpochMillis IS NULL")
+    suspend fun updateStep(id: String, stepIndex: Int): Int
 }
 
 @Dao

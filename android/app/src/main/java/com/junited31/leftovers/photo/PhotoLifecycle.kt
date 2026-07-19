@@ -47,6 +47,8 @@ class PhotoLifecycle(private val context: Context) {
 
     fun createManagedPhoto(): ManagedPhoto = ManagedPhoto.create(this)
 
+    fun discard(photo: ManagedPhoto) = photo.delete()
+
     fun fileProviderUri(photo: ManagedPhoto): Uri = FileProvider.getUriForFile(
         context,
         "${context.packageName}.fileprovider",

@@ -8,7 +8,12 @@ from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, ValidationError
 
 from .models import CookingAdviceResponse, RecipeGenerateResponse
-from .prompts import ADVICE_INSTRUCTIONS, RECIPE_INSTRUCTIONS
+from .prompts import (
+    ADVICE_CONTEXT_END,
+    ADVICE_CONTEXT_START,
+    ADVICE_INSTRUCTIONS,
+    RECIPE_INSTRUCTIONS,
+)
 
 MODEL: Literal["gpt-5.6"] = "gpt-5.6"
 
@@ -103,7 +108,7 @@ class GPT56Adapter:
                 model=MODEL,
                 store=False,
                 instructions=ADVICE_INSTRUCTIONS,
-                user_data=request_json,
+                user_data=f"{ADVICE_CONTEXT_START}\n{request_json}\n{ADVICE_CONTEXT_END}",
                 schema_name="cooking_advice",
                 response_model=CookingAdviceResponse,
                 image=photo,

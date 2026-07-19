@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.RecipeSnapshotDao
+import com.junited31.leftovers.data.CookSessionDao
+import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import java.util.UUID
 
 private sealed interface RecipeUiState {
     data object Idle : RecipeUiState
@@ -48,10 +51,13 @@ fun RecipeScreen(
     equipment: Set<String>,
     api: LeftoversApi,
     snapshotDao: RecipeSnapshotDao,
+    cookSessionDao: CookSessionDao,
+    onCookingStarted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     val saver = remember(snapshotDao) { RecipeSnapshotSaver(snapshotDao) }
+    val cooking = remember(snapshotDao, cookSessionDao) { CookingSessionStore(snapshotDao, cookSessionDao) }
     var state by remember { mutableStateOf<RecipeUiState>(RecipeUiState.Idle) }
     var savedTitle by remember { mutableStateOf<String?>(null) }
     val pantryById = remember(pantry) { pantry.associateBy { it.id } }
@@ -89,8 +95,16 @@ fun RecipeScreen(
             is RecipeUiState.Ready -> current.result.ranked.forEachIndexed { index, ranked ->
                 RecipeCard(ranked, pantryById, index) {
                     scope.launch {
-                        if (saver.save(current.result, ranked.id, System.currentTimeMillis())) {
+                        val saved = saver.save(current.result, ranked.id, System.currentTimeMillis()) ||
+                            snapshotDao.get(ranked.id) != null
+                        if (saved) {
                             savedTitle = ranked.candidate.title
+                            cooking.start(
+                                ranked.id,
+                                UUID.randomUUID().toString(),
+                                System.currentTimeMillis(),
+                            )
+                            onCookingStarted()
                         }
                     }
                 }
@@ -163,7 +177,7 @@ private fun RecipeCard(
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().testTag("save-recipe-$index"),
-            ) { Text("레시피 저장") }
+            ) { Text("저장하고 요리 시작") }
         }
     }
 }
