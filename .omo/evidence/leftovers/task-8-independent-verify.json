@@ -1,0 +1,40 @@
+{
+  "task": "T8",
+  "verdict": "confirmed",
+  "confidence": 0.99,
+  "verifiedAt": "2026-07-19T14:00:00+09:00",
+  "commands": {
+    "androidFocused": "BUILD SUCCESSFUL",
+    "androidFull": "68 tests, 0 failures, 0 errors, 0 skipped; lint 0 errors; assemble and androidTest compilation passed",
+    "connected": "SM-F711N Android 15: 2 tests, 0 failures, 0 errors, 0 skipped",
+    "backend": "66 passed",
+    "secretScan": "189 files inspected",
+    "diffCheck": "passed"
+  },
+  "repair": {
+    "finding": "Android emitted an empty optional measurement-hint note that the backend rejected",
+    "resolution": "Android omits blank or whitespace-only note keys while preserving nonblank notes",
+    "reproduction": "Android-equivalent no-note request returned HTTP 200 with one model call and three recipes"
+  },
+  "artifacts": {
+    "feedback": ".omo/evidence/leftovers/task-8-feedback.json",
+    "stale": ".omo/evidence/leftovers/task-8-stale.txt",
+    "formScreenshotSha256": "04498F0797E330FEF8F769072FE97A8E3782150780B20B64D01CFCBDECE63C6F",
+    "successScreenshotSha256": "04F96D22D33EBEBE44C4397105056D4A2B355171351F6ECA29FFC14A622D3CFC"
+  },
+  "adversarialClasses": {
+    "malformedInput": "pass",
+    "promptInjection": "pass",
+    "cancelResume": "pass within T8 contract",
+    "staleState": "pass",
+    "dirtyWorktree": "pass",
+    "hungOrLongCommands": "pass",
+    "flakyTests": "pass",
+    "misleadingSuccessOutput": "pass",
+    "repeatedInterruptions": "pass for caught failures"
+  },
+  "minorRisks": [
+    "A hard process kill between retained-photo copy and Room completion can leave an unreferenced app-private photo.",
+    "Physical-device verification is limited to the focused T8 class on SM-F711N Android 15."
+  ]
+}

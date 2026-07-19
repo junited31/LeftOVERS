@@ -123,7 +123,7 @@ Your next move: start implementation from this dual-reviewed approved plan. Full
   QA scenarios: happy - upload the generated/licensed cooking fixture at step 2 and `curl`/UI both show observations, actions, confidence, safety note, evidence `task-7-cooking-advice.json` and `task-7-cooking.png`; failure - network disabled with `adb shell cmd connectivity airplane-mode enable`, PASS when steps remain usable, retry is explicit, no DB mutation/re-upload occurs, then restore connectivity in cleanup receipt.
   Commit: Y | `feat(cooking): guide steps with photo advice`
 
-- [ ] 8. Complete meals, retain leftovers, and learn deterministic preferences
+- [x] 8. Complete meals, retain leftovers, and learn deterministic preferences
   What to do / Must NOT do: Build actual-use editor, rating 1-5, ingredient measurement adjustments, notes, recommend-again toggle, optional final-photo retention, atomic completion call, profile derivation, exact fingerprint cooldown, and result confirmation. Keep adjustments as normalized ingredient name, preferred amount in milli-units, canonical unit, note, and completion timestamp; newest wins per name+unit, and the latest 20 unique keys become the next recipe request's `measurementHints`. Do not add a conversion engine or ML.
   Parallelization: Wave 2 | Blocked by: T2,T4,T6,T7 | Blocks: T9,T10
   References: `.omo/drafts/leftovers.md:20,55-60,66-68,72-76` plus unit/ranking/cooldown definitions.
