@@ -38,6 +38,7 @@ import com.junited31.leftovers.data.RecipeSnapshotEntity
 import com.junited31.leftovers.data.RecipeSteps
 import com.junited31.leftovers.network.LeftoversApi
 import com.junited31.leftovers.network.TokenProvider
+import com.junited31.leftovers.network.TokenUnavailableException
 import com.junited31.leftovers.photo.PhotoContracts
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.runBlocking
@@ -106,22 +107,31 @@ class CookingPhotoFlowTest {
     fun offline_cooking_steps_and_retry_survive_an_unavailable_photo_client() {
         // Given: cooking data is already persisted, but no authenticated photo client is available.
         val fixture = mediaStoreFixture()
-        application.recipeApiOverride = null
+        application.recipeApiOverride = LeftoversApi(
+            server.url("/").toString(),
+            TokenProvider { throw TokenUnavailableException() },
+        )
 
         // When: the user opens the cooking destination while offline.
         scenario = ActivityScenario.launch(MainActivity::class.java)
         compose.onNodeWithTag("nav-cooking").performClick()
         application.photoPickerFixtureOverride = fixture
         compose.onNodeWithTag("attach-gallery").performClick()
+        compose.waitUntil(10_000) {
+            runCatching { compose.onNodeWithTag("request-advice").assertIsEnabled() }.isSuccess
+        }
         compose.onNodeWithTag("request-advice").performClick()
 
         // Then: local step guidance remains available without constructing the network client.
         compose.onNodeWithText("2 / 3 단계").performScrollTo().assertIsDisplayed()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("retry-advice").fetchSemanticsNodes().size == 1
+        }
         compose.onNodeWithTag("retry-advice").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("사진 다시 선택해 재시도").assertIsDisplayed()
         assertLastRenderedLine(
-            "네트워크 연결을 확인하고\n다시 시도해 주세요.",
-            "다시 시도해 주세요.",
+            "인증 정보를 확인할 수 없어요.",
+            "인증 정보를 확인할 수 없어요.",
         )
         assertEquals(1, runBlocking { database.cookSessionDao().get("task-7-session") }?.currentStepIndex)
         assertEquals(0, server.requestCount)

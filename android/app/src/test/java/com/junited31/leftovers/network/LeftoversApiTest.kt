@@ -54,6 +54,23 @@ class LeftoversApiTest {
     }
 
     @Test
+    fun default_client_allows_model_response_longer_than_ten_seconds() {
+        // Given
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("{\"ok\":true}")
+                .setBodyDelay(11, TimeUnit.SECONDS),
+        )
+
+        // When
+        val result = api().executeJson("/v1/recipes/generate", "{}")
+
+        // Then
+        assertEquals(ApiResult.Success("{\"ok\":true}"), result)
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
     fun typed_error_when_http_status_is_known() {
         // Given
         val fixtures = listOf(

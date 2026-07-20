@@ -1,0 +1,13 @@
+{
+  "deviceModel": "SM-F711N",
+  "apiHost": "leftovers-api-rlm4ngxglq-du.a.run.app",
+  "firebaseAnonymousAuth": true,
+  "recipeCount": 3,
+  "photoInputPixels": "256x256",
+  "photoAdviceSchemaRendered": true,
+  "safetyGuidanceRendered": true,
+  "mealLogCount": 1,
+  "offlineBeforeHistoryRead": true,
+  "historyTitleRendered": true,
+  "temporaryPhotoCacheCount": 0
+}

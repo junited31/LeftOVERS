@@ -31,9 +31,17 @@ function Invoke-Checked {
     if (-not (Get-Command $Executable -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $Executable" }
     $stderr = [System.IO.Path]::GetTempFileName()
     try {
-        $global:LASTEXITCODE = 0
-        $output = @(& $Executable @Arguments 2>$stderr)
-        if ($LASTEXITCODE -ne 0) { throw "Command failed: $Executable $($Arguments[0])" }
+        $previousErrorAction = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $global:LASTEXITCODE = 0
+            $output = @(& $Executable @Arguments 2>$stderr)
+            $exitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorAction
+        }
+        if ($exitCode -ne 0) { throw "Command failed: $Executable $($Arguments[0])" }
         return ($output -join "`n").Trim()
     }
     finally {
@@ -45,9 +53,16 @@ function Invoke-Status {
     param([Parameter(Mandatory)][string]$Executable, [Parameter(Mandatory)][string[]]$Arguments)
 
     if (-not (Get-Command $Executable -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $Executable" }
-    $global:LASTEXITCODE = 0
-    $output = @(& $Executable @Arguments 2>$null)
-    return [pscustomobject]@{ Success = ($LASTEXITCODE -eq 0); Output = (($output -join "`n").Trim()) }
+    $previousErrorAction = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $global:LASTEXITCODE = 0
+        $output = @(& $Executable @Arguments 2>$null)
+        return [pscustomobject]@{ Success = ($LASTEXITCODE -eq 0); Output = (($output -join "`n").Trim()) }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorAction
+    }
 }
 
 $activeProject = Invoke-Checked $GcloudExecutable @('config', 'get-value', 'project')
@@ -56,10 +71,23 @@ $describedProject = Invoke-Checked $GcloudExecutable @('projects', 'describe', $
 if ($describedProject.Trim() -cne $ProjectId) { throw "Target project $ProjectId does not exist or is not accessible." }
 $billing = Invoke-Checked $GcloudExecutable @('billing', 'projects', 'describe', $ProjectId, '--format=value(billingEnabled)')
 Assert-BillingEnabled -Value $billing -ProjectId $ProjectId
+if ($Execute) {
+    foreach ($path in @($OpenAiApiKeyFile, $QuotaHashKeyFile)) {
+        if (-not [string]::IsNullOrWhiteSpace($path)) { Assert-Utf8SecretFile -Path $path }
+    }
+}
 
 $signingReport = Invoke-Checked $GradleExecutable @('-p', (Join-Path $repositoryRoot 'android'), ':app:signingReport', '--console=plain')
 $sha1 = Get-DebugSigningSha1 -SigningReport $signingReport
 $projectNumber = Invoke-Checked $GcloudExecutable @('projects', 'describe', $ProjectId, '--format=value(projectNumber)')
+if ($Execute) {
+    $services = @(
+        'apikeys.googleapis.com', 'artifactregistry.googleapis.com', 'cloudbuild.googleapis.com',
+        'firebase.googleapis.com', 'firestore.googleapis.com', 'identitytoolkit.googleapis.com',
+        'run.googleapis.com', 'secretmanager.googleapis.com', 'securetoken.googleapis.com'
+    )
+    Invoke-Checked $GcloudExecutable (@('services', 'enable') + $services + @("--project=$ProjectId", '--quiet')) | Out-Null
+}
 $openAiSecret = Invoke-Status $GcloudExecutable @('secrets', 'describe', 'OPENAI_API_KEY', "--project=$ProjectId", '--format=value(name)')
 $quotaSecret = Invoke-Status $GcloudExecutable @('secrets', 'describe', 'QUOTA_HASH_KEY', "--project=$ProjectId", '--format=value(name)')
 $openAiVersion = if ($openAiSecret.Success) { Invoke-Status $GcloudExecutable @('secrets', 'versions', 'list', 'OPENAI_API_KEY', '--filter=state=ENABLED', '--limit=1', "--project=$ProjectId", '--format=value(name)') } else { [pscustomobject]@{ Success = $false; Output = '' } }
@@ -73,12 +101,6 @@ if ($Execute) {
     if (-not $quotaVersion.Success -and -not (Test-Path -LiteralPath $QuotaHashKeyFile -PathType Leaf)) {
         throw 'QUOTA_HASH_KEY has no enabled version; supply -QuotaHashKeyFile with a local secret file.'
     }
-    $services = @(
-        'apikeys.googleapis.com', 'artifactregistry.googleapis.com', 'cloudbuild.googleapis.com',
-        'firebase.googleapis.com', 'firestore.googleapis.com', 'identitytoolkit.googleapis.com',
-        'run.googleapis.com', 'secretmanager.googleapis.com', 'securetoken.googleapis.com'
-    )
-    Invoke-Checked $GcloudExecutable (@('services', 'enable') + $services + @("--project=$ProjectId", '--quiet')) | Out-Null
 }
 
 $firebaseProjects = Invoke-Checked $FirebaseExecutable @('projects:list', '--json') | ConvertFrom-Json
@@ -98,21 +120,40 @@ if ($null -eq $app) {
 }
 if ($null -eq $app -or [string]::IsNullOrWhiteSpace($app.appId)) { throw "Firebase Android app $PackageName could not be resolved." }
 
-if ($Execute) {
+if ($Execute -and -not (Test-Path -LiteralPath $GoogleServicesJson -PathType Leaf)) {
     $configDirectory = Split-Path -Parent $GoogleServicesJson
     if (-not (Test-Path -LiteralPath $configDirectory)) { New-Item -ItemType Directory -Path $configDirectory -Force | Out-Null }
     Invoke-Checked $FirebaseExecutable @('apps:sdkconfig', 'ANDROID', $app.appId, '--project', $ProjectId, '--out', $GoogleServicesJson) | Out-Null
+}
+Assert-FirebaseConfig -Path $GoogleServicesJson -ProjectId $ProjectId -PackageName $PackageName
+$firebaseConfig = Get-Content -Raw -LiteralPath $GoogleServicesJson | ConvertFrom-Json
+$configuredKeys = @($firebaseConfig.client | ForEach-Object { $_.api_key } | ForEach-Object { $_.current_key } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+if ($configuredKeys.Count -ne 1) { throw 'Firebase config must contain exactly one current_key.' }
+$resourceKey = Invoke-Checked $GcloudExecutable @('services', 'api-keys', 'get-key-string', $FirebaseKeyId, '--location=global', "--project=$ProjectId", '--format=value(keyString)')
+if ($resourceKey -cne $configuredKeys[0]) { throw 'FirebaseKeyId must identify google-services.json current_key.' }
+$resourceKey = $null
+$configuredKeys = $null
+$firebaseConfig = $null
+
+if ($Execute) {
     $shaList = Invoke-Checked $FirebaseExecutable @('apps:android:sha:list', $app.appId, '--project', $ProjectId, '--json')
     if ($shaList -notmatch [regex]::Escape($sha1)) {
         Invoke-Checked $FirebaseExecutable @('apps:android:sha:create', $app.appId, $sha1, '--project', $ProjectId, '--non-interactive') | Out-Null
     }
 }
-Assert-FirebaseConfig -Path $GoogleServicesJson -ProjectId $ProjectId -PackageName $PackageName
 
 $accessToken = Invoke-Checked $GcloudExecutable @('auth', 'print-access-token')
 $identityUri = "https://identitytoolkit.googleapis.com/admin/v2/projects/$ProjectId/config"
-$headers = @{ Authorization = "Bearer $accessToken" }
-$identityConfig = Invoke-RestMethod -Method Get -Uri $identityUri -Headers $headers
+$headers = @{ Authorization = "Bearer $accessToken"; 'X-Goog-User-Project' = $ProjectId }
+try {
+    $identityConfig = Invoke-RestMethod -Method Get -Uri $identityUri -Headers $headers
+}
+catch {
+    $statusCode = if ($null -ne $_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    if (-not $Execute -or $statusCode -ne 404) { throw }
+    Invoke-RestMethod -Method Post -Uri "https://identitytoolkit.googleapis.com/v2/projects/$ProjectId/identityPlatform:initializeAuth" -Headers $headers | Out-Null
+    $identityConfig = Invoke-RestMethod -Method Get -Uri $identityUri -Headers $headers
+}
 if (-not $identityConfig.signIn.anonymous.enabled) {
     if (-not $Execute) { throw 'Firebase Anonymous Authentication is not enabled.' }
     $identityConfig = Invoke-RestMethod -Method Patch -Uri "${identityUri}?updateMask=signIn.anonymous.enabled" -Headers $headers -ContentType 'application/json' -Body '{"signIn":{"anonymous":{"enabled":true}}}'

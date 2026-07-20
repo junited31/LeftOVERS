@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "145269937569",
+    "project_id": "leftovers-019f706b",
+    "storage_bucket": "leftovers-019f706b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:145269937569:android:363c07e5cde9e27f7567e0",
+        "android_client_info": {
+          "package_name": "com.junited31.leftovers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8ZGTONjdeX7M9BklD9uwfFSjpex4plkQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

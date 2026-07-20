@@ -44,6 +44,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.io.File
 import java.io.FileOutputStream
 
@@ -200,18 +201,25 @@ class RecipeScreenTest {
     }.filter(String::isNotBlank).joinToString("\n")
 
     private fun pantry() = listOf(
-        item("00000000-0000-0000-0000-000000000401", "Rice", 900_000, PantryUnit.GRAM, 1),
-        item("00000000-0000-0000-0000-000000000402", "Spinach", 300_000, PantryUnit.GRAM, 2),
-        item("00000000-0000-0000-0000-000000000403", "Eggs", 6_000, PantryUnit.COUNT, 3),
+        item("00000000-0000-0000-0000-000000000401", "Rice", 900_000, PantryUnit.GRAM, 1, 1),
+        item("00000000-0000-0000-0000-000000000402", "Spinach", 300_000, PantryUnit.GRAM, 2, 2),
+        item("00000000-0000-0000-0000-000000000403", "Eggs", 6_000, PantryUnit.COUNT, 3, 4),
     )
 
-    private fun item(id: String, name: String, amount: Long, unit: PantryUnit, version: Int) =
+    private fun item(
+        id: String,
+        name: String,
+        amount: Long,
+        unit: PantryUnit,
+        version: Int,
+        daysUntilExpiry: Long,
+    ) =
         PantryItemEntity(
             requireNotNull(PantryItemId.parse(id)),
             name,
             amount,
             unit,
-            LocalDate.now().plusDays(version.toLong()).toEpochDay(),
+            LocalDate.now(ZoneOffset.UTC).plusDays(daysUntilExpiry).toEpochDay(),
             version,
         )
 

@@ -1,5 +1,17 @@
 $ErrorActionPreference = 'Stop'
 
+function Assert-Utf8SecretFile {
+    param([Parameter(Mandatory)][string]$Path)
+
+    try {
+        $text = [System.Text.UTF8Encoding]::new($false, $true).GetString([System.IO.File]::ReadAllBytes($Path))
+    }
+    catch {
+        throw 'Secret file must contain valid nonblank UTF-8.'
+    }
+    if ([string]::IsNullOrWhiteSpace($text)) { throw 'Secret file must contain valid nonblank UTF-8.' }
+}
+
 function Assert-BillingEnabled {
     param([Parameter(Mandatory)][string]$Value, [Parameter(Mandatory)][string]$ProjectId)
 
@@ -39,7 +51,7 @@ function Assert-AndroidKeyRestrictions {
     $applications = @($key.restrictions.androidKeyRestrictions.allowedApplications)
     if ($applications.Count -ne 1 -or
         $applications[0].packageName -cne $PackageName -or
-        $applications[0].sha1Fingerprint.Trim().ToUpperInvariant() -cne $Sha1.Trim().ToUpperInvariant()) {
+        $applications[0].sha1Fingerprint.Trim().Replace(':', '').ToUpperInvariant() -cne $Sha1.Trim().Replace(':', '').ToUpperInvariant()) {
         throw "Android key restriction must contain exactly $PackageName and the demo SHA-1."
     }
 

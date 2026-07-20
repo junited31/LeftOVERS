@@ -32,9 +32,17 @@ function Invoke-Checked {
     if (-not (Get-Command $Executable -ErrorAction SilentlyContinue)) { throw "Required command is unavailable: $Executable" }
     $stderr = [System.IO.Path]::GetTempFileName()
     try {
-        $global:LASTEXITCODE = 0
-        $output = @(& $Executable @Arguments 2>$stderr)
-        if ($LASTEXITCODE -ne 0) { throw "Command failed: $Executable $($Arguments[0])" }
+        $previousErrorAction = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $global:LASTEXITCODE = 0
+            $output = @(& $Executable @Arguments 2>$stderr)
+            $exitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorAction
+        }
+        if ($exitCode -ne 0) { throw "Command failed: $Executable $($Arguments[0])" }
         return ($output -join "`n").Trim()
     }
     finally {
@@ -119,7 +127,20 @@ try {
     if ([string]::IsNullOrWhiteSpace($token)) { throw 'Firebase token file is empty.' }
     Set-Content -LiteralPath $authConfig -Value "header = `"Authorization: Bearer $token`"" -Encoding ASCII
     Set-Content -LiteralPath $invalidAuthConfig -Value 'header = "Authorization: Bearer invalid"' -Encoding ASCII
-    [System.IO.File]::WriteAllBytes($syntheticPng, [Convert]::FromBase64String('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nEAAAAAASUVORK5CYII='))
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = New-Object System.Drawing.Bitmap 256, 256
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.Clear([System.Drawing.Color]::Bisque)
+        $graphics.FillEllipse([System.Drawing.Brushes]::SaddleBrown, 32, 48, 192, 128)
+        $graphics.FillEllipse([System.Drawing.Brushes]::White, 82, 78, 92, 70)
+        $graphics.FillEllipse([System.Drawing.Brushes]::Gold, 108, 98, 40, 40)
+        $bitmap.Save($syntheticPng, [System.Drawing.Imaging.ImageFormat]::Png)
+    }
+    finally {
+        $graphics.Dispose()
+        $bitmap.Dispose()
+    }
 
     $health = Invoke-Preflight @('--silent', '--show-error', '--output', '-', '--write-out', "`n%{http_code}", "$baseUrl/health")
     if ($health.Status -ne 200 -or (ConvertFrom-Json $health.Body).status -cne 'ok') { throw 'Health preflight failed.' }

@@ -20,6 +20,9 @@ $global:cloudTestShaExists = $true
 $global:cloudTestInvalidRecipe = $false
 $global:cloudTestProjectId = 'leftovers-019f706b'
 $global:cloudTestProjectDescribeFails = $false
+$global:cloudTestStatusWritesError = $false
+$global:cloudTestCheckedWritesError = $false
+$global:cloudTestResourceKey = 'fixture-key'
 
 function global:gcloud_fixture {
     $command = $args -join ' '
@@ -32,10 +35,12 @@ function global:gcloud_fixture {
         return
     }
     if ($command -like 'billing projects describe*') { $global:cloudTestBilling; return }
+    if ($command -like 'services api-keys get-key-string*') { $global:cloudTestResourceKey; return }
     if ($command -like 'services api-keys describe*') { Get-Content -Raw $global:cloudTestKeyFixture; return }
     if ($command -like 'services api-keys update*') { return }
     if ($command -like 'secrets describe*') {
         if ($global:cloudTestSecretsExist) { 'existing'; return }
+        if ($global:cloudTestStatusWritesError) { Write-Error 'fixture missing secret' }
         $global:LASTEXITCODE = 1
         return
     }
@@ -48,13 +53,19 @@ function global:gcloud_fixture {
         $global:LASTEXITCODE = 1
         return
     }
-    if ($command -like 'services enable*') { return }
+    if ($command -like 'services enable*') {
+        if ($global:cloudTestCheckedWritesError) { Write-Error 'fixture progress' }
+        return
+    }
     if ($command -like 'firestore databases create*') { $global:cloudTestFirestoreExists = $true; return }
     if ($command -like 'secrets create*') { return }
     if ($command -like 'secrets versions add*') { return }
     if ($command -like 'secrets add-iam-policy-binding*') { return }
     if ($command -like 'auth print-access-token*') { 'fixture-access-token'; return }
-    if ($command -like 'run deploy*') { return }
+    if ($command -like 'run deploy*') {
+        if ($global:cloudTestCheckedWritesError) { Write-Error 'fixture progress' }
+        return
+    }
     if ($command -like 'run services describe*') { 'https://leftovers-api-abc123-an.a.run.app'; return }
     throw "Unexpected gcloud fixture command: $command"
 }
@@ -95,6 +106,7 @@ function global:firebase_fixture {
 function global:Invoke-RestMethod {
     param($Method, $Uri, $Headers, $Body, $ContentType)
     $global:cloudTestCalls.Add("rest $Method $Uri")
+    Assert-True ($Headers['X-Goog-User-Project'] -ceq 'leftovers-019f706b') 'Identity Toolkit requests require the target quota project header.'
     if ($Method -eq 'Patch') { $global:cloudTestAnonymousEnabled = $true }
     return [pscustomobject]@{ signIn = [pscustomobject]@{ anonymous = [pscustomobject]@{ enabled = $global:cloudTestAnonymousEnabled } } }
 }
@@ -127,6 +139,16 @@ function global:curl_fixture {
         return
     }
     if ($command -match '/v1/cooking/advice') {
+        $photoForm = @($args | Where-Object { $_ -like 'photo=@*;type=image/png' })[0]
+        $photoPath = $photoForm.Substring('photo=@'.Length).Split(';')[0]
+        Add-Type -AssemblyName System.Drawing
+        $image = [System.Drawing.Image]::FromFile($photoPath)
+        try {
+            Assert-True ($image.Width -ge 256 -and $image.Height -ge 256) 'Synthetic image preflight must exercise a model-usable PNG.'
+        }
+        finally {
+            $image.Dispose()
+        }
         Get-Content -Raw (Join-Path $fixtures 'advice-response.valid.json'); '200'; return
     }
     throw "Unexpected curl fixture command: $command"
@@ -170,6 +192,17 @@ function Expect-ExactFailure([scriptblock]$Action, [string]$Message) {
 
 . $contracts
 
+# Given binary secret bytes, when bootstrap input is checked, then Cloud Run-incompatible text is rejected.
+$invalidSecret = Join-Path ([System.IO.Path]::GetTempPath()) "leftovers-secret-$([guid]::NewGuid()).bin"
+try {
+    [System.IO.File]::WriteAllBytes($invalidSecret, [byte[]]@(0xC3, 0x28))
+    Expect-Failure { Assert-Utf8SecretFile -Path $invalidSecret } 'valid nonblank UTF-8'
+    Assert-Utf8SecretFile -Path (Join-Path $fixtures 'token.txt')
+}
+finally {
+    Remove-Item -LiteralPath $invalidSecret -Force -ErrorAction SilentlyContinue
+}
+
 # Given a different active project, when bootstrap starts, then no target command is attempted.
 $global:cloudTestCalls.Clear()
 $global:cloudTestActiveProject = 'unrelated-project'
@@ -186,10 +219,22 @@ Assert-True (-not (($global:cloudTestCalls -join "`n") -match 'services enable|p
 # Given mixed-case true with whitespace, when execute is requested, then billing precedes all writes.
 $global:cloudTestCalls.Clear()
 $global:cloudTestBilling = " `r`n TrUe `n "
+$global:cloudTestCheckedWritesError = $true
 Invoke-Bootstrap -Execute
+$global:cloudTestCheckedWritesError = $false
 $billingIndex = $global:cloudTestCalls.FindIndex({ param($call) $call -like 'billing projects describe*' })
 $writeIndex = $global:cloudTestCalls.FindIndex({ param($call) $call -like 'services enable*' })
 Assert-True ($billingIndex -ge 0 -and $writeIndex -gt $billingIndex) 'Billing must be checked before the first write.'
+$secretProbeIndex = $global:cloudTestCalls.FindIndex({ param($call) $call -like 'secrets describe*' })
+Assert-True ($writeIndex -lt $secretProbeIndex) 'Required APIs must be enabled before Secret Manager is probed.'
+Assert-True (-not (($global:cloudTestCalls -join "`n") -match 'firebase apps:sdkconfig')) 'A verified existing Firebase config must not be downloaded again.'
+
+# Given a caller-selected API key that is not google-services current_key, bootstrap must fail before restricting it.
+$global:cloudTestCalls.Clear()
+$global:cloudTestResourceKey = 'different-fixture-key'
+Expect-Failure { Invoke-Bootstrap -Execute } 'FirebaseKeyId must identify google-services.json current_key'
+Assert-True (-not (($global:cloudTestCalls -join "`n") -match 'services api-keys update')) 'A non-binding API key must never be restricted as the Android app key.'
+$global:cloudTestResourceKey = 'fixture-key'
 
 # Given no Firebase/Firestore/secrets/auth resources, when execute runs after billing, then every mutation is idempotently provisioned behind the gate.
 $provisionedConfig = Join-Path ([System.IO.Path]::GetTempPath()) "google-services-$([guid]::NewGuid()).json"
@@ -200,6 +245,7 @@ try {
     $global:cloudTestFirestoreExists = $false
     $global:cloudTestSecretsExist = $false
     $global:cloudTestSecretVersionsExist = $false
+    $global:cloudTestStatusWritesError = $true
     $global:cloudTestAnonymousEnabled = $false
     $global:cloudTestShaExists = $false
     & $bootstrap `
@@ -225,6 +271,7 @@ finally {
     $global:cloudTestFirestoreExists = $true
     $global:cloudTestSecretsExist = $true
     $global:cloudTestSecretVersionsExist = $true
+    $global:cloudTestStatusWritesError = $false
     $global:cloudTestAnonymousEnabled = $true
     $global:cloudTestShaExists = $true
 }
@@ -240,6 +287,16 @@ $global:cloudTestSecretVersionsExist = $true
 # Given Firebase and signing fixtures, when contracts are checked, then exact values pass.
 Assert-FirebaseConfig -Path (Join-Path $fixtures 'google-services.valid.json') -ProjectId 'leftovers-019f706b' -PackageName 'com.junited31.leftovers'
 Assert-AndroidKeyRestrictions -Path (Join-Path $fixtures 'key-restrictions.valid.json') -PackageName 'com.junited31.leftovers' -Sha1 $expectedSha1
+$compactKey = Join-Path ([System.IO.Path]::GetTempPath()) "key-restrictions-$([guid]::NewGuid()).json"
+try {
+    $compact = Get-Content -Raw (Join-Path $fixtures 'key-restrictions.valid.json') | ConvertFrom-Json
+    $compact.restrictions.androidKeyRestrictions.allowedApplications[0].sha1Fingerprint = $expectedSha1.Replace(':', '')
+    $compact | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $compactKey -Encoding UTF8
+    Assert-AndroidKeyRestrictions -Path $compactKey -PackageName 'com.junited31.leftovers' -Sha1 $expectedSha1
+}
+finally {
+    Remove-Item -LiteralPath $compactKey -Force -ErrorAction SilentlyContinue
+}
 Assert-True ((Get-DebugSigningSha1 -SigningReport (Get-Content -Raw (Join-Path $fixtures 'signing-report.txt'))) -eq $expectedSha1) 'Signing SHA-1 extraction failed.'
 Assert-True ((Get-DebugSigningSha1 -SigningReport (Get-Content -Raw (Join-Path $fixtures 'signing-report-multi.txt'))) -eq $expectedSha1) 'Signing SHA-1 must come from the debug variant block.'
 Expect-Failure {
@@ -341,6 +398,7 @@ $properties = Join-Path ([System.IO.Path]::GetTempPath()) "leftovers-$([guid]::N
 try {
     $global:cloudTestCalls.Clear()
     $global:cloudTestBilling = " True `r`n"
+    $global:cloudTestCheckedWritesError = $true
     & $deploy `
         -FirebaseTokenFile (Join-Path $fixtures 'token.txt') `
         -RecipeRequestJson (Join-Path $fixtures 'recipe-request.json') `
@@ -349,6 +407,7 @@ try {
         -GcloudExecutable 'gcloud_fixture' `
         -CurlExecutable 'curl_fixture' `
         -Execute
+    $global:cloudTestCheckedWritesError = $false
     $deployIndex = $global:cloudTestCalls.FindIndex({ param($call) $call -like 'run deploy*' })
     $billingIndex = $global:cloudTestCalls.FindIndex({ param($call) $call -like 'billing projects describe*' })
     Assert-True ($deployIndex -gt $billingIndex) 'Deploy must run only after billing is true.'
@@ -356,8 +415,13 @@ try {
     Assert-True ((Get-Content -Raw $properties) -match '^LEFTOVERS_API_BASE_URL=https://.*\.run\.app/?' ) 'Cloud Run URL was not injected.'
 }
 finally {
+    $global:cloudTestCheckedWritesError = $false
     Remove-Item -LiteralPath $properties -Force -ErrorAction SilentlyContinue
 }
+
+# Given a fresh Firebase project, when bootstrap is inspected, then Authentication initialization is present.
+$bootstrapSource = Get-Content -Raw -LiteralPath $bootstrap
+Assert-True ($bootstrapSource -match 'identityPlatform:initializeAuth') 'Fresh projects must initialize Firebase Authentication before reading its config.'
 
 # Given Android source, when the deployment contract is inspected, then BuildConfig owns the injected URL.
 $buildScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'android\app\build.gradle.kts')

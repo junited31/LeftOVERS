@@ -1,0 +1,9 @@
+quota_concurrent_statuses_observed=200,429
+quota_concurrent_statuses=200,429
+quota_rejected_code=quota_exceeded
+quota_uid_count=20
+quota_global_count_before=5
+quota_expired_token_status=401
+quota_success_schema=True
+quota_probe_temp_residue=False
+quota_probe_doc_cleanup_attempted=True

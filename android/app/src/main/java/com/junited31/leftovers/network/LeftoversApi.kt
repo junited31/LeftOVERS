@@ -12,6 +12,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 sealed interface ApiResult {
@@ -34,6 +35,7 @@ class LeftoversApi(
     private val tokenProvider: TokenProvider,
     client: OkHttpClient = OkHttpClient.Builder()
         .retryOnConnectionFailure(false)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build(),
 ) {
     private val baseUrl = baseUrl.toHttpUrl()

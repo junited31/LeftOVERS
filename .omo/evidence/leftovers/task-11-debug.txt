@@ -1,0 +1,16 @@
+T11 real-cloud Android timeout diagnosis
+
+RED runtime evidence:
+- SM-F711N received the recipe-screen network-failure state while the corresponding Cloud Run request later completed HTTP 200 in roughly 20-24 seconds.
+- LeftoversApi used OkHttp's default 10-second read timeout.
+- Regression test default_client_allows_model_response_longer_than_ten_seconds failed with the default client on an 11-second delayed response.
+
+GREEN toggle:
+- The default LeftoversApi read timeout is now 60 seconds; retryOnConnectionFailure remains false.
+- The delayed-response regression passed.
+- The exact RealCloudE2eTest passed on SM-F711N and the final full connected suite passed 31 tests with 0 failures/errors/skips.
+
+Observability gap:
+- The first E2E wait watched only for recipe cards, so a typed terminal error state appeared quickly but the test waited the full 180 seconds.
+- Diagnosis correlated the safe UI error copy, connected-test XML, and sanitized Cloud Run status/timing. No request body, credential, token, or secret was logged.
+- The final success test remains success-only; typed failure-state coverage stays in the existing MockWebServer error tests.
