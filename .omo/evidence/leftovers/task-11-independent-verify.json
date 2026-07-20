@@ -1,0 +1,49 @@
+{
+  "task": "T11",
+  "verdict": "confirmed",
+  "confidence": 0.99,
+  "cloud": {
+    "project": "leftovers-019f706b",
+    "region": "asia-northeast3",
+    "service": "leftovers-api",
+    "revision": "leftovers-api-00004-jwr",
+    "healthStatus": 200,
+    "invalidTokenStatus": 401
+  },
+  "firebaseKey": {
+    "projectKeyCount": 1,
+    "configKeyMatchCount": 1,
+    "packageRestrictionExact": true,
+    "demoShaRestrictionExact": true,
+    "apiRestrictionCount": 2,
+    "apiRestrictionExact": true,
+    "unusedAutoCreatedKeyDeleted": true
+  },
+  "verification": {
+    "backend": "66/66",
+    "androidUnit": "78/78",
+    "androidConnected": "31/31 on SM-F711N Android 15",
+    "lint": "0 errors, 11 warnings",
+    "secretScan": "236 files passed",
+    "gitDiffCheck": "passed",
+    "visualEvidence": "PASS/HIGH"
+  },
+  "adversarialClasses": {
+    "staleState": "Post-fix full connected report includes and passes RealCloudE2eTest.",
+    "dirtyWorktree": "Only declared T11 implementation, tests, config, and evidence were present.",
+    "misleadingSuccessOutput": "A first review found that the restricted key differed from google-services.json current_key; the binding is now fail-closed and live-reverified.",
+    "secretLeakage": "Diagnostic Firebase key output was removed from local gcloud logs; repository use remains only the allowed google-services.json entry and all audited residue locations are clear.",
+    "generatedArtifactFreshness": "Cloud JSON and PNG are corroborative; the post-fix device XML is authoritative.",
+    "flakyTests": "The final full 31-test connected suite passed after fixture stabilization."
+  },
+  "cleanup": {
+    "temporaryQuotaDocumentAbsent": true,
+    "temporaryPhotoCacheCount": 0,
+    "debugJournalAbsent": true,
+    "temporaryAuditToolsAbsent": true,
+    "diagnosticKeyLogResidueCount": 0
+  },
+  "nonblocking": [
+    "Local Docker Desktop daemon was unavailable; the image was built by regional Cloud Build and the deployed revision was verified with live traffic."
+  ]
+}
