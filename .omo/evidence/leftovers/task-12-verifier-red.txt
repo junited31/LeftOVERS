@@ -1,0 +1,26 @@
+T12 submission verifier RED
+Fixture: scripts/tests/fixtures/submission_draft.json
+Expected exact fields: status devpost_url youtube_url session_id repository_url release_url
+Command: python scripts/tests/test_verify_submission.py
+Traceback (most recent call last):
+  File "D:\workspace\develop\LeftOVERS-impl\scripts\tests\test_verify_submission.py", line 23, in <module>
+    from scripts.verify_submission import ProbeResponse, PublicUrl, parse_record, verify_submission
+ModuleNotFoundError: No module named 'scripts.verify_submission'
+exit_code=1
+
+Post-implementation negative validation (expected nonzero):
+Command: python scripts/verify_submission.py --record scripts/tests/fixtures/submission_draft.json
+[FAIL] status: must be Submitted
+[FAIL] submitted_at_utc: must be a UTC submission timestamp
+[FAIL] session_id: must equal 019f706b-b713-7780-a456-f63ab18b173a
+[FAIL] youtube_duration_seconds: must be between 1 and 179 seconds
+[FAIL] youtube_has_audio: must be true
+[FAIL] repository_url: must be a non-placeholder public HTTPS URL
+[FAIL] release_url: must be a non-placeholder public HTTPS URL
+[FAIL] apk_url: must be a non-placeholder public HTTPS URL
+[FAIL] checksum_url: must be a non-placeholder public HTTPS URL
+[FAIL] youtube_url: must be a non-placeholder public HTTPS URL
+[FAIL] devpost_url: must be a non-placeholder public HTTPS URL
+[FAIL] checksum_path: file is missing or outside the repository
+Submission verification failed with 12 issue(s).
+exit_code=1

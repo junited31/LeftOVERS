@@ -1,0 +1,56 @@
+{
+  "task": "T12 local publication materials",
+  "status": "LOCAL_PREPARED_EXTERNAL_PENDING",
+  "sessionId": "019f706b-b713-7780-a456-f63ab18b173a",
+  "repositoryUrl": "https://github.com/junited31/LeftOVERS",
+  "backendHealthUrl": "https://leftovers-api-rlm4ngxglq-du.a.run.app/health",
+  "tdd": {
+    "redEvidence": ".omo/evidence/leftovers/task-12-verifier-red.txt",
+    "green": "python -m unittest scripts.tests.test_media_probe scripts.tests.test_verify_submission: 22 tests passed",
+    "reviewFixes": [
+      "strict SHA-bound release proof rejects contradictory positive hook counts",
+      "backend health URL must be a public Cloud Run run.app endpoint",
+      "release assets must belong to repository_url and the fetched checksum must match the local debug APK",
+      "submitted_at_utc is parsed as a real UTC timestamp",
+      "duration and audio come from a bounded real ffprobe process and strict SHA-bound evidence rather than submission-record assertions",
+      "the documented exact verifier CLI is covered by an integration test"
+    ]
+  },
+  "pythonQuality": {
+    "syntax": "python -m py_compile: passed",
+    "lint": "ruff: passed",
+    "types": "basedpyright: 0 errors, 0 warnings",
+    "noExcuseAudit": "passed; no violations in 4 Python files",
+    "pureLoc": {
+      "scripts/submission_validation.py": 231,
+      "scripts/verify_submission.py": 139,
+      "scripts/tests/test_verify_submission.py": 241,
+      "scripts/tests/test_media_probe.py": 29
+    }
+  },
+  "securityAndStructure": {
+    "secretScan": "passed over the current tracked and untracked scope",
+    "diffCheck": "passed",
+    "markdownRender": "README and three docs rendered to temporary HTML and structural checks passed",
+    "temporaryArtifacts": "removed"
+  },
+  "liveVerifier": {
+    "expectedExit": 1,
+    "reason": "The canonical record is honestly Draft until external publication succeeds.",
+    "pendingFields": [
+      "status",
+      "submitted_at_utc",
+      "release_url",
+      "apk_url",
+      "checksum_url",
+      "youtube_url",
+      "devpost_url",
+      "checksum_path",
+      "release_debug_hook_proof_path",
+      "demo_media_path",
+      "demo_media_evidence_path",
+      "git_worktree"
+    ]
+  },
+  "externalActions": "No GitHub release, YouTube upload, Devpost population, or Devpost Submit action was performed by this task."
+}

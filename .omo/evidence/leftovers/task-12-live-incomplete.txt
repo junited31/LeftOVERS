@@ -1,0 +1,13 @@
+[FAIL] status: must be Submitted
+[FAIL] submitted_at_utc: must be a UTC submission timestamp
+[FAIL] release_url: must be a non-placeholder public HTTPS URL
+[FAIL] apk_url: must be a non-placeholder public HTTPS URL
+[FAIL] checksum_url: must be a non-placeholder public HTTPS URL
+[FAIL] youtube_url: must be a non-placeholder public HTTPS URL
+[FAIL] devpost_url: must be a non-placeholder public HTTPS URL
+[FAIL] checksum_path: file is missing or outside the repository
+[FAIL] release_debug_hook_proof_path: file is missing or outside the repository
+[FAIL] demo_media_path: file is missing or outside the repository
+[FAIL] demo_media_evidence_path: file is missing or outside the repository
+[FAIL] git_worktree: must be clean at the publication commit
+Submission verification failed with 12 issue(s).

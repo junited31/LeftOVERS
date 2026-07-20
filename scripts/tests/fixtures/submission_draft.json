@@ -1,0 +1,22 @@
+{
+  "status": "Draft",
+  "devpost_url": "",
+  "submitted_at_utc": "",
+  "repository_url": "",
+  "release_url": "",
+  "apk_url": "",
+  "checksum_url": "",
+  "backend_health_url": "https://leftovers-api-rlm4ngxglq-du.a.run.app/health",
+  "youtube_url": "",
+  "session_id": "",
+  "apk_path": "android/app/build/outputs/apk/debug/app-debug.apk",
+  "checksum_path": "dist/app-debug.apk.sha256",
+  "release_apk_path": "android/app/build/outputs/apk/release/app-release-unsigned.apk",
+  "release_debug_hook_proof_path": "dist/release-debug-hooks.json",
+  "demo_media_path": "dist/leftovers-demo.mp4",
+  "demo_media_evidence_path": "dist/leftovers-demo-media.json",
+  "readme_path": "README.md",
+  "submission_path": "docs/submission.md",
+  "demo_script_path": "docs/demo-script.md",
+  "license_path": "LICENSE"
+}

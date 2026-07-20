@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "task": "T12 GitHub release preparation only",
+  "capturedAt": "2026-07-20T13:42:28+09:00",
+  "status": "prepared_not_published",
+  "head": {
+    "expected": "890aa7c5fbb542a848e6960ea5595f0e6608edfd",
+    "beforeBuild": "890aa7c5fbb542a848e6960ea5595f0e6608edfd",
+    "afterVerification": "890aa7c5fbb542a848e6960ea5595f0e6608edfd",
+    "stale": false
+  },
+  "scope": {
+    "publicationPerformed": false,
+    "tagCreated": false,
+    "pushPerformed": false,
+    "commitCreated": false,
+    "sourceDocsPlanLedgerEdited": false
+  },
+  "build": {
+    "command": "cd android && ./gradlew.bat clean :app:assembleDebug :app:assembleRelease --no-daemon",
+    "result": "BUILD SUCCESSFUL in 39s; 91 actionable tasks, 90 executed, 1 up-to-date",
+    "freshness": "Gradle clean ran before both assemble tasks"
+  },
+  "artifacts": {
+    "debugApk": {
+      "path": "D:/workspace/develop/LeftOVERS-impl/android/app/build/outputs/apk/debug/app-debug.apk",
+      "sha256": "f0a461c5112b80545f2ad5dde61ce9476acbb4d78fe277b19ca0d330516c72a2",
+      "sizeBytes": 61743706,
+      "modifiedAt": "2026-07-20T13:36:21.6512278+09:00",
+      "archiveIntegrity": "unzip -t: no errors detected"
+    },
+    "unsignedReleaseApk": {
+      "path": "D:/workspace/develop/LeftOVERS-impl/android/app/build/outputs/apk/release/app-release-unsigned.apk",
+      "sha256": "898916f8a30c3be413219b9a54789d0971a2e2fd2e5b4e89da8d0c57d45aade2",
+      "sizeBytes": 47144653,
+      "modifiedAt": "2026-07-20T13:36:24.340514+09:00",
+      "archiveIntegrity": "unzip -t: no errors detected",
+      "signatureProbe": "apksigner verify exited 1 with Missing META-INF/MANIFEST.MF, proving this release artifact is unsigned"
+    },
+    "temporaryChecksumAsset": {
+      "path": "D:/workspace/develop/LeftOVERS-impl/android/app/build/outputs/apk/debug/app-debug.apk.sha256",
+      "content": "f0a461c5112b80545f2ad5dde61ce9476acbb4d78fe277b19ca0d330516c72a2 *app-debug.apk",
+      "sha256": "773d551aae3c6c63d8ac0b98b35f418a11a25cce752afb3db9cfbf35fd26281e",
+      "verification": "sha256sum -c returned app-debug.apk: OK",
+      "cleanup": "deleted after verification as a temporary release-prep asset"
+    }
+  },
+  "debugApkContract": {
+    "aaptCommand": "%LOCALAPPDATA%/Android/Sdk/build-tools/35.0.0/aapt.exe dump badging android/app/build/outputs/apk/debug/app-debug.apk",
+    "package": "com.junited31.leftovers",
+    "versionCode": 1,
+    "versionName": "1.0",
+    "compileSdk": 35,
+    "minSdk": 29,
+    "targetSdk": 35,
+    "applicationLabel": "LeftOVERS",
+    "certificate": {
+      "subject": "C=US, O=Android, CN=Android Debug",
+      "sha256": "bea9f61f46fe1ff05570b1b5b4b4b2d8ff37b6f57282e4b3b0827dae724fb086",
+      "sha1": "60ef8fc8ff12b0e912a0772b2b1e3920aed2e961",
+      "signers": 1,
+      "schemeV2": true
+    }
+  },
+  "releaseBoundary": {
+    "tokens": [
+      "DEBUG_SEED",
+      "DEBUG_RESET",
+      "DebugSeedReceiver",
+      "DebugApplication",
+      "seedPantry",
+      "seedEquipment"
+    ],
+    "manifest": {
+      "command": "aapt.exe dump xmltree app-release-unsigned.apk AndroidManifest.xml, then exact token scan",
+      "debugPositiveControlMatches": 1,
+      "releaseMatches": 0,
+      "releaseApplication": "com.junited31.leftovers.LeftoversApplication",
+      "releaseDebugReceiverMatches": 0,
+      "releaseAllReceiverElements": 1,
+      "releaseNonDebugReceiver": "androidx.profileinstaller.ProfileInstallReceiver"
+    },
+    "dex": {
+      "command": "unzip each classes*.dex and binary-safe grep the exact debug-only tokens",
+      "debugDexFiles": 10,
+      "debugPositiveControlMatches": 13,
+      "releaseDexFiles": 3,
+      "releaseMatches": 0
+    },
+    "resources": {
+      "command": "aapt.exe dump resources app-release-unsigned.apk and aapt.exe list app-release-unsigned.apk, then exact token scan",
+      "debugResourceTableMatches": 0,
+      "releaseResourceTableMatches": 0,
+      "releaseArchiveEntryMatches": 0
+    },
+    "verdict": "pass: no debug seed/reset receiver, application, action, or seed helper leaked into the release manifest, DEX, resource table, or archive entry names"
+  },
+  "physicalDeviceQa": {
+    "device": {
+      "serial": "R5CR91DXA8R",
+      "model": "SM-F711N",
+      "androidRelease": 15,
+      "api": 35,
+      "authorized": true
+    },
+    "scenario": "force-stop and uninstall prior package, assert package absent, install fresh debug APK, cold-launch MainActivity, inspect focused window and real UI, then uninstall",
+    "install": "adb install returned Success",
+    "launch": "Status ok; LaunchState COLD; MainActivity; TotalTime 849 ms; WaitTime 852 ms",
+    "focusedWindow": "com.junited31.leftovers/com.junited31.leftovers.MainActivity",
+    "uiObservables": [
+      "지금 사용할 수 있는 재료",
+      "재료 추가",
+      "아직 등록한 재료가 없어요. 재료를 추가해 주세요."
+    ],
+    "uiXml": {
+      "path": "D:/workspace/develop/LeftOVERS-impl/android/app/build/outputs/t12-prep/home.xml",
+      "sha256": "7d123a6d94f03ed4476b721b3943564fd90864083f30b4749367a541bc3638f4"
+    },
+    "prepScreenshot": {
+      "path": "D:/workspace/develop/LeftOVERS-impl/android/app/build/outputs/t12-prep/home.png",
+      "sha256": "f728a198699a3b5a30c94648fde2002edaf51a949bfd90a657c6c33360c05840",
+      "dimensions": "1080x2640 RGBA",
+      "visualInspection": "fresh empty-pantry home rendered legibly with bottom navigation; no crash or blocking dialog"
+    },
+    "diagnosticNotes": [
+      "The first uninstall returned DELETE_FAILED_INTERNAL_ERROR while the app was active; force-stop plus exact retry returned Success and the required clean-install run started from pm path absent.",
+      "The first Git Bash adb /sdcard pull was rewritten to a Windows path by MSYS; the verified rerun used MSYS_NO_PATHCONV=1 and read back the device file from /sdcard.",
+      "Direct adb exec-out screencap included Samsung's multiple-display warning in stdout, so the valid evidence capture used on-device screencap plus adb pull."
+    ]
+  },
+  "secretScan": {
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/scan_secrets.ps1",
+    "result": "Secret scan passed (245 files inspected).",
+    "binding": "final scan executed after this evidence file existed; no evidence edit is permitted after that scan"
+  },
+  "adversarial": {
+    "staleState": {
+      "result": "pass",
+      "evidence": "exact full HEAD matched before build, after build, before evidence write, and final gate; clean ran before assemble; APK timestamps and hashes were refreshed"
+    },
+    "generatedArtifact": {
+      "result": "pass",
+      "evidence": "both APK ZIPs passed unzip -t; aapt parsed actual package metadata; apksigner parsed the debug signer and rejected the release as unsigned; temporary checksum verified the debug bytes"
+    },
+    "misleadingSuccessOutput": {
+      "result": "pass",
+      "evidence": "Gradle BUILD SUCCESSFUL was not trusted alone; independent archive, aapt, apksigner, manifest, DEX, resource, install, focused-window, UI XML, and screenshot probes agreed"
+    },
+    "dirtyWorktree": {
+      "result": "concurrent_changes_observed",
+      "initial": "clean",
+      "finalExpectedOwnChange": ".omo/evidence/leftovers/task-12-release-prep.json",
+      "concurrentUntrackedNotTouched": [
+        "README.md (concurrently modified)",
+        ".omo/evidence/leftovers/task-12-verifier-red.txt",
+        "docs/asset-provenance.md",
+        "docs/demo-script.md",
+        "docs/submission.md",
+        "scripts/tests/fixtures/submission_draft.json",
+        "scripts/tests/test_verify_submission.py",
+        "scripts/verify_submission.py"
+      ],
+      "buildOutputs": "ignored under android/app/build/"
+    },
+    "hungOrLongCommands": {
+      "result": "pass",
+      "evidence": "Gradle, aapt, APK scans, ADB, and secret scan all completed within their bounded tool calls; no process was abandoned"
+    }
+  },
+  "cleanup": {
+    "installedPackageAbsent": true,
+    "remoteSdcardQaFilesAbsent": true,
+    "temporaryChecksumAbsent": true,
+    "temporaryScriptAbsent": true,
+    "cloudOrExternalMutation": false,
+    "retainedIgnoredPrepArtifacts": [
+      "android/app/build/outputs/apk/debug/app-debug.apk",
+      "android/app/build/outputs/apk/release/app-release-unsigned.apk",
+      "android/app/build/outputs/t12-prep/home.xml",
+      "android/app/build/outputs/t12-prep/home.png"
+    ]
+  },
+  "rerunAfterFinalT12Commit": [
+    "Re-run the clean debug/release build because any final commit invalidates the HEAD-to-artifact binding.",
+    "Recompute APK size and SHA-256 and regenerate the release checksum asset from the final debug APK.",
+    "Repeat aapt badging, apksigner, release manifest/DEX/resource scans, and ZIP integrity checks against the final APKs.",
+    "Re-run the canonical secret scan after all final evidence and submission files are present.",
+    "Repeat the clean SM-F711N install/cold-launch/UI readback if the final commit changes Android source, resources, manifest, Gradle config, or packaged google-services input."
+  ],
+  "doneClaim": {
+    "verdict": "prepared",
+    "publishableDebugApkPrepared": true,
+    "unsignedReleaseBoundaryProofPrepared": true,
+    "externalPublicationPending": true,
+    "knownRisk": "Artifacts bind only to HEAD 890aa7c5fbb542a848e6960ea5595f0e6608edfd and must be rebuilt/reverified after the final T12 commit."
+  }
+}

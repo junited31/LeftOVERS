@@ -1,0 +1,33 @@
+{
+  "task": "T12 local publication preparation",
+  "verdict": "confirmed",
+  "confidence": 0.99,
+  "scope": "local preparation only; no public release, video upload, or Devpost submission",
+  "verification": {
+    "tests": "22/22",
+    "ruff": "pass",
+    "basedpyright": "0 errors, 0 warnings",
+    "noExcuseAudit": "pass",
+    "pureLoc": [231, 139, 241, 29],
+    "secretScan": "249 files passed",
+    "gitDiffCheck": "pass",
+    "liveVerifier": "exit 1 with exactly 12 declared publication-pending fields and no success claim"
+  },
+  "adversarial": {
+    "releaseProof": "contradictory counts and stale SHA rejected",
+    "urls": "private, example, and cross-repository URLs rejected",
+    "checksum": "wrong fetched checksum rejected",
+    "timestamp": "impossible and non-UTC timestamps rejected",
+    "media": "missing ffprobe, timeout, nonzero exit, invalid JSON, no audio, duration >=180, observation mismatch, and arbitrary non-MP4 bytes rejected"
+  },
+  "cleanup": {
+    "temporaryFixtures": 0,
+    "pythonCacheFiles": 0
+  },
+  "pending": [
+    "install ffprobe and create the final positive media proof",
+    "publish the GitHub release and checksum",
+    "upload the public narrated video after action-time confirmation",
+    "populate and submit Devpost after the required confirmations"
+  ]
+}
