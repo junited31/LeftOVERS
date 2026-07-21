@@ -34,6 +34,18 @@ class CanonicalUnit(StrEnum):
     COUNT = "count"
 
 
+class RecipeLocale(StrEnum):
+    ENGLISH = "en"
+    KOREAN = "ko"
+
+
+class RecipeKind(StrEnum):
+    MEAL = "meal"
+    DRINK = "drink"
+    SNACK = "snack"
+    DESSERT = "dessert"
+
+
 class PantryRow(ApiModel):
     pantry_item_id: UUID = Field(alias="pantryItemId")
     version: int = Field(ge=0)
@@ -91,6 +103,8 @@ class MeasurementHint(ApiModel):
 
 
 class RecipeGenerateRequest(ApiModel):
+    locale: RecipeLocale
+    recipe_kind: RecipeKind = Field(alias="recipeKind")
     pantry: tuple[PantryRow, ...] = Field(min_length=1, max_length=200)
     equipment: tuple[str, ...] = Field(min_length=1, max_length=32)
     history: tuple[RecipeHistoryHint, ...] = Field(default=(), max_length=20)
@@ -114,6 +128,7 @@ class MissingIngredient(ApiModel):
 
 
 class RecipeCandidate(ApiModel):
+    recipe_kind: RecipeKind = Field(alias="recipeKind")
     title: str = Field(min_length=1, max_length=200)
     cuisine: str = Field(min_length=1, max_length=100)
     primary_technique: str = Field(alias="primaryTechnique", min_length=1, max_length=100)
@@ -210,6 +225,8 @@ def validate_recipe_bindings(
     techniques: set[str] = set()
     equipment = {normalize_label(item) for item in request.equipment}
     for recipe in response.recipes:
+        if recipe.recipe_kind != request.recipe_kind:
+            raise ModelContractError
         title = normalize_label(recipe.title)
         cuisine = normalize_label(recipe.cuisine)
         technique = normalize_label(recipe.primary_technique)

@@ -1,6 +1,7 @@
 {
   "recipes": [
     {
+      "recipeKind": "meal",
       "title": "Egg fried rice",
       "cuisine": "Korean",
       "primaryTechnique": "stir-fry",
@@ -10,6 +11,7 @@
       "steps": ["Cook the rice", "Add egg"]
     },
     {
+      "recipeKind": "meal",
       "title": "Rice omelette",
       "cuisine": "Japanese",
       "primaryTechnique": "pan-fry",
@@ -19,6 +21,7 @@
       "steps": ["Beat eggs", "Fold rice"]
     },
     {
+      "recipeKind": "meal",
       "title": "Crispy rice cakes",
       "cuisine": "Korean",
       "primaryTechnique": "pan-fry",

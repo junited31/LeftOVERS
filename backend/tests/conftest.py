@@ -77,8 +77,16 @@ class FakeAI:
         return self.advice_outputs[index]
 
 
-def recipe_request(*, name: str = "Rice", notes: str | None = None) -> JsonObject:
+def recipe_request(
+    *,
+    name: str = "Rice",
+    notes: str | None = None,
+    locale: str = "en",
+    recipe_kind: str = "meal",
+) -> JsonObject:
     payload: JsonObject = {
+        "locale": locale,
+        "recipeKind": recipe_kind,
         "pantry": [
             {
                 "pantryItemId": PANTRY_ID,
@@ -104,10 +112,11 @@ def recipe_request(*, name: str = "Rice", notes: str | None = None) -> JsonObjec
     return payload
 
 
-def valid_recipe_payload() -> JsonObject:
+def valid_recipe_payload(*, recipe_kind: str = "meal") -> JsonObject:
     return {
         "recipes": [
             {
+                "recipeKind": recipe_kind,
                 "title": "Egg fried rice",
                 "cuisine": "Korean",
                 "primaryTechnique": "stir-fry",
@@ -124,6 +133,7 @@ def valid_recipe_payload() -> JsonObject:
                 "steps": ["Cook the rice", "Add egg"],
             },
             {
+                "recipeKind": recipe_kind,
                 "title": "Rice omelette",
                 "cuisine": "Japanese",
                 "primaryTechnique": "pan-fry",
@@ -142,6 +152,7 @@ def valid_recipe_payload() -> JsonObject:
                 "steps": ["Beat eggs", "Fold rice"],
             },
             {
+                "recipeKind": recipe_kind,
                 "title": "Crispy rice cakes",
                 "cuisine": "Korean",
                 "primaryTechnique": "pan-fry",

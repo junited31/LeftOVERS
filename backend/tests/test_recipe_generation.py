@@ -18,6 +18,125 @@ from conftest import (
 )
 
 
+def korean_dessert_payload() -> JsonObject:
+    payload = valid_recipe_payload(recipe_kind="dessert")
+    recipes = payload["recipes"]
+    assert isinstance(recipes, list)
+    korean_fields = [
+        ("달걀 볶음밥 디저트", [], ["밥을 익힌다", "달걀을 넣는다"]),
+        (
+            "달콤한 쌀 오믈렛",
+            [{"name": "소금", "amountMilliUnits": 1_000, "unit": "g"}],
+            ["달걀을 푼다", "밥을 접는다"],
+        ),
+        ("바삭한 쌀과자", [], ["밥을 빚는다", "팬에 굽는다"]),
+    ]
+    for recipe, (title, missing, steps) in zip(recipes, korean_fields, strict=True):
+        assert isinstance(recipe, dict)
+        recipe["title"] = title
+        recipe["missingIngredients"] = missing
+        recipe["steps"] = steps
+    return payload
+
+
+def invalid_recipe_contract_rows() -> list[tuple[str, str, JsonObject, int]]:
+    rows: list[tuple[str, str, JsonObject, int]] = []
+
+    missing_locale = recipe_request(recipe_kind="dessert", locale="ko")
+    missing_locale.pop("locale")
+    rows.append(("request missing locale", "request", missing_locale, 0))
+
+    unknown_locale = recipe_request(recipe_kind="dessert", locale="fr")
+    rows.append(("request unknown locale", "request", unknown_locale, 0))
+
+    missing_kind = recipe_request(recipe_kind="dessert", locale="ko")
+    missing_kind.pop("recipeKind")
+    rows.append(("request missing kind", "request", missing_kind, 0))
+
+    unknown_kind = recipe_request(recipe_kind="breakfast", locale="ko")
+    rows.append(("request unknown kind", "request", unknown_kind, 0))
+
+    candidate_missing_kind = korean_dessert_payload()
+    candidate_missing_kind["recipes"][0].pop("recipeKind")  # type: ignore[index,union-attr]
+    rows.append(("candidate missing kind", "candidate", candidate_missing_kind, 3))
+
+    candidate_unknown_kind = korean_dessert_payload()
+    candidate_unknown_kind["recipes"][0]["recipeKind"] = "breakfast"  # type: ignore[index,union-attr]
+    rows.append(("candidate unknown kind", "candidate", candidate_unknown_kind, 3))
+
+    candidate_mismatch = korean_dessert_payload()
+    candidate_mismatch["recipes"][0]["recipeKind"] = "meal"  # type: ignore[index,union-attr]
+    rows.append(("candidate kind mismatching request", "candidate", candidate_mismatch, 3))
+
+    assert len(rows) == 7
+    return rows
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("case", "category", "payload", "provider_calls"),
+    invalid_recipe_contract_rows(),
+)
+async def test_recipe_kind_and_locale_fail_closed_contract_rows(
+    case: str,
+    category: str,
+    payload: JsonObject,
+    provider_calls: int,
+) -> None:
+    del case
+    request = payload if category == "request" else recipe_request(locale="ko", recipe_kind="dessert")
+    ai = FakeAI(recipe_outputs=[json.dumps(payload)] if category == "candidate" else None)
+
+    with configured_app(ai=ai) as (app, _, _, _):
+        response = await post_json(app, request)
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": {
+            "code": "validation_error" if category == "request" else "model_validation_failed",
+            "message": (
+                "Request does not match schema"
+                if category == "request"
+                else "Model response failed validation"
+            ),
+        }
+    }
+    assert ai.recipe_calls == provider_calls
+
+
+@pytest.mark.anyio
+async def test_korean_dessert_response_is_localized_without_locale_echo() -> None:
+    ai = FakeAI(recipe_outputs=[json.dumps(korean_dessert_payload(), ensure_ascii=False)])
+    with configured_app(ai=ai) as (app, _, _, _):
+        response = await post_json(app, recipe_request(locale="ko", recipe_kind="dessert"))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["recipes"]) == 3
+    assert {recipe["recipeKind"] for recipe in body["recipes"]} == {"dessert"}
+    assert [recipe["title"] for recipe in body["recipes"]] == [
+        "달걀 볶음밥 디저트",
+        "달콤한 쌀 오믈렛",
+        "바삭한 쌀과자",
+    ]
+    assert body["recipes"][1]["missingIngredients"][0]["name"] == "소금"
+    assert body["recipes"][0]["steps"][0] == "밥을 익힌다"
+    assert "locale" not in json.dumps(body, ensure_ascii=False)
+
+
+def test_recipe_kind_and_locale_schemas_are_required_and_request_only() -> None:
+    from app.models import RecipeCandidate, RecipeGenerateRequest, RecipeGenerateResponse
+
+    request_schema = RecipeGenerateRequest.model_json_schema(by_alias=True)
+    candidate_schema = RecipeCandidate.model_json_schema(by_alias=True)
+    response_schema = RecipeGenerateResponse.model_json_schema(by_alias=True)
+
+    assert {"locale", "recipeKind"} <= set(request_schema["required"])
+    assert "recipeKind" in candidate_schema["required"]
+    assert "locale" not in json.dumps(candidate_schema)
+    assert "locale" not in json.dumps(response_schema)
+
+
 @pytest.mark.anyio
 async def test_recipe_request_without_measurement_hints_still_succeeds() -> None:
     # Given: the existing request shape has no measurementHints field.
@@ -225,6 +344,7 @@ def test_shared_normalization_fixtures_match_android_values_and_fingerprint() ->
         CanonicalUnit,
         MissingIngredient,
         RecipeCandidate,
+        RecipeKind,
         normalize_label,
         recipe_fingerprint,
     )
@@ -240,6 +360,7 @@ def test_shared_normalization_fixtures_match_android_values_and_fingerprint() ->
     normalized = [normalize_label(case["input"]) for case in fixtures["normalization"]]
     fingerprint = fixtures["fingerprint"]
     candidate = RecipeCandidate(
+        recipeKind=RecipeKind.MEAL,
         title="fixture",
         cuisine=fingerprint["cuisine"],
         primaryTechnique=fingerprint["primaryTechnique"],

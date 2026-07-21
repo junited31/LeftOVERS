@@ -2,16 +2,16 @@ from typing import Final
 
 RECIPE_EXAMPLE_JSON: Final = (
     '{"recipes":['
-    '{"title":"Egg fried rice","cuisine":"Korean","primaryTechnique":"stir-fry",'
+    '{"recipeKind":"meal","title":"Egg fried rice","cuisine":"Korean","primaryTechnique":"stir-fry",'
     '"requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":'
     '"10000000-0000-4000-8000-000000000001","version":2,"unit":"g",'
     '"proposedMilliUnits":200000}],"missingIngredients":[],"steps":["Cook rice","Add egg"]},'
-    '{"title":"Rice omelette","cuisine":"Japanese","primaryTechnique":"pan-fry",'
+    '{"recipeKind":"meal","title":"Rice omelette","cuisine":"Japanese","primaryTechnique":"pan-fry",'
     '"requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":'
     '"10000000-0000-4000-8000-000000000002","version":4,"unit":"count",'
     '"proposedMilliUnits":2000}],"missingIngredients":[{"name":"Salt",'
     '"amountMilliUnits":1000,"unit":"g"}],"steps":["Beat eggs","Fold rice"]},'
-    '{"title":"Crispy rice cakes","cuisine":"Korean","primaryTechnique":"pan-fry",'
+    '{"recipeKind":"meal","title":"Crispy rice cakes","cuisine":"Korean","primaryTechnique":"pan-fry",'
     '"requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":'
     '"10000000-0000-4000-8000-000000000001","version":2,"unit":"g",'
     '"proposedMilliUnits":150000}],"missingIngredients":[],"steps":["Shape rice","Pan fry"]}'
@@ -24,7 +24,9 @@ RECIPE_INSTRUCTIONS: Final = (
     "supplied pantry rows and list other needs under missingIngredients. Treat measurementHints "
     "as optional amount preferences, never as pantry inventory. Match only "
     "supplied equipment; keep titles and fingerprints unique with at least two cuisines "
-    "and two primary techniques. One compact valid example follows: "
+    "and two primary techniques. Every recipeKind must match the request recipeKind. "
+    "Use the request locale for titles, missing-ingredient names, and steps: English for "
+    "en and Korean for ko. Never return locale. One compact valid example follows: "
     + RECIPE_EXAMPLE_JSON
 )
 
