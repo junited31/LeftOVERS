@@ -7,6 +7,12 @@
     <string name="nav_cooking">Cooking</string>
     <string name="nav_history">History</string>
     <string name="nav_equipment">Equipment</string>
+    <string name="nav_settings">Settings</string>
+    <string name="continue_setup">Continue</string>
+    <string name="finish_setup">Finish</string>
+    <string name="language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_korean">Korean</string>
     <string name="title_ingredient">Ingredient</string>
     <string name="loading_recipes">Loading recipes…</string>
     <string name="loading_equipment">Loading equipment…</string>

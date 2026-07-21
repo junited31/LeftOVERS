@@ -25,8 +25,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Kitchen
 import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SoupKitchen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-private enum class AppScreen { PANTRY, RECIPES, COOKING, HISTORY, EQUIPMENT }
+private enum class AppScreen { PANTRY, RECIPES, COOKING, HISTORY, SETTINGS }
 
 private data class EquipmentChoice(val id: String, val labelRes: Int)
 
@@ -145,9 +145,37 @@ private fun LeftoversApp(
     val recipesLabel = stringResource(R.string.nav_recipes)
     val cookingLabel = stringResource(R.string.nav_cooking)
     val historyLabel = stringResource(R.string.nav_history)
-    val equipmentLabel = stringResource(R.string.nav_equipment)
+    val settingsLabel = stringResource(R.string.nav_settings)
 
     MaterialTheme {
+        val loadedPreferences = preferences ?: return@MaterialTheme
+        if (loadedPreferences[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] != true) {
+            OnboardingFlow(
+                pantryItems = pantryItems,
+                selectedEquipment = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
+                onToggleEquipment = { id ->
+                    scope.launch {
+                        dataStore.edit { values ->
+                            val current = values[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty()
+                            values[LeftoversPreferenceKeys.EQUIPMENT_IDS] =
+                                if (id in current) current - id else current + id
+                        }
+                    }
+                },
+                onSavePantry = { saved, editing ->
+                    scope.launch {
+                        if (editing) pantryDao.update(saved) else pantryDao.insertAll(listOf(saved))
+                    }
+                },
+                onDeletePantry = { scope.launch { pantryDao.delete(it.id) } },
+                onFinish = {
+                    scope.launch {
+                        dataStore.edit { it[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true }
+                    }
+                },
+            )
+            return@MaterialTheme
+        }
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -205,15 +233,15 @@ private fun LeftoversApp(
                         },
                     )
                     NavigationBarItem(
-                        selected = screen == AppScreen.EQUIPMENT,
+                        selected = screen == AppScreen.SETTINGS,
                         onClick = {
-                            screen = AppScreen.EQUIPMENT
+                            screen = AppScreen.SETTINGS
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = equipmentLabel) },
-                        label = { Text(equipmentLabel) },
-                        modifier = Modifier.testTag("nav-equipment").semantics {
-                            contentDescription = equipmentLabel
+                        icon = { Icon(Icons.Outlined.Settings, contentDescription = settingsLabel) },
+                        label = { Text(settingsLabel) },
+                        modifier = Modifier.testTag("nav-settings").semantics {
+                            contentDescription = settingsLabel
                         },
                     )
                 }
@@ -244,7 +272,7 @@ private fun LeftoversApp(
                     },
                     onDelete = { scope.launch { pantryDao.delete(it.id) } },
                 )
-                screen == AppScreen.RECIPES -> preferences?.let { loadedPreferences ->
+                screen == AppScreen.RECIPES -> {
                     val recipeApi = remember { recipeApiProvider() }
                     RecipeScreen(
                         pantry = pantryItems,
@@ -256,7 +284,7 @@ private fun LeftoversApp(
                         onCookingStarted = { screen = AppScreen.COOKING },
                         modifier = Modifier.padding(padding),
                     )
-                } ?: Text(stringResource(R.string.loading_recipes), modifier = Modifier.padding(padding).padding(20.dp))
+                }
                 screen == AppScreen.COOKING -> {
                     val photos = remember(context) { PhotoLifecycle(context) }
                     CookingScreen(
@@ -273,22 +301,22 @@ private fun LeftoversApp(
                     repository = remember(mealLogDao) { HistoryRepository(mealLogDao) },
                     modifier = Modifier.padding(padding),
                 )
-                else -> preferences?.let { loadedPreferences ->
+                else -> {
                     EquipmentChecklist(
                         selected = loadedPreferences[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty(),
-                        modifier = Modifier.padding(padding),
+                        modifier = Modifier.padding(padding).testTag("settings-kitchen"),
                         onToggle = { id ->
                             scope.launch {
                                 dataStore.edit { values ->
                                     val current = values[LeftoversPreferenceKeys.EQUIPMENT_IDS].orEmpty()
                                     values[LeftoversPreferenceKeys.EQUIPMENT_IDS] =
                                         if (id in current) current - id else current + id
-                                    values[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true
                                 }
                             }
                         },
+                        showLanguage = true,
                     )
-                } ?: Text(stringResource(R.string.loading_equipment), modifier = Modifier.padding(padding).padding(20.dp))
+                }
             }
         }
     }
@@ -300,8 +328,66 @@ private val AppScreen.titleRes: Int
         AppScreen.RECIPES -> R.string.nav_recipes
         AppScreen.COOKING -> R.string.nav_cooking
         AppScreen.HISTORY -> R.string.nav_history
-        AppScreen.EQUIPMENT -> R.string.nav_equipment
+        AppScreen.SETTINGS -> R.string.nav_settings
     }
+
+@Composable
+private fun OnboardingFlow(
+    pantryItems: List<PantryItemEntity>,
+    selectedEquipment: Set<String>,
+    onToggleEquipment: (String) -> Unit,
+    onSavePantry: (PantryItemEntity, Boolean) -> Unit,
+    onDeletePantry: (PantryItemEntity) -> Unit,
+    onFinish: () -> Unit,
+) {
+    var pantryStep by rememberSaveable { mutableStateOf(false) }
+    var editId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showForm by rememberSaveable { mutableStateOf(false) }
+
+    when {
+        !pantryStep -> Column(Modifier.fillMaxSize().testTag("onboarding-equipment")) {
+            EquipmentChecklist(
+                selected = selectedEquipment,
+                modifier = Modifier.weight(1f),
+                onToggle = onToggleEquipment,
+            )
+            Button(
+                onClick = { pantryStep = true },
+                enabled = selectedEquipment.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().padding(20.dp).testTag("onboarding-continue"),
+            ) { Text(stringResource(R.string.continue_setup)) }
+        }
+        showForm -> PantryForm(
+            existingItem = pantryItems.firstOrNull { it.id.value == editId },
+            modifier = Modifier.testTag("onboarding-pantry-form"),
+            onCancel = { showForm = false },
+            onSave = { saved ->
+                onSavePantry(saved, editId != null)
+                showForm = false
+            },
+        )
+        else -> Column(Modifier.fillMaxSize().testTag("onboarding-pantry")) {
+            PantryList(
+                pantryItems = pantryItems,
+                modifier = Modifier.weight(1f),
+                onAdd = {
+                    editId = null
+                    showForm = true
+                },
+                onEdit = {
+                    editId = it.id.value
+                    showForm = true
+                },
+                onDelete = onDeletePantry,
+            )
+            Button(
+                onClick = onFinish,
+                enabled = pantryItems.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().padding(20.dp).testTag("onboarding-finish"),
+            ) { Text(stringResource(R.string.finish_setup)) }
+        }
+    }
+}
 
 @Composable
 private fun PantryList(
@@ -311,7 +397,7 @@ private fun PantryList(
     onEdit: (PantryItemEntity) -> Unit,
     onDelete: (PantryItemEntity) -> Unit,
 ) {
-    Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("pantry-list")) {
         Text(
             text = stringResource(R.string.pantry_heading),
             style = MaterialTheme.typography.titleMedium,
@@ -486,6 +572,7 @@ private fun EquipmentChecklist(
     selected: Set<String>,
     modifier: Modifier,
     onToggle: (String) -> Unit,
+    showLanguage: Boolean = false,
 ) {
     LazyColumn(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         item {
@@ -506,7 +593,8 @@ private fun EquipmentChecklist(
                         onValueChange = { onToggle(equipment.id) },
                     )
                     .heightIn(min = 48.dp)
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .testTag("equipment-${equipment.id}"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(checked = equipment.id in selected, onCheckedChange = null)
@@ -515,6 +603,45 @@ private fun EquipmentChecklist(
             }
             HorizontalDivider()
         }
+        if (showLanguage) {
+            item {
+                Text(
+                    text = stringResource(R.string.language),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp).semantics { heading() },
+                )
+                LanguageChoice("en", R.string.language_english)
+                LanguageChoice("ko", R.string.language_korean)
+                Spacer(Modifier.padding(bottom = 16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageChoice(languageTag: String, labelRes: Int) {
+    val selected = AppCompatDelegate.getApplicationLocales().get(0)?.language == languageTag
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = {
+                    if (languageTag == "en") {
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                    } else {
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
+                    }
+                },
+            )
+            .heightIn(min = 48.dp)
+            .testTag("settings-language-$languageTag"),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Spacer(Modifier.width(12.dp))
+        Text(stringResource(labelRes))
     }
 }
 

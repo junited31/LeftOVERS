@@ -76,6 +76,7 @@ class LeftoversFlowE2eTest {
         database.pantryDao().insertAll(pantry())
         context.leftoversDataStore.edit {
             it[LeftoversPreferenceKeys.EQUIPMENT_IDS] = setOf("gas_burner", "basic_cookware")
+            it[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true
         }
         server = MockWebServer().apply { start() }
         serverRunning = true

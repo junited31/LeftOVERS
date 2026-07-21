@@ -20,12 +20,16 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.text.AnnotatedString
+import androidx.datastore.preferences.core.edit
 import androidx.room.Room
 import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.junited31.leftovers.MainActivity
 import com.junited31.leftovers.data.LeftoversDatabase
+import com.junited31.leftovers.data.LeftoversPreferenceKeys
+import com.junited31.leftovers.data.leftoversDataStore
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -46,6 +50,11 @@ class PantryEquipmentTest {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
         }
         shell("am broadcast -a com.junited31.leftovers.DEBUG_RESET")
+        runBlocking {
+            InstrumentationRegistry.getInstrumentation().targetContext.leftoversDataStore.edit {
+                it[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true
+            }
+        }
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
     }
@@ -86,14 +95,14 @@ class PantryEquipmentTest {
 
     @Test
     fun equipmentSelectionPersistsAcrossActivityRecreation() {
-        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithTag("nav-settings").performClick()
         compose.onNodeWithText("기본 조리도구").assertIsOff().performClick()
         compose.waitUntil(5_000) {
             runCatching { compose.onNodeWithText("기본 조리도구").assertIsOn() }.isSuccess
         }
 
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithTag("nav-settings").performClick()
         compose.waitUntil(5_000) {
             runCatching { compose.onNodeWithText("기본 조리도구").assertIsOn() }.isSuccess
         }
@@ -140,7 +149,7 @@ class PantryEquipmentTest {
         compose.onNodeWithText("지금 사용할 수 있는 재료")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
 
-        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithTag("nav-settings").performClick()
         compose.onNodeWithText("주방에 있는 조리도구를 선택해 주세요")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
     }
@@ -160,7 +169,7 @@ class PantryEquipmentTest {
         compose.onNodeWithText("지금 사용할 수 있는 재료").assertIsDisplayed()
         captureScreen("task-6-korean-pantry")
 
-        compose.onNodeWithTag("nav-equipment").performClick()
+        compose.onNodeWithTag("nav-settings").performClick()
         compose.onNodeWithText("주방에 있는 조리도구를 선택해 주세요").assertIsDisplayed()
         captureScreen("task-6-korean-equipment")
     }

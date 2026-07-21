@@ -1,0 +1,13 @@
+{
+  "activityScenariosClosed": true,
+  "appDataCleared": true,
+  "roomRowsRemaining": 0,
+  "dataStoreTaskStateRemaining": false,
+  "appLocales": ["en"],
+  "taskCapturePrefixFilesOnDevice": 0,
+  "physicalDisplaySize": "1080x2640",
+  "airplaneMode": false,
+  "networkStateModified": false,
+  "taskGradleDaemonsRemaining": 0,
+  "hostTemporaryFilesRemaining": 0
+}

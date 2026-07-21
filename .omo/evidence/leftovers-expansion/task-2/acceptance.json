@@ -1,0 +1,17 @@
+{
+  "unit": {
+    "tests": 84,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "connected": {
+    "device": "R5CR91DXA8R",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "gitDiffCheck": "pass",
+  "secretScan": "pass (312 files inspected)"
+}

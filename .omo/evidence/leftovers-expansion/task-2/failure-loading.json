@@ -1,0 +1,10 @@
+{
+  "device": "R5CR91DXA8R",
+  "source": "Android screenrecord during clear-and-launch",
+  "outputFps": 30,
+  "outputFrames": 60,
+  "width": 1080,
+  "height": 2640,
+  "normalization": "Variable-rate device capture normalized to constant 30 fps by frame duplication; no frames were synthesized or removed.",
+  "assertion": "No onboarding or main-navigation frame rendered before preferences loaded."
+}

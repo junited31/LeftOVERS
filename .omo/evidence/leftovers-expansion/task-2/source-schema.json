@@ -1,0 +1,10 @@
+{
+  "navigationBarItemCalls": 5,
+  "appScreenEquipmentReferences": 0,
+  "equipmentToggleWritesOnboardingComplete": false,
+  "onboardingCompleteUiWrites": 1,
+  "roomVersion": 1,
+  "schemaSha256Before": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E",
+  "schemaSha256After": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E",
+  "schemaChanged": false
+}

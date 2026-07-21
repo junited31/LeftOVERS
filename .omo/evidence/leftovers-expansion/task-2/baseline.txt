@@ -1,0 +1,8 @@
+Base HEAD: 81f45b6
+Production state: unmodified
+Device: R5CR91DXA8R (SM-F711N, API 35)
+Reset: adb shell pm clear com.junited31.leftovers
+Command: :app:connectedDebugAndroidTest class=PantryEquipmentTest,LeftoversFlowE2eTest
+Result: FAIL; 11 tests, 9 passed, 2 failed, 0 skipped
+Failures: LeftoversFlowE2eTest pantry flow could not find Rice; typed error flow timed out.
+Note: both failures occurred on base HEAD before any production or test edit.

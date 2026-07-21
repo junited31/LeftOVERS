@@ -1,0 +1,8 @@
+{
+  "equipmentIds": "[basic_cookware, gas_burner]",
+  "pantryRows": 1,
+  "onboardingComplete": true,
+  "bottomDestinations": 5,
+  "roomCheckedDirectly": true,
+  "dataStoreCheckedDirectly": true
+}
