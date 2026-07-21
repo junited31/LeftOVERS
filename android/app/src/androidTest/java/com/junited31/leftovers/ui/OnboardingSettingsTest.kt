@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -35,6 +36,7 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -67,6 +69,19 @@ class OnboardingSettingsTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
+    }
+
+    @Test
+    fun onboardingActionsStayInsideSystemBars() {
+        launch()
+
+        assertTopInsideStatusBar("Select the equipment in your kitchen")
+        assertBottomInsideNavigationBar("onboarding-continue")
+        compose.onNodeWithTag("equipment-gas_burner").performClick()
+        compose.waitUntil(5_000) { equipmentIds().isNotEmpty() }
+        compose.onNodeWithTag("onboarding-continue").performClick()
+        assertTopInsideStatusBar("Ingredients available now")
+        assertBottomInsideNavigationBar("onboarding-finish")
     }
 
     @Test
@@ -203,6 +218,21 @@ class OnboardingSettingsTest {
 
     private fun applicationLanguage(): String =
         AppCompatDelegate.getApplicationLocales().toLanguageTags()
+
+    private fun assertTopInsideStatusBar(text: String) {
+        val statusBar = context.resources.getDimensionPixelSize(
+            context.resources.getIdentifier("status_bar_height", "dimen", "android"),
+        )
+        assertTrue(compose.onNodeWithText(text).fetchSemanticsNode().boundsInRoot.top >= statusBar)
+    }
+
+    private fun assertBottomInsideNavigationBar(tag: String) {
+        val navigationBar = context.resources.getDimensionPixelSize(
+            context.resources.getIdentifier("navigation_bar_height", "dimen", "android"),
+        )
+        val safeBottom = context.resources.displayMetrics.heightPixels - navigationBar
+        assertTrue(compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.bottom <= safeBottom)
+    }
 
     private fun capture(name: String) {
         compose.mainClock.advanceTimeBy(1_000)

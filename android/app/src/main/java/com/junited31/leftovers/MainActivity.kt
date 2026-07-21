@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -345,7 +348,9 @@ private fun OnboardingFlow(
     var showForm by rememberSaveable { mutableStateOf(false) }
 
     when {
-        !pantryStep -> Column(Modifier.fillMaxSize().testTag("onboarding-equipment")) {
+        !pantryStep -> Column(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-equipment"),
+        ) {
             EquipmentChecklist(
                 selected = selectedEquipment,
                 modifier = Modifier.weight(1f),
@@ -359,14 +364,16 @@ private fun OnboardingFlow(
         }
         showForm -> PantryForm(
             existingItem = pantryItems.firstOrNull { it.id.value == editId },
-            modifier = Modifier.testTag("onboarding-pantry-form"),
+            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-pantry-form"),
             onCancel = { showForm = false },
             onSave = { saved ->
                 onSavePantry(saved, editId != null)
                 showForm = false
             },
         )
-        else -> Column(Modifier.fillMaxSize().testTag("onboarding-pantry")) {
+        else -> Column(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-pantry"),
+        ) {
             PantryList(
                 pantryItems = pantryItems,
                 modifier = Modifier.weight(1f),
