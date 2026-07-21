@@ -1,0 +1,17 @@
+Command: backend\.venv\Scripts\python.exe -m pytest -q backend\tests\test_recipe_generation.py -k recipe_kind_and_locale_fail_closed_contract_rows
+Phase: RED (production files unchanged)
+Exit code: 1
+Output:
+....FFF                                                                  [100%]
+
+Failed rows:
+- candidate missing kind: expected model_validation_failed after 3 primary calls; got request validation_error before provider
+- candidate unknown kind: expected model_validation_failed after 3 primary calls; got request validation_error before provider
+- candidate kind mismatching request: expected model_validation_failed after 3 primary calls; got request validation_error before provider
+
+Summary:
+3 failed, 4 passed, 31 deselected in 0.75s
+
+The four request rows already fail closed because strict extra-field rejection rejects the new
+wire fields before the fields exist in the request model. The three candidate rows prove the
+missing request contract currently prevents the required primary validation/repair path.

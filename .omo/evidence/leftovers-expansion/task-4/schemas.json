@@ -1,0 +1,46 @@
+{
+  "binding": {
+    "codeHead": "3698c4eaaa7c3ff49c05fa6d32fe49f9035b74a8",
+    "codeTree": "b12981b6b68335b85ee80a5c52862f284ae333dc",
+    "trackedHeadClean": true,
+    "sourceHashesSha256": {
+      "backend/app/main.py": "af2536cd1150073acc439774225c60081e8b72a0364223398394dfed7432e1a7",
+      "backend/app/models.py": "0a47854f910cb2195f44da894c742f99e29b58a21fb5eaa2008088162523eb5c",
+      "backend/app/prompts.py": "4961d02d32c1e3111dfb7ead45638ecab0fc868a0d66fa412265eda5bffa0b54",
+      "backend/app/openai_client.py": "9382bd71e2bd315efedb6a837e4bec587c6505cf7ffe29ac24f29174665eb560",
+      "backend/tests/conftest.py": "4d5d867344f081cc5bacf1c0f241dcdb8c7a5317cda18f53afe181b22aeb22eb",
+      "backend/tests/test_recipe_generation.py": "43ef1411a6230cdd2376ba1e2d3e16122cda8ea3e5a588eb2f499012f18a4412",
+      "backend/tests/test_api_boundaries.py": "a740b72be4f9e1bdf5d3b74d018c35bc560b74c6b57c99e41111fea351336182",
+      "backend/tests/test_openai_client.py": "5c57a44ba0bb280caff3ccd8f23aba574efbd6cc8d6e3c42adeb2d30a9306813",
+      "scripts/tests/fixtures/recipe-request.json": "642ac6de265f01f284c19aba8e4c99f896b30dd7752ab2cfbbe43b550d9ef01f",
+      "scripts/tests/fixtures/recipe-response.valid.json": "4a40c740761b6bc98960bb7bb547011426c25d960ffc5f4f9ba0664f932795f2"
+    }
+  },
+  "requestRequired": [
+    "locale",
+    "recipeKind",
+    "pantry",
+    "equipment"
+  ],
+  "candidateRequired": [
+    "recipeKind",
+    "title",
+    "cuisine",
+    "primaryTechnique",
+    "requiredEquipment",
+    "trackedUses",
+    "missingIngredients",
+    "steps"
+  ],
+  "requestSchemaSha256": "26aa106e31a647a98d17e58f77f0421ba3bc23e1f40ca973a6d0227cd61a65bc",
+  "candidateSchemaSha256": "4fb6d568e063ae4b39b3b30f8f73d91f4f9fbe62e39c051d877563da66b3d3b5",
+  "responseSchemaSha256": "a5fc66049bd6104242fd1dac5c7469b52f567a9d0b51148603529fed935e7526",
+  "assertions": {
+    "requestRequiresLocale": true,
+    "requestRequiresRecipeKind": true,
+    "candidateRequiresRecipeKind": true,
+    "candidateContainsNoLocale": true,
+    "responseContainsNoLocale": true
+  },
+  "verdict": "PASS"
+}

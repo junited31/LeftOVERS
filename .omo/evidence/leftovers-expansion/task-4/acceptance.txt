@@ -1,0 +1,24 @@
+Focused GREEN
+Command: backend\.venv\Scripts\python.exe -m pytest -q backend\tests\test_recipe_generation.py -k "recipe_kind_and_locale or korean_dessert"
+Exit code: 0
+Result: 9 passed, 29 deselected in 0.63s
+
+Exact acceptance
+Command: backend\.venv\Scripts\python.exe -m pytest -q backend\tests\test_recipe_generation.py backend\tests\test_api_boundaries.py backend\tests\test_openai_client.py
+Exit code: 0
+Result: 49 passed in 0.71s
+
+Broader backend unit suite (shared validation changed)
+Command: backend\.venv\Scripts\python.exe -m pytest -q backend\tests
+Exit code: 0
+Result: 75 passed in 0.90s
+
+Deployment fixture/preflight contract
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\tests\cloud_scripts_test.ps1
+Exit code: 0
+Result: Cloud script contract tests passed.
+
+Static lint availability
+Command: backend\.venv\Scripts\python.exe -m ruff check backend\app backend\tests
+Exit code: 1
+Result: backend venv has no ruff module; no lint result claimed.
