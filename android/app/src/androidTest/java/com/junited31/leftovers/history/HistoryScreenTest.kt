@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.core.os.LocaleListCompat
+import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -25,6 +26,7 @@ import com.junited31.leftovers.data.ActualPantryUse
 import com.junited31.leftovers.data.ActualPantryUses
 import com.junited31.leftovers.data.JsonConverters
 import com.junited31.leftovers.data.LeftoversDatabase
+import com.junited31.leftovers.data.LeftoversPreferenceKeys
 import com.junited31.leftovers.data.MealFeedback
 import com.junited31.leftovers.data.MealLogEntity
 import com.junited31.leftovers.data.MeasurementAdjustment
@@ -37,6 +39,7 @@ import com.junited31.leftovers.data.PantryUnit
 import com.junited31.leftovers.data.RecipePreferenceMetadata
 import com.junited31.leftovers.data.RecipeSnapshotRecord
 import com.junited31.leftovers.data.RecipeSteps
+import com.junited31.leftovers.data.leftoversDataStore
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -69,6 +72,7 @@ class HistoryScreenTest {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
         database.clearAllTables()
+        context.leftoversDataStore.edit { it[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true }
         photos.retainedFinalPhotos().forEach(File::delete)
     }
 
@@ -134,6 +138,32 @@ class HistoryScreenTest {
         assertEquals(path, runBlocking { database.mealLogDao().get("missing") }
             ?.recipeSnapshot?.feedback?.finalPhotoPath)
         capture("task-9-missing-photo.xml", xml = true)
+    }
+
+    @Test
+    fun adjustmentHistoryLocalizesOnlyExactCanonicalNames() {
+        val base = log("names", 3_500, null)
+        insertLog(base.copy(
+            recipeSnapshot = base.recipeSnapshot.copy(
+                feedback = base.recipeSnapshot.feedback.copy(
+                    measurementAdjustments = listOf(
+                        MeasurementAdjustment("onion", 1_000, PantryUnit.COUNT, "exact", 3_500),
+                        MeasurementAdjustment("Onion ", 1_000, PantryUnit.COUNT, "near", 3_500),
+                    ),
+                ),
+            ),
+        ))
+        launchHistory()
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
+        }
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithText("완료한 요리").assertIsDisplayed() }.isSuccess
+        }
+
+        compose.onNodeWithTag("history-row-names").performClick()
+        scrollTo("양파 · 1 개 · exact")
+        scrollTo("Onion  · 1 개 · near")
     }
 
     @Test

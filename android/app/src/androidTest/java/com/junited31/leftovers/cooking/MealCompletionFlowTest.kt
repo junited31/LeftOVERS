@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -24,6 +25,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.text.AnnotatedString
 import androidx.room.Room
 import androidx.core.os.LocaleListCompat
+import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -32,6 +34,7 @@ import com.junited31.leftovers.DebugApplication
 import com.junited31.leftovers.MainActivity
 import com.junited31.leftovers.data.CookSessionEntity
 import com.junited31.leftovers.data.LeftoversDatabase
+import com.junited31.leftovers.data.LeftoversPreferenceKeys
 import com.junited31.leftovers.data.PantryBinding
 import com.junited31.leftovers.data.PantryBindings
 import com.junited31.leftovers.data.PantryItemEntity
@@ -40,6 +43,7 @@ import com.junited31.leftovers.data.PantryUnit
 import com.junited31.leftovers.data.RecipePreferenceMetadata
 import com.junited31.leftovers.data.RecipeSnapshotEntity
 import com.junited31.leftovers.data.RecipeSteps
+import com.junited31.leftovers.data.leftoversDataStore
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -73,10 +77,11 @@ class MealCompletionFlowTest {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
         }
         database.clearAllTables()
+        context.leftoversDataStore.edit { it[LeftoversPreferenceKeys.ONBOARDING_COMPLETE] = true }
         photos.ownedCacheFiles().forEach(File::delete)
         photos.retainedFinalPhotos().forEach(File::delete)
         database.pantryDao().insertAll(
-            listOf(PantryItemEntity(riceId, "쌀", 10_000, PantryUnit.GRAM, null, 1)),
+            listOf(PantryItemEntity(riceId, "Onion ", 10_000, PantryUnit.GRAM, null, 1)),
         )
         database.recipeSnapshotDao().insert(
             RecipeSnapshotEntity(
@@ -106,6 +111,7 @@ class MealCompletionFlowTest {
     @Test
     fun editsActualUseFeedbackAndPhotoThenCompletesOfflineWithExactRemaining() {
         launchCompletion()
+        compose.onNodeWithText("Onion ").assertIsDisplayed()
         compose.onNodeWithTag("completion-form-title")
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Heading, Unit))
         compose.onNodeWithTag("rating-group")
@@ -129,15 +135,17 @@ class MealCompletionFlowTest {
 
         assertEquals(0L, runBlocking { database.pantryDao().get(riceId) }?.quantityMilliUnits)
         val log = requireNotNull(runBlocking { database.mealLogDao().latest() }.single())
-        assertEquals("쌀", log.actualUses.values.single().displayName)
+        assertEquals("Onion ", log.actualUses.values.single().displayName)
         assertEquals(5, log.recipeSnapshot.feedback.rating)
         assertFalse(log.recipeSnapshot.feedback.recommendAgain)
         assertEquals("덜 짜게", log.recipeSnapshot.feedback.notes)
         assertEquals(4_000L, log.recipeSnapshot.feedback.measurementAdjustments.single().preferredAmountMilliUnits)
+        assertEquals("Onion ", log.recipeSnapshot.feedback.measurementAdjustments.single().ingredientName)
         assertTrue(File(requireNotNull(log.recipeSnapshot.feedback.finalPhotoPath)).isFile)
         val profile = PreferenceProfile.from(listOf(log))
         assertEquals(1, profile.history.size)
         assertEquals(4_000L, profile.measurementHints.single().preferredAmountMilliUnits)
+        assertEquals("onion", profile.measurementHints.single().ingredientName)
         hideKeyboard()
         captureCompletionEvidence(log.recipeSnapshot.feedback.finalPhotoPath, profile)
     }

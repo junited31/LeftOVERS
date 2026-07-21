@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.R
+import com.junited31.leftovers.pantryDisplayName
 import com.junited31.leftovers.data.ActualPantryUse
 import com.junited31.leftovers.data.ActualPantryUses
 import com.junited31.leftovers.data.CompleteCookSessionCommand
@@ -55,7 +56,6 @@ import com.junited31.leftovers.photo.InvalidPhotoException
 import com.junited31.leftovers.photo.PhotoContracts
 import com.junited31.leftovers.photo.PhotoLifecycle
 import com.junited31.leftovers.photo.PhotoTooLargeException
-import com.junited31.leftovers.recipes.RecipeNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -126,7 +126,7 @@ internal fun MealCompletionForm(
         bindings.forEachIndexed { index, binding ->
             val item = pantryById[binding.pantryItemId]
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(item?.name ?: stringResource(R.string.ingredient_number, index + 1), style = MaterialTheme.typography.titleMedium)
+                Text(item?.let { pantryDisplayName(it.name) } ?: stringResource(R.string.ingredient_number, index + 1), style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = actualAmounts[index],
                     onValueChange = { value -> actualAmounts = actualAmounts.updated(index, value) },
@@ -235,9 +235,7 @@ internal fun MealCompletionForm(
                     val adjustments = bindings.mapIndexedNotNull { index, binding ->
                         preferred[index]?.let { amount ->
                             MeasurementAdjustment(
-                                ingredientName = RecipeNormalizer.normalize(
-                                    pantryById[binding.pantryItemId]?.name.orEmpty(),
-                                ),
+                                ingredientName = pantryById[binding.pantryItemId]?.name.orEmpty(),
                                 preferredAmountMilliUnits = amount,
                                 unit = binding.unit,
                                 note = adjustmentNotes[index].trim(),
@@ -256,9 +254,7 @@ internal fun MealCompletionForm(
                                     sourceVersion = binding.sourceVersion,
                                     unit = binding.unit,
                                     actualMilliUnits = checkNotNull(actual[index]),
-                                    displayName = pantryById[binding.pantryItemId]?.name
-                                        ?.trim()
-                                        ?.takeIf(String::isNotEmpty),
+                                    displayName = pantryById[binding.pantryItemId]?.name,
                                 )
                             },
                         ),

@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.R
+import com.junited31.leftovers.pantryDisplayName
 import com.junited31.leftovers.data.MealLogEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
@@ -201,7 +202,7 @@ private fun HistoryDetailScreen(
                     ?.let { stringResource(R.string.history_adjustment_note, it) }.orEmpty()
                 stringResource(
                     R.string.history_adjustment_line,
-                    adjustment.ingredientName,
+                    pantryDisplayName(adjustment.ingredientName),
                     amount(adjustment.preferredAmountMilliUnits),
                     unit(adjustment.unit),
                     note,
@@ -227,7 +228,8 @@ private fun completedAt(epochMillis: Long): String = Instant.ofEpochMilli(epochM
 
 @Composable
 private fun ingredientLabel(displayName: String?, index: Int, id: PantryItemId) =
-    displayName ?: stringResource(R.string.ingredient_fallback, index + 1, id.value.takeLast(4))
+    displayName?.let { pantryDisplayName(it) }
+        ?: stringResource(R.string.ingredient_fallback, index + 1, id.value.takeLast(4))
 
 private fun amount(milliUnits: Long): String = BigDecimal.valueOf(milliUnits)
     .movePointLeft(3).stripTrailingZeros().toPlainString()

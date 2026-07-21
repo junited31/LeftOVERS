@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -39,12 +41,14 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -144,6 +148,7 @@ private fun LeftoversApp(
     var screen by rememberSaveable { mutableStateOf(AppScreen.PANTRY) }
     var editId by rememberSaveable { mutableStateOf<String?>(null) }
     var showForm by rememberSaveable { mutableStateOf(false) }
+    var formSession by rememberSaveable { mutableStateOf(0) }
     val pantryLabel = stringResource(R.string.nav_pantry)
     val recipesLabel = stringResource(R.string.nav_recipes)
     val cookingLabel = stringResource(R.string.nav_cooking)
@@ -251,26 +256,30 @@ private fun LeftoversApp(
             },
         ) { padding ->
             when {
-                showForm -> PantryForm(
-                    existingItem = pantryItems.firstOrNull { it.id.value == editId },
-                    modifier = Modifier.padding(padding),
-                    onCancel = { showForm = false },
-                    onSave = { saved ->
-                        scope.launch {
-                            if (editId == null) pantryDao.insertAll(listOf(saved)) else pantryDao.update(saved)
-                            showForm = false
-                        }
-                    },
-                )
+                showForm -> key(formSession) {
+                    PantryForm(
+                        existingItem = pantryItems.firstOrNull { it.id.value == editId },
+                        modifier = Modifier.padding(padding),
+                        onCancel = { showForm = false },
+                        onSave = { saved ->
+                            scope.launch {
+                                if (editId == null) pantryDao.insertAll(listOf(saved)) else pantryDao.update(saved)
+                                showForm = false
+                            }
+                        },
+                    )
+                }
                 screen == AppScreen.PANTRY -> PantryList(
                     pantryItems = pantryItems,
                     modifier = Modifier.padding(padding),
                     onAdd = {
                         editId = null
+                        formSession++
                         showForm = true
                     },
                     onEdit = {
                         editId = it.id.value
+                        formSession++
                         showForm = true
                     },
                     onDelete = { scope.launch { pantryDao.delete(it.id) } },
@@ -346,6 +355,7 @@ private fun OnboardingFlow(
     var pantryStep by rememberSaveable { mutableStateOf(false) }
     var editId by rememberSaveable { mutableStateOf<String?>(null) }
     var showForm by rememberSaveable { mutableStateOf(false) }
+    var formSession by rememberSaveable { mutableStateOf(0) }
 
     when {
         !pantryStep -> Column(
@@ -362,15 +372,17 @@ private fun OnboardingFlow(
                 modifier = Modifier.fillMaxWidth().padding(20.dp).testTag("onboarding-continue"),
             ) { Text(stringResource(R.string.continue_setup)) }
         }
-        showForm -> PantryForm(
-            existingItem = pantryItems.firstOrNull { it.id.value == editId },
-            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-pantry-form"),
-            onCancel = { showForm = false },
-            onSave = { saved ->
-                onSavePantry(saved, editId != null)
-                showForm = false
-            },
-        )
+        showForm -> key(formSession) {
+            PantryForm(
+                existingItem = pantryItems.firstOrNull { it.id.value == editId },
+                modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-pantry-form"),
+                onCancel = { showForm = false },
+                onSave = { saved ->
+                    onSavePantry(saved, editId != null)
+                    showForm = false
+                },
+            )
+        }
         else -> Column(
             Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).testTag("onboarding-pantry"),
         ) {
@@ -379,10 +391,12 @@ private fun OnboardingFlow(
                 modifier = Modifier.weight(1f),
                 onAdd = {
                     editId = null
+                    formSession++
                     showForm = true
                 },
                 onEdit = {
                     editId = it.id.value
+                    formSession++
                     showForm = true
                 },
                 onDelete = onDeletePantry,
@@ -420,15 +434,16 @@ private fun PantryList(
             Text(stringResource(R.string.pantry_empty))
         } else {
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).testTag("pantry-items"),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(pantryItems, key = { it.id.value }) { item ->
-                    val editDescription = stringResource(R.string.edit_item_cd, item.name)
-                    val deleteDescription = stringResource(R.string.delete_item_cd, item.name)
+                    val displayName = pantryDisplayName(item.name)
+                    val editDescription = stringResource(R.string.edit_item_cd, displayName)
+                    val deleteDescription = stringResource(R.string.delete_item_cd, displayName)
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
-                            Text(item.name, style = MaterialTheme.typography.titleMedium)
+                            Text(displayName, style = MaterialTheme.typography.titleMedium)
                             Text(stringResource(R.string.quantity_unit_format, formatQuantity(item.quantityMilliUnits), displayUnit(item.unit)))
                             item.expiryEpochDay?.let {
                                 Text(stringResource(R.string.expiry_date_format, LocalDate.ofEpochDay(it)))
@@ -458,6 +473,32 @@ private fun PantryList(
     }
 }
 
+internal data class PantrySuggestion(val canonicalId: String, val unit: PantryUnit, val labelRes: Int)
+
+internal val pantrySuggestions = listOf(
+    PantrySuggestion("eggs", PantryUnit.COUNT, R.string.pantry_suggestion_eggs),
+    PantrySuggestion("milk", PantryUnit.MILLILITER, R.string.pantry_suggestion_milk),
+    PantrySuggestion("butter", PantryUnit.GRAM, R.string.pantry_suggestion_butter),
+    PantrySuggestion("cheese", PantryUnit.GRAM, R.string.pantry_suggestion_cheese),
+    PantrySuggestion("onion", PantryUnit.COUNT, R.string.pantry_suggestion_onion),
+    PantrySuggestion("garlic", PantryUnit.COUNT, R.string.pantry_suggestion_garlic),
+    PantrySuggestion("rice", PantryUnit.GRAM, R.string.pantry_suggestion_rice),
+    PantrySuggestion("bread", PantryUnit.COUNT, R.string.pantry_suggestion_bread),
+    PantrySuggestion("flour", PantryUnit.GRAM, R.string.pantry_suggestion_flour),
+    PantrySuggestion("sugar", PantryUnit.GRAM, R.string.pantry_suggestion_sugar),
+    PantrySuggestion("salt", PantryUnit.GRAM, R.string.pantry_suggestion_salt),
+    PantrySuggestion("black pepper", PantryUnit.GRAM, R.string.pantry_suggestion_black_pepper),
+    PantrySuggestion("cooking oil", PantryUnit.MILLILITER, R.string.pantry_suggestion_cooking_oil),
+    PantrySuggestion("tomato", PantryUnit.COUNT, R.string.pantry_suggestion_tomato),
+    PantrySuggestion("potato", PantryUnit.COUNT, R.string.pantry_suggestion_potato),
+    PantrySuggestion("carrot", PantryUnit.COUNT, R.string.pantry_suggestion_carrot),
+    PantrySuggestion("spinach", PantryUnit.GRAM, R.string.pantry_suggestion_spinach),
+)
+
+@Composable
+internal fun pantryDisplayName(name: String): String =
+    pantrySuggestions.firstOrNull { it.canonicalId == name }?.let { stringResource(it.labelRes) } ?: name
+
 @Composable
 private fun PantryForm(
     existingItem: PantryItemEntity?,
@@ -481,6 +522,25 @@ private fun PantryForm(
         modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item {
+            Text(stringResource(R.string.suggested_ingredients), style = MaterialTheme.typography.labelLarge)
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                pantrySuggestions.forEach { suggestion ->
+                    SuggestionChip(
+                        onClick = {
+                            name = suggestion.canonicalId
+                            unit = suggestion.unit
+                            quantity = ""
+                        },
+                        label = { Text(stringResource(suggestion.labelRes)) },
+                        modifier = Modifier.testTag("suggestion-${suggestion.canonicalId}"),
+                    )
+                }
+            }
+        }
         item {
             OutlinedTextField(
                 value = name,
@@ -506,6 +566,19 @@ private fun PantryForm(
                 modifier = Modifier.fillMaxWidth().testTag("quantity-input"),
             )
         }
+        if (unit == PantryUnit.COUNT) {
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("0.25" to "1/4", "0.5" to "1/2", "1" to "1", "2" to "2").forEach { (value, label) ->
+                        SuggestionChip(
+                            onClick = { quantity = value },
+                            label = { Text(label) },
+                            modifier = Modifier.testTag("fraction-$value"),
+                        )
+                    }
+                }
+            }
+        }
         item {
             Text(stringResource(R.string.unit), style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -516,7 +589,7 @@ private fun PantryForm(
                             selected = unit == choice,
                             role = Role.RadioButton,
                             onClick = { unit = choice },
-                        ).padding(vertical = 8.dp),
+                        ).padding(vertical = 8.dp).testTag("unit-${choice.value}"),
                     ) {
                         RadioButton(selected = unit == choice, onClick = null)
                         Text(displayUnit(choice))
@@ -554,7 +627,7 @@ private fun PantryForm(
                                     id = existingItem?.id ?: requireNotNull(
                                         PantryItemId.parse(UUID.randomUUID().toString()),
                                     ),
-                                    name = name.trim(),
+                                    name = name,
                                     quantityMilliUnits = checkNotNull(parsedQuantity),
                                     unit = unit,
                                     expiryEpochDay = parsedExpiry?.toEpochDay(),

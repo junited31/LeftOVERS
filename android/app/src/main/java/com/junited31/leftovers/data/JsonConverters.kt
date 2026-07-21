@@ -72,7 +72,7 @@ class JsonConverters {
                     .put("unit", use.unit.value)
                     .put("actualMilliUnits", use.actualMilliUnits)
                     .apply {
-                        use.displayName?.trim()?.takeIf(String::isNotEmpty)?.let {
+                        use.displayName?.takeIf(String::isNotEmpty)?.let {
                             put("displayName", it)
                         }
                     },
@@ -91,7 +91,6 @@ class JsonConverters {
                         unit = requiredUnit(json.getString("unit")),
                         actualMilliUnits = json.getLong("actualMilliUnits"),
                         displayName = (json.opt("displayName") as? String)
-                            ?.trim()
                             ?.takeIf(String::isNotEmpty),
                     )
                 }

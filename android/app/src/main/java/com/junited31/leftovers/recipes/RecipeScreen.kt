@@ -33,6 +33,7 @@ import com.junited31.leftovers.data.CookSessionDao
 import com.junited31.leftovers.data.MealLogDao
 import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.R
+import com.junited31.leftovers.pantryDisplayName
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import kotlinx.coroutines.Dispatchers
@@ -217,7 +218,7 @@ private fun uses(
     candidate.trackedUses.forEach { use ->
         add(stringResource(
             R.string.ingredient_amount_format,
-            pantryById.getValue(use.pantryItemId).name,
+            pantryDisplayName(pantryById.getValue(use.pantryItemId).name),
             amount(use.proposedMilliUnits),
             displayUnit(use.unit.value),
         ))
