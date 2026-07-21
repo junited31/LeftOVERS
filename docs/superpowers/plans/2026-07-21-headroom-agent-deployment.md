@@ -46,13 +46,19 @@ Run: `opencode --version`
 
 Expected: exit 0 and version `1.18.4`.
 
-- [ ] **Step 4: Replace the existing Headroom tool with the verified current package**
+- [ ] **Step 4: Remove the failed download cache**
 
-Run: `uv tool install --force --python 3.13 "headroom-ai[all]==0.32.1"`
+Run: `uv cache clean`
 
-Expected: exit 0 with the `headroom` executable installed.
+Expected: exit 0 and enough free disk for the minimal install.
 
-- [ ] **Step 5: Verify all host CLIs**
+- [ ] **Step 5: Install only the required Headroom features**
+
+Run: `uv tool install --force --python 3.13 "headroom-ai[proxy,code]==0.32.1"`
+
+Expected: exit 0 with the `headroom` executable installed and no Torch/CUDA packages.
+
+- [ ] **Step 6: Verify all host CLIs**
 
 Run: `headroom --version && claude --version && codex --version && opencode --version`
 

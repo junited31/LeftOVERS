@@ -6,7 +6,7 @@ Run Headroom persistently on this ARM64 Ubuntu host and route Claude Code, Codex
 
 ## Architecture
 
-- Upgrade the existing `uv`-managed `headroom-ai` tool to the current release with the upstream `all` extra.
+- Upgrade the existing `uv`-managed `headroom-ai` tool to the current release with only the `proxy` and `code` extras. The proxy extra already includes MCP support; GPU/ML extras are unnecessary on this host.
 - Repair the installed OpenCode ARM64 binary by running its existing postinstall script; do not add another OpenCode installation.
 - Use Headroom's turnkey deployment with Docker on `127.0.0.1:8787`. Docker is already available and Headroom selects a restartable container on this host.
 - Apply provider-scoped, reversible configuration only to `claude`, `codex`, and `opencode`.
