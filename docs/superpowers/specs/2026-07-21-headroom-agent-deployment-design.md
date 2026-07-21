@@ -8,7 +8,7 @@ Run Headroom persistently on this ARM64 Ubuntu host and route Claude Code, Codex
 
 - Upgrade the existing `uv`-managed `headroom-ai` tool to the current release with only the `proxy` and `code` extras. The proxy extra already includes MCP support; GPU/ML extras are unnecessary on this host.
 - Repair the installed OpenCode ARM64 binary by running its existing postinstall script; do not add another OpenCode installation.
-- Use Headroom's turnkey deployment with Docker on `127.0.0.1:8787`. Docker is already available and Headroom selects a restartable container on this host.
+- Use Headroom's turnkey deployment with Docker on `127.0.0.1:8787`. Pin `ghcr.io/headroomlabs-ai/headroom:0.32.0`, the current repository release with an ARM64 image, instead of the stale legacy image alias bundled as the PyPI default.
 - Apply provider-scoped, reversible configuration only to `claude`, `codex`, and `opencode`.
 - Launch sessions with `headroom wrap claude`, `headroom wrap codex`, or `headroom wrap opencode`; each wrapper reuses the persistent proxy.
 

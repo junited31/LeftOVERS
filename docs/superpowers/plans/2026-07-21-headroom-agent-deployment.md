@@ -26,7 +26,7 @@
 
 **Interfaces:**
 - Consumes: existing global OpenCode 1.18.4 package and `uv` tool installation.
-- Produces: runnable `opencode` and Headroom 0.32.1 CLI commands.
+- Produces: runnable `opencode` and Headroom 0.32.0 CLI commands.
 
 - [ ] **Step 1: Prove OpenCode is currently broken**
 
@@ -54,7 +54,7 @@ Expected: exit 0 and enough free disk for the minimal install.
 
 - [ ] **Step 5: Install only the required Headroom features**
 
-Run: `uv tool install --force --python 3.13 "headroom-ai[proxy,code]==0.32.1"`
+Run: `uv tool install --force --python 3.13 "headroom-ai[proxy,code]==0.32.0"`
 
 Expected: exit 0 with the `headroom` executable installed and no Torch/CUDA packages.
 
@@ -62,7 +62,7 @@ Expected: exit 0 with the `headroom` executable installed and no Torch/CUDA pack
 
 Run: `headroom --version && claude --version && codex --version && opencode --version`
 
-Expected: four zero exits; Headroom reports `0.32.1`.
+Expected: four zero exits; Headroom reports `0.32.0`, matching the current published ARM64 container release.
 
 ### Task 2: Deploy and configure Headroom
 
@@ -70,11 +70,11 @@ Expected: four zero exits; Headroom reports `0.32.1`.
 - Modify externally: `/home/ai/.headroom/deploy/default/manifest.json`
 - Modify externally: `/home/ai/.claude/settings.json`
 - Modify externally: `/home/ai/.codex/config.toml`
-- Create externally: `/home/ai/.config/opencode/opencode.json`
+- Modify externally: `/home/ai/.config/opencode/opencode.jsonc`
 - Create externally when needed: `/home/ai/.config/opencode/opencode.json.headroom-backup`
 
 **Interfaces:**
-- Consumes: Headroom 0.32.1 CLI, Docker, and the three installed agent CLIs.
+- Consumes: Headroom 0.32.0 CLI, Docker, and the three installed agent CLIs.
 - Produces: healthy local proxy at `http://127.0.0.1:8787` and reversible provider routing.
 
 - [ ] **Step 1: Capture non-secret pre-deployment invariants**
@@ -112,7 +112,8 @@ headroom deploy \
   --target claude \
   --target codex \
   --target opencode \
-  --no-telemetry
+  --no-telemetry \
+  --image ghcr.io/headroomlabs-ai/headroom:0.32.0
 ```
 
 Expected: Headroom selects `persistent-docker`, starts the default profile, and reports the three managed targets.
@@ -134,7 +135,7 @@ Expected: the profile is running and healthy, `readyz` exits 0, and health JSON 
 **Files:**
 - Verify externally: `/home/ai/.claude/settings.json`
 - Verify externally: `/home/ai/.codex/config.toml`
-- Verify externally: `/home/ai/.config/opencode/opencode.json`
+- Verify externally: `/home/ai/.config/opencode/opencode.jsonc`
 
 **Interfaces:**
 - Consumes: the persistent deployment from Task 2.
@@ -163,9 +164,9 @@ assert 'base_url = "http://127.0.0.1:8787/v1"' in codex
 assert 'model = "gpt-5.6-sol"' in codex
 assert '[features]' in codex
 
-opencode = json.loads((home / '.config/opencode/opencode.json').read_text())
+opencode = json.loads((home / '.config/opencode/opencode.jsonc').read_text())
 assert opencode['provider']['headroom']['options']['baseURL'] == 'http://127.0.0.1:8787/v1'
-assert 'oh-my-openagent@latest' in (home / '.config/opencode/opencode.jsonc').read_text()
+assert 'oh-my-openagent@latest' in opencode['plugin']
 print('managed routing and preserved settings: ok')
 PY
 ```
@@ -177,9 +178,9 @@ Expected: `managed routing and preserved settings: ok`.
 Run:
 
 ```bash
-timeout 45 headroom wrap claude -- --version
-timeout 45 headroom wrap codex -- --version
-timeout 45 headroom wrap opencode -- --version
+timeout 45 headroom wrap claude --no-context-tool --no-mcp --no-tokensave --no-serena --no-proxy -- --version
+timeout 45 headroom wrap codex --no-context-tool --no-mcp --no-tokensave --no-serena --no-proxy -- --version
+timeout 45 headroom wrap opencode --no-context-tool --no-project-rtk --no-mcp --no-serena --no-proxy -- --version
 ```
 
 Expected: each command exits 0, prints its agent version, and reports reuse of the existing proxy rather than binding a second proxy.
