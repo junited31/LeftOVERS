@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.os.ParcelFileDescriptor
 import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assert
@@ -22,6 +23,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.text.AnnotatedString
 import androidx.room.Room
+import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -67,6 +69,9 @@ class MealCompletionFlowTest {
 
     @Before
     fun setUp() = runBlocking {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
+        }
         database.clearAllTables()
         photos.ownedCacheFiles().forEach(File::delete)
         photos.retainedFinalPhotos().forEach(File::delete)
@@ -93,6 +98,9 @@ class MealCompletionFlowTest {
         runBlocking { database.clearAllTables() }
         photos.ownedCacheFiles().forEach(File::delete)
         photos.retainedFinalPhotos().forEach(File::delete)
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
     }
 
     @Test

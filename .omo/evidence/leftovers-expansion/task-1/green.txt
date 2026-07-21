@@ -1,0 +1,10 @@
+LeftOVERS expansion Task 1 GREEN
+Date: 2026-07-21 (Asia/Seoul)
+
+Command:
+  cd android
+  .\gradlew.bat :app:testDebugUnitTest --tests com.junited31.leftovers.AppLocaleBootstrapTest --no-daemon --console=plain
+
+Result: PASS (exit 0), 2 tests, 0 failures, 0 errors, 0 skipped.
+
+The accepted RED failures are green: compiled locales_config contains en/ko, AppCompat metadata and localized nav resources resolve, MainActivity extends AppCompatActivity, and the English bootstrap is ordered after super.onCreate and before setContent.

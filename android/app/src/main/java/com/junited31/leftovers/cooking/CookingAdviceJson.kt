@@ -1,5 +1,6 @@
 package com.junited31.leftovers.cooking
 
+import com.junited31.leftovers.R
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -7,15 +8,12 @@ import kotlin.math.roundToInt
 
 enum class CookingAdviceStatus { CONTINUE, ADJUST, STOP }
 
-internal const val COOKING_SAFETY_GUIDANCE =
-    "사진만으로 익음과 안전을 확인할 수 없어요. 시간과 온도를 확인하세요."
-
 data class CookingAdvice(
     val status: CookingAdviceStatus,
-    val observations: List<String>,
-    val nextActions: List<String>,
+    val observations: List<Int>,
+    val nextActions: List<Int>,
     val confidence: Double,
-    val safetyNote: String,
+    val safetyNote: Int,
 ) {
     val confidencePercent: Int = (confidence * 100).roundToInt()
 }
@@ -25,32 +23,32 @@ sealed interface CookingAdviceDecodeResult {
     data object Invalid : CookingAdviceDecodeResult
 }
 
-data class CookingStep(val text: String, val durationLabel: String?) {
+data class CookingStep(val text: String, val durationMinutes: Int?) {
     companion object {
         private val duration = Regex("(?:약\\s*)?(\\d{1,3})\\s*분")
 
         fun from(text: String): CookingStep {
             val match = duration.find(text)
-            return CookingStep(text, match?.groupValues?.get(1)?.let { "약 ${it}분" })
+            return CookingStep(text, match?.groupValues?.get(1)?.toInt())
         }
     }
 }
 
 object CookingAdviceJson {
     private val observationCopy = mapOf(
-        "surface_browned" to "표면이 노릇해졌어요",
-        "surface_pale" to "표면 색이 아직 옅어 보여요",
-        "visible_moisture" to "표면에 수분이 보여요",
-        "visible_smoke" to "연기가 보여요",
-        "uneven_browning" to "표면 색이 고르지 않아 보여요",
+        "surface_browned" to R.string.observation_surface_browned,
+        "surface_pale" to R.string.observation_surface_pale,
+        "visible_moisture" to R.string.observation_visible_moisture,
+        "visible_smoke" to R.string.observation_visible_smoke,
+        "uneven_browning" to R.string.observation_uneven_browning,
     )
     private val actionCopy = mapOf(
-        "check_center_temperature" to "중심 온도를 확인하세요",
-        "turn_and_check_center_temperature" to "뒤집고 중심 온도를 확인하세요",
-        "turn_or_stir" to "뒤집거나 저어 주세요",
-        "lower_heat" to "불을 낮춰 주세요",
-        "continue_cooking" to "시간을 확인하며 더 조리하세요",
-        "turn_off_heat" to "불을 끄고 연기 원인을 확인하세요",
+        "check_center_temperature" to R.string.action_check_center_temperature,
+        "turn_and_check_center_temperature" to R.string.action_turn_check_temperature,
+        "turn_or_stir" to R.string.action_turn_or_stir,
+        "lower_heat" to R.string.action_lower_heat,
+        "continue_cooking" to R.string.action_continue_cooking,
+        "turn_off_heat" to R.string.action_turn_off_heat,
     )
 
     fun request(step: String, notes: String? = null): String = JSONObject()
@@ -76,14 +74,14 @@ object CookingAdviceJson {
             CookingAdviceDecodeResult.Invalid
         } else {
             CookingAdviceDecodeResult.Success(
-                CookingAdvice(status, observations, actions, confidence, COOKING_SAFETY_GUIDANCE),
+                CookingAdvice(status, observations, actions, confidence, R.string.safety_guidance),
             )
         }
     } catch (_: JSONException) {
         CookingAdviceDecodeResult.Invalid
     }
 
-    private fun approvedCopy(array: JSONArray, copy: Map<String, String>): List<String> {
+    private fun approvedCopy(array: JSONArray, copy: Map<String, Int>): List<Int> {
         val codes = List(array.length()) { index -> array.getString(index).trim() }
         return codes.mapNotNull(copy::get).takeIf { it.size == codes.size }.orEmpty()
     }

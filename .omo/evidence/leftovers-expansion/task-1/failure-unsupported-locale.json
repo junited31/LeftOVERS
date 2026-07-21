@@ -1,0 +1,13 @@
+{
+  "device": "R5CR91DXA8R",
+  "injectedApplicationLocale": "ja",
+  "harness": "AppLocaleDeviceTest#setUnsupportedJapaneseAndVerifyEnglishFallback",
+  "tests": 1,
+  "failures": 0,
+  "applicationLocalesAfterRecreate": ["ja"],
+  "englishFallbackHeadingPresent": true,
+  "koreanHeadingPresent": false,
+  "rawResourceIdPatternPresent": false,
+  "processAliveAfterRelaunch": true,
+  "result": "PASS"
+}

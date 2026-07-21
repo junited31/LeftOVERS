@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.ParcelFileDescriptor.AutoCloseInputStream
 import android.util.Xml
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -20,10 +21,12 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.text.AnnotatedString
 import androidx.room.Room
+import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.junited31.leftovers.MainActivity
 import com.junited31.leftovers.data.LeftoversDatabase
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -39,9 +42,19 @@ class PantryEquipmentTest {
 
     @Before
     fun resetDebugState() {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
+        }
         shell("am broadcast -a com.junited31.leftovers.DEBUG_RESET")
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
+    }
+
+    @After
+    fun restoreEnglish() {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
     }
 
     @Test

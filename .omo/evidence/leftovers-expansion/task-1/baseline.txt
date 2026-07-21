@@ -1,0 +1,18 @@
+LeftOVERS expansion Task 1 baseline
+Date: 2026-07-21 (Asia/Seoul)
+Commit: d2df361153bd8a908620948ceb00f78b289b4c12
+Device: R5CR91DXA8R (SM-F711N, API 35)
+
+Command:
+  cd android
+  .\gradlew.bat :app:testDebugUnitTest --no-daemon --console=plain
+Result: PASS (exit 0), 78 tests, 0 failures, 0 errors, 0 skipped.
+
+Command:
+  $env:ANDROID_SERIAL='R5CR91DXA8R'
+  .\gradlew.bat :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest,com.junited31.leftovers.ui.RecipeScreenTest,com.junited31.leftovers.cooking.MealCompletionFlowTest,com.junited31.leftovers.history.HistoryScreenTest' --no-daemon --console=plain
+Result: PASS (exit 0), 18 tests, 0 failures, 0 errors, 0 skipped; BUILD SUCCESSFUL in 1m 7s.
+
+Evidence sources:
+  android/app/build/test-results/testDebugUnitTest/TEST-*.xml
+  android/app/build/outputs/androidTest-results/connected/debug/TEST-SM-F711N - 15-_app-.xml

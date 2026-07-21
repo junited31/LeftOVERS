@@ -1,0 +1,24 @@
+{
+  "device": {
+    "serial": "R5CR91DXA8R",
+    "model": "SM-F711N",
+    "api": 35,
+    "systemLocale": "ko-KR"
+  },
+  "firstRun": {
+    "appDataCleared": true,
+    "applicationLocales": ["en"],
+    "englishHeadingPresent": true,
+    "screenshotSha256": "8155D77355A98C600CF7BAD0D9AEDF747DBEC083785BBC0CA22E86AE79740266",
+    "xmlSha256": "3248714461B0F0E1D0223B9581C93F476A35F8B4E3DDD5C1BFFBFCCB4F81C1D9"
+  },
+  "koreanHarness": {
+    "test": "AppLocaleDeviceTest#setKoreanAndVerifyPersistence",
+    "result": "PASS",
+    "applicationLocales": ["ko"],
+    "koreanHeadingPresentAfterRecreateAndRelaunch": true,
+    "screenshotSha256": "9F47874FEA056EDE96FB66E0C011350ABE3EF848B491E20AF08AC6A755C19D01",
+    "xmlSha256": "C74ADAA8419D62B4CD1AF7314AD239EB0D8959DA6AE5EB0B4223E860EB047BA5"
+  },
+  "debugApkSha256": "E1DC0B6AFE12DF20C7D7413C79BC850A83E7954B601954B5CD3BB02DCCC7256C"
+}

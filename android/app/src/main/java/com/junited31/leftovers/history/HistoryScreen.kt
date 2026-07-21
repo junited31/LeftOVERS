@@ -27,10 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.junited31.leftovers.R
 import com.junited31.leftovers.data.MealLogEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
@@ -77,21 +79,22 @@ private fun HistoryTimeline(
     ) {
         item {
             Text(
-                "완료한 요리",
+                stringResource(R.string.history_heading),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 16.dp).semantics { heading() },
             )
         }
         when {
-            logs == null -> item { Text("요리 기록을 불러오는 중…") }
+            logs == null -> item { Text(stringResource(R.string.history_loading)) }
             logs.isEmpty() -> item {
-                Text("아직 완료한 요리가 없어요.", modifier = Modifier.testTag("history-empty"))
+                Text(stringResource(R.string.history_empty), modifier = Modifier.testTag("history-empty"))
             }
             else -> itemsIndexed(logs, key = { _, log -> log.id }) { _, log ->
+                val openDescription = stringResource(R.string.history_open_cd, log.recipeSnapshot.title)
                 Card(
                     modifier = Modifier.fillMaxWidth()
                         .clickable { onOpen(log.id) }
-                        .semantics { contentDescription = "${log.recipeSnapshot.title} 기록 열기" }
+                        .semantics { contentDescription = openDescription }
                         .testTag("history-row-${log.id}"),
                 ) {
                     Column(
@@ -100,7 +103,7 @@ private fun HistoryTimeline(
                     ) {
                         Text(log.recipeSnapshot.title, style = MaterialTheme.typography.titleMedium)
                         Text(completedAt(log.completedAtEpochMillis))
-                        Text("평점 ${log.recipeSnapshot.feedback.rating} / 5")
+                        Text(stringResource(R.string.rating_value, log.recipeSnapshot.feedback.rating))
                     }
                 }
             }
@@ -128,7 +131,9 @@ private fun HistoryDetailScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            TextButton(onClick = onBack, modifier = Modifier.padding(top = 4.dp)) { Text("기록 목록") }
+            TextButton(onClick = onBack, modifier = Modifier.padding(top = 4.dp)) {
+                Text(stringResource(R.string.history_list))
+            }
         }
         item {
             Text(
@@ -142,50 +147,50 @@ private fun HistoryDetailScreen(
             when {
                 bitmap != null -> Image(
                     bitmap = bitmap,
-                    contentDescription = "${log.recipeSnapshot.title} 완성 사진",
+                    contentDescription = stringResource(R.string.final_photo_cd, log.recipeSnapshot.title),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(200.dp).testTag("history-photo"),
                 )
                 detail.referencedPhotoMissing || detail.availablePhotoPath != null -> Text(
-                    "완성 사진 파일을 찾을 수 없어요.",
+                    stringResource(R.string.final_photo_missing),
                     modifier = Modifier.testTag("history-photo-missing"),
                 )
-                else -> Text("완성 사진을 남기지 않았어요.", modifier = Modifier.testTag("history-photo-empty"))
+                else -> Text(stringResource(R.string.final_photo_empty), modifier = Modifier.testTag("history-photo-empty"))
             }
         }
         item {
             DetailSection(
-                "평가",
+                stringResource(R.string.evaluation),
                 listOf(
-                    "평점 ${feedback.rating} / 5",
-                    if (feedback.recommendAgain) "다시 추천함" else "다시 추천하지 않음",
-                    feedback.notes.ifBlank { "메모 없음" },
+                    stringResource(R.string.rating_value, feedback.rating),
+                    stringResource(if (feedback.recommendAgain) R.string.recommended_again else R.string.not_recommended_again),
+                    feedback.notes.ifBlank { stringResource(R.string.no_notes) },
                 ),
             )
         }
         item {
-            DetailSection("레시피 스냅샷", buildList {
+            DetailSection(stringResource(R.string.recipe_snapshot), buildList {
                 log.recipeSnapshot.steps.values.forEachIndexed { index, step -> add("${index + 1}. $step") }
             })
         }
         item {
-            DetailSection("실제 사용량", log.actualUses.values.mapIndexed { index, use ->
+            DetailSection(stringResource(R.string.actual_use), log.actualUses.values.mapIndexed { index, use ->
                 "${ingredientLabel(use.displayName, index, use.pantryItemId)} · " +
                     "${amount(use.actualMilliUnits)} ${unit(use.unit)}"
-            }.ifEmpty { listOf("사용한 재료 없음") })
+            }.ifEmpty { listOf(stringResource(R.string.no_ingredients_used)) })
         }
         item {
-            DetailSection("남은 수량", log.remainingPantry.values.mapIndexed { index, remaining ->
+            DetailSection(stringResource(R.string.remaining_quantity), log.remainingPantry.values.mapIndexed { index, remaining ->
                 "${ingredientLabel(displayNamesByPantryId[remaining.pantryItemId], index, remaining.pantryItemId)} · " +
                     "${amount(remaining.quantityMilliUnits)} ${unit(remaining.unit)}"
-            }.ifEmpty { listOf("남은 수량 기록 없음") })
+            }.ifEmpty { listOf(stringResource(R.string.no_remaining_record)) })
         }
         item {
-            DetailSection("다음 조리 조정", feedback.measurementAdjustments.map { adjustment ->
+            DetailSection(stringResource(R.string.next_cooking_adjustment), feedback.measurementAdjustments.map { adjustment ->
                 val note = adjustment.note.takeIf(String::isNotBlank)?.let { " · $it" }.orEmpty()
                 "${adjustment.ingredientName} · ${amount(adjustment.preferredAmountMilliUnits)} " +
                     "${unit(adjustment.unit)}$note"
-            }.ifEmpty { listOf("조정 기록 없음") })
+            }.ifEmpty { listOf(stringResource(R.string.no_adjustment_record)) })
         }
         item { Spacer(Modifier.height(12.dp)) }
     }
@@ -205,10 +210,13 @@ private fun completedAt(epochMillis: Long): String = Instant.ofEpochMilli(epochM
     .atZone(ZoneId.systemDefault())
     .format(completedAtFormatter)
 
+@Composable
 private fun ingredientLabel(displayName: String?, index: Int, id: PantryItemId) =
-    displayName ?: "재료 ${index + 1} (${id.value.takeLast(4)})"
+    displayName ?: stringResource(R.string.ingredient_fallback, index + 1, id.value.takeLast(4))
 
 private fun amount(milliUnits: Long): String = BigDecimal.valueOf(milliUnits)
     .movePointLeft(3).stripTrailingZeros().toPlainString()
 
-private fun unit(unit: PantryUnit): String = if (unit == PantryUnit.COUNT) "개" else unit.value
+@Composable
+private fun unit(unit: PantryUnit): String =
+    if (unit == PantryUnit.COUNT) stringResource(R.string.unit_count) else unit.value

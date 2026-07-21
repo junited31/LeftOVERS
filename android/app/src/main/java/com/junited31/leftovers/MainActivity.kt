@@ -1,8 +1,9 @@
 package com.junited31.leftovers
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,6 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.core.os.LocaleListCompat
 import com.junited31.leftovers.data.LeftoversDatabase
 import com.junited31.leftovers.data.LeftoversPreferenceKeys
 import com.junited31.leftovers.data.PantryDao
@@ -79,9 +82,12 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (AppCompatDelegate.getApplicationLocales().isEmpty) {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
         val database = LeftoversDatabase.get(applicationContext)
         val recipeApiProvider = { (application as LeftoversApplication).createRecipeApi() }
         setContent {
@@ -102,18 +108,18 @@ class MainActivity : ComponentActivity() {
 
 private enum class AppScreen { PANTRY, RECIPES, COOKING, HISTORY, EQUIPMENT }
 
-private data class EquipmentChoice(val id: String, val label: String)
+private data class EquipmentChoice(val id: String, val labelRes: Int)
 
 private val equipmentChoices = listOf(
-    EquipmentChoice("induction", "인덕션"),
-    EquipmentChoice("gas_burner", "가스레인지"),
-    EquipmentChoice("microwave", "전자레인지"),
-    EquipmentChoice("oven", "오븐"),
-    EquipmentChoice("air_fryer", "에어프라이어"),
-    EquipmentChoice("blender", "블렌더"),
-    EquipmentChoice("rice_cooker", "전기밥솥"),
-    EquipmentChoice("toaster", "토스터"),
-    EquipmentChoice("basic_cookware", "기본 조리도구"),
+    EquipmentChoice("induction", R.string.equipment_induction),
+    EquipmentChoice("gas_burner", R.string.equipment_gas_burner),
+    EquipmentChoice("microwave", R.string.equipment_microwave),
+    EquipmentChoice("oven", R.string.equipment_oven),
+    EquipmentChoice("air_fryer", R.string.equipment_air_fryer),
+    EquipmentChoice("blender", R.string.equipment_blender),
+    EquipmentChoice("rice_cooker", R.string.equipment_rice_cooker),
+    EquipmentChoice("toaster", R.string.equipment_toaster),
+    EquipmentChoice("basic_cookware", R.string.equipment_basic_cookware),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,7 +146,7 @@ private fun LeftoversApp(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(if (showForm) "재료" else screen.title) },
+                    title = { Text(stringResource(if (showForm) R.string.title_ingredient else screen.titleRes)) },
                 )
             },
             bottomBar = {
@@ -151,10 +157,10 @@ private fun LeftoversApp(
                             screen = AppScreen.PANTRY
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.Inventory2, contentDescription = "식재료") },
-                        label = { Text("식재료") },
+                        icon = { Icon(Icons.Outlined.Inventory2, contentDescription = stringResource(R.string.nav_pantry)) },
+                        label = { Text(stringResource(R.string.nav_pantry)) },
                         modifier = Modifier.testTag("nav-pantry").semantics {
-                            contentDescription = "식재료"
+                            contentDescription = context.getString(R.string.nav_pantry)
                         },
                     )
                     NavigationBarItem(
@@ -163,10 +169,10 @@ private fun LeftoversApp(
                             screen = AppScreen.RECIPES
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.RestaurantMenu, contentDescription = "레시피") },
-                        label = { Text("레시피") },
+                        icon = { Icon(Icons.Outlined.RestaurantMenu, contentDescription = stringResource(R.string.nav_recipes)) },
+                        label = { Text(stringResource(R.string.nav_recipes)) },
                         modifier = Modifier.testTag("nav-recipes").semantics {
-                            contentDescription = "레시피"
+                            contentDescription = context.getString(R.string.nav_recipes)
                         },
                     )
                     NavigationBarItem(
@@ -175,10 +181,10 @@ private fun LeftoversApp(
                             screen = AppScreen.COOKING
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = "요리") },
-                        label = { Text("요리") },
+                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = stringResource(R.string.nav_cooking)) },
+                        label = { Text(stringResource(R.string.nav_cooking)) },
                         modifier = Modifier.testTag("nav-cooking").semantics {
-                            contentDescription = "요리"
+                            contentDescription = context.getString(R.string.nav_cooking)
                         },
                     )
                     NavigationBarItem(
@@ -187,10 +193,10 @@ private fun LeftoversApp(
                             screen = AppScreen.HISTORY
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.History, contentDescription = "기록") },
-                        label = { Text("기록") },
+                        icon = { Icon(Icons.Outlined.History, contentDescription = stringResource(R.string.nav_history)) },
+                        label = { Text(stringResource(R.string.nav_history)) },
                         modifier = Modifier.testTag("nav-history").semantics {
-                            contentDescription = "기록"
+                            contentDescription = context.getString(R.string.nav_history)
                         },
                     )
                     NavigationBarItem(
@@ -199,10 +205,10 @@ private fun LeftoversApp(
                             screen = AppScreen.EQUIPMENT
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = "조리도구") },
-                        label = { Text("조리도구") },
+                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = stringResource(R.string.nav_equipment)) },
+                        label = { Text(stringResource(R.string.nav_equipment)) },
                         modifier = Modifier.testTag("nav-equipment").semantics {
-                            contentDescription = "조리도구"
+                            contentDescription = context.getString(R.string.nav_equipment)
                         },
                     )
                 }
@@ -245,7 +251,7 @@ private fun LeftoversApp(
                         onCookingStarted = { screen = AppScreen.COOKING },
                         modifier = Modifier.padding(padding),
                     )
-                } ?: Text("레시피를 불러오는 중…", modifier = Modifier.padding(padding).padding(20.dp))
+                } ?: Text(stringResource(R.string.loading_recipes), modifier = Modifier.padding(padding).padding(20.dp))
                 screen == AppScreen.COOKING -> {
                     val photos = remember(context) { PhotoLifecycle(context) }
                     CookingScreen(
@@ -277,19 +283,19 @@ private fun LeftoversApp(
                             }
                         },
                     )
-                } ?: Text("조리도구를 불러오는 중…", modifier = Modifier.padding(padding).padding(20.dp))
+                } ?: Text(stringResource(R.string.loading_equipment), modifier = Modifier.padding(padding).padding(20.dp))
             }
         }
     }
 }
 
-private val AppScreen.title: String
+private val AppScreen.titleRes: Int
     get() = when (this) {
-        AppScreen.PANTRY -> "식재료"
-        AppScreen.RECIPES -> "레시피"
-        AppScreen.COOKING -> "요리"
-        AppScreen.HISTORY -> "기록"
-        AppScreen.EQUIPMENT -> "조리도구"
+        AppScreen.PANTRY -> R.string.nav_pantry
+        AppScreen.RECIPES -> R.string.nav_recipes
+        AppScreen.COOKING -> R.string.nav_cooking
+        AppScreen.HISTORY -> R.string.nav_history
+        AppScreen.EQUIPMENT -> R.string.nav_equipment
     }
 
 @Composable
@@ -302,7 +308,7 @@ private fun PantryList(
 ) {
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Text(
-            text = "지금 사용할 수 있는 재료",
+            text = stringResource(R.string.pantry_heading),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 16.dp).semantics { heading() },
         )
@@ -310,21 +316,25 @@ private fun PantryList(
             onClick = onAdd,
             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp).testTag("add-pantry"),
         ) {
-            Text("재료 추가")
+            Text(stringResource(R.string.add_ingredient))
         }
         if (pantryItems.isEmpty()) {
-            Text("아직 등록한 재료가 없어요. 재료를 추가해 주세요.")
+            Text(stringResource(R.string.pantry_empty))
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(pantryItems, key = { it.id.value }) { item ->
+                    val editDescription = stringResource(R.string.edit_item_cd, item.name)
+                    val deleteDescription = stringResource(R.string.delete_item_cd, item.name)
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
                             Text(item.name, style = MaterialTheme.typography.titleMedium)
-                            Text("${formatQuantity(item.quantityMilliUnits)} ${displayUnit(item.unit)}")
-                            item.expiryEpochDay?.let { Text("유통기한: ${LocalDate.ofEpochDay(it)}") }
+                            Text(stringResource(R.string.quantity_unit_format, formatQuantity(item.quantityMilliUnits), displayUnit(item.unit)))
+                            item.expiryEpochDay?.let {
+                                Text(stringResource(R.string.expiry_date_format, LocalDate.ofEpochDay(it)))
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End,
@@ -332,15 +342,15 @@ private fun PantryList(
                                 TextButton(
                                     onClick = { onEdit(item) },
                                     modifier = Modifier.semantics {
-                                        contentDescription = "${item.name} 수정"
+                                        contentDescription = editDescription
                                     },
-                                ) { Text("수정") }
+                                ) { Text(stringResource(R.string.edit)) }
                                 TextButton(
                                     onClick = { onDelete(item) },
                                     modifier = Modifier.semantics {
-                                        contentDescription = "${item.name} 삭제"
+                                        contentDescription = deleteDescription
                                     },
-                                ) { Text("삭제") }
+                                ) { Text(stringResource(R.string.delete)) }
                             }
                         }
                     }
@@ -377,9 +387,9 @@ private fun PantryForm(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("재료 이름") },
+                label = { Text(stringResource(R.string.ingredient_name)) },
                 isError = nameError,
-                supportingText = if (nameError) ({ Text("재료 이름을 입력해 주세요.") }) else null,
+                supportingText = if (nameError) ({ Text(stringResource(R.string.ingredient_name_error)) }) else null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).testTag("name-input"),
             )
@@ -388,10 +398,10 @@ private fun PantryForm(
             OutlinedTextField(
                 value = quantity,
                 onValueChange = { quantity = it },
-                label = { Text("수량") },
+                label = { Text(stringResource(R.string.quantity)) },
                 isError = quantityError,
                 supportingText = if (quantityError) ({
-                    Text("수량은 0보다 큰 값으로 소수점 셋째 자리까지 입력해 주세요.")
+                    Text(stringResource(R.string.quantity_error))
                 }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
@@ -399,7 +409,7 @@ private fun PantryForm(
             )
         }
         item {
-            Text("단위", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.unit), style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 PantryUnit.entries.forEach { choice ->
                     Row(
@@ -420,16 +430,16 @@ private fun PantryForm(
             OutlinedTextField(
                 value = expiry,
                 onValueChange = { expiry = it },
-                label = { Text("유통기한 (YYYY-MM-DD, 선택)") },
+                label = { Text(stringResource(R.string.expiry_optional)) },
                 isError = expiryError,
-                supportingText = if (expiryError) ({ Text("YYYY-MM-DD 형식으로 입력해 주세요.") }) else null,
+                supportingText = if (expiryError) ({ Text(stringResource(R.string.expiry_error)) }) else null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onCancel) { Text("취소") }
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
@@ -460,7 +470,7 @@ private fun PantryForm(
                         }
                     },
                     modifier = Modifier.testTag("save-pantry"),
-                ) { Text("재료 저장") }
+                ) { Text(stringResource(R.string.save_ingredient)) }
             }
         }
     }
@@ -475,7 +485,7 @@ private fun EquipmentChecklist(
     LazyColumn(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         item {
             Text(
-                text = "주방에 있는 조리도구를 선택해 주세요",
+                text = stringResource(R.string.equipment_heading),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 16.dp).semantics { heading() },
             )
@@ -496,7 +506,7 @@ private fun EquipmentChecklist(
             ) {
                 Checkbox(checked = equipment.id in selected, onCheckedChange = null)
                 Spacer(Modifier.width(12.dp))
-                Text(equipment.label, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(equipment.labelRes), style = MaterialTheme.typography.bodyLarge)
             }
             HorizontalDivider()
         }
@@ -506,7 +516,8 @@ private fun EquipmentChecklist(
 private fun formatQuantity(milliUnits: Long): String =
     BigDecimal.valueOf(milliUnits).movePointLeft(3).stripTrailingZeros().toPlainString()
 
+@Composable
 private fun displayUnit(unit: PantryUnit): String = when (unit) {
-    PantryUnit.COUNT -> "개"
+    PantryUnit.COUNT -> stringResource(R.string.unit_count)
     else -> unit.value
 }

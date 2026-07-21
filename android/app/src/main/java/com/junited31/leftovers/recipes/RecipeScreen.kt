@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -31,6 +32,7 @@ import com.junited31.leftovers.data.RecipeSnapshotDao
 import com.junited31.leftovers.data.CookSessionDao
 import com.junited31.leftovers.data.MealLogDao
 import com.junited31.leftovers.cooking.CookingSessionStore
+import com.junited31.leftovers.R
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import kotlinx.coroutines.Dispatchers
@@ -40,14 +42,13 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.Locale
 import java.util.UUID
 
 private sealed interface RecipeUiState {
     data object Idle : RecipeUiState
     data object Loading : RecipeUiState
     data class Ready(val result: RecommendationResult.Valid) : RecipeUiState
-    data class Error(val message: String) : RecipeUiState
+    data class Error(val messageRes: Int) : RecipeUiState
 }
 
 @Composable
@@ -74,11 +75,11 @@ fun RecipeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "냉장고 재료로 만드는 세 가지 요리",
+            stringResource(R.string.recipe_heading),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() },
         )
-        Text("선택한 조리도구로 만들 수 있는 완성된 조합만 보여드려요.")
+        Text(stringResource(R.string.recipe_subtitle))
         Button(
             onClick = {
                 state = RecipeUiState.Loading
@@ -102,13 +103,13 @@ fun RecipeScreen(
             enabled = state != RecipeUiState.Loading && pantry.isNotEmpty() && equipment.isNotEmpty(),
             modifier = Modifier.fillMaxWidth().testTag("generate-recipes"),
         ) {
-            Text(if (state == RecipeUiState.Loading) "생성 중…" else "레시피 생성")
+            Text(stringResource(if (state == RecipeUiState.Loading) R.string.recipe_generating else R.string.recipe_generate))
         }
         when (val current = state) {
-            RecipeUiState.Idle -> Text("재료와 조리도구를 준비한 뒤 레시피를 생성해 보세요.")
-            RecipeUiState.Loading -> Text("다양성과 재료 활용도를 확인하는 중…")
+            RecipeUiState.Idle -> Text(stringResource(R.string.recipe_idle))
+            RecipeUiState.Loading -> Text(stringResource(R.string.recipe_loading))
             is RecipeUiState.Error -> Text(
-                current.message,
+                stringResource(current.messageRes),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                     .testTag("recipe-error"),
@@ -131,7 +132,7 @@ fun RecipeScreen(
                 }
             }
         }
-        savedTitle?.let { title -> Text("$title 레시피를 저장했어요.") }
+        savedTitle?.let { title -> Text(stringResource(R.string.recipe_saved, title)) }
     }
 }
 
@@ -153,20 +154,18 @@ private fun rankedState(
             )
         ) {
             is RecommendationResult.Valid -> RecipeUiState.Ready(ranked)
-            is RecommendationResult.Invalid -> RecipeUiState.Error(
-                "서로 다른 세 가지 유효한 레시피를 만들지 못했어요.",
-            )
+            is RecommendationResult.Invalid -> RecipeUiState.Error(R.string.recipe_error_invalid)
         }
-        RecipeDecodeResult.Invalid -> RecipeUiState.Error("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.")
+        RecipeDecodeResult.Invalid -> RecipeUiState.Error(R.string.recipe_error_invalid)
     }
-    ApiResult.InvalidRequest -> RecipeUiState.Error("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.")
-    ApiResult.AuthUnavailable, ApiResult.Unauthorized -> RecipeUiState.Error("인증 정보를 확인할 수 없어요.")
-    is ApiResult.QuotaLimited -> RecipeUiState.Error("오늘의 레시피 생성 횟수를 모두 사용했어요.")
-    ApiResult.PayloadTooLarge -> RecipeUiState.Error("레시피 요청이 너무 커요.")
-    ApiResult.UpstreamUnavailable, ApiResult.NetworkFailure -> RecipeUiState.Error("레시피 서비스에 연결할 수 없어요.")
-    ApiResult.Cancelled -> RecipeUiState.Error("레시피 요청이 취소됐어요.")
+    ApiResult.InvalidRequest -> RecipeUiState.Error(R.string.recipe_error_invalid)
+    ApiResult.AuthUnavailable, ApiResult.Unauthorized -> RecipeUiState.Error(R.string.error_auth)
+    is ApiResult.QuotaLimited -> RecipeUiState.Error(R.string.recipe_error_quota)
+    ApiResult.PayloadTooLarge -> RecipeUiState.Error(R.string.recipe_error_payload)
+    ApiResult.UpstreamUnavailable, ApiResult.NetworkFailure -> RecipeUiState.Error(R.string.recipe_error_network)
+    ApiResult.Cancelled -> RecipeUiState.Error(R.string.recipe_error_cancelled)
     ApiResult.AlreadyExecuted, ApiResult.InvalidPhoto, is ApiResult.UnexpectedHttp ->
-        RecipeUiState.Error("레시피 요청에 실패했어요.")
+        RecipeUiState.Error(R.string.recipe_error_unknown)
 }
 
 internal suspend fun loadPreferenceProfile(mealLogDao: MealLogDao): PreferenceProfile =
@@ -186,58 +185,69 @@ private fun RecipeCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(candidate.title, style = MaterialTheme.typography.titleMedium)
-            Text("${candidate.cuisine} · ${candidate.primaryTechnique}")
-            Text("사용 재료:\n${uses(candidate, pantryById)}")
-            Text("조리도구: ${candidate.requiredEquipment.joinToString { displayEquipment(it) }.ifEmpty { "없음" }}")
-            Text("추천 이유", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.recipe_meta, candidate.cuisine, candidate.primaryTechnique))
+            Text(stringResource(R.string.recipe_uses, uses(candidate, pantryById)))
+            val equipment = buildList {
+                candidate.requiredEquipment.forEach { add(displayEquipment(it)) }
+            }.joinToString().ifEmpty { stringResource(R.string.none) }
+            Text(stringResource(R.string.recipe_equipment, equipment))
+            Text(stringResource(R.string.why_recommended), style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(metric("재료 활용", ranked.coverage), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(metric("유통기한", ranked.expiry), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric(R.string.metric_coverage, ranked.coverage), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric(R.string.metric_expiry, ranked.expiry), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(metric("취향 일치", ranked.preference), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(metric("새로움", ranked.novelty), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric(R.string.metric_preference, ranked.preference), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(metric(R.string.metric_novelty, ranked.novelty), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             }
-            Text("부족한 재료: ${missing(candidate)}")
+            Text(stringResource(R.string.missing_ingredients, missing(candidate)))
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().testTag("save-recipe-$index"),
-            ) { Text("저장하고 요리 시작") }
+            ) { Text(stringResource(R.string.save_and_start)) }
         }
     }
 }
 
+@Composable
 private fun uses(
     candidate: RecommendationCandidate,
     pantryById: Map<PantryItemId, PantryItemEntity>,
-): String = candidate.trackedUses.joinToString { use ->
-    "${pantryById.getValue(use.pantryItemId).name} ${amount(use.proposedMilliUnits)} ${displayUnit(use.unit.value)}"
-}.replace(", ", "\n").ifEmpty { "사용한 식재료 없음" }
+): String = buildList {
+    candidate.trackedUses.forEach { use ->
+        add("${pantryById.getValue(use.pantryItemId).name} ${amount(use.proposedMilliUnits)} ${displayUnit(use.unit.value)}")
+    }
+}.joinToString("\n").ifEmpty { stringResource(R.string.no_pantry_used) }
 
-private fun missing(candidate: RecommendationCandidate): String =
-    candidate.missingIngredients.joinToString {
-        "${it.name} ${amount(it.amountMilliUnits)} ${displayUnit(it.unit.value)}"
-    }.ifEmpty { "없음" }
+@Composable
+private fun missing(candidate: RecommendationCandidate): String = buildList {
+    candidate.missingIngredients.forEach {
+        add("${it.name} ${amount(it.amountMilliUnits)} ${displayUnit(it.unit.value)}")
+    }
+}.joinToString().ifEmpty { stringResource(R.string.none) }
 
+@Composable
 private fun displayEquipment(value: String): String = when (RecipeNormalizer.normalize(value.replace('_', ' '))) {
-    "induction" -> "인덕션"
-    "gas burner" -> "가스레인지"
-    "microwave" -> "전자레인지"
-    "oven" -> "오븐"
-    "air fryer" -> "에어프라이어"
-    "blender" -> "블렌더"
-    "rice cooker" -> "전기밥솥"
-    "toaster" -> "토스터"
-    "basic cookware" -> "기본 조리도구"
+    "induction" -> stringResource(R.string.equipment_induction)
+    "gas burner" -> stringResource(R.string.equipment_gas_burner)
+    "microwave" -> stringResource(R.string.equipment_microwave)
+    "oven" -> stringResource(R.string.equipment_oven)
+    "air fryer" -> stringResource(R.string.equipment_air_fryer)
+    "blender" -> stringResource(R.string.equipment_blender)
+    "rice cooker" -> stringResource(R.string.equipment_rice_cooker)
+    "toaster" -> stringResource(R.string.equipment_toaster)
+    "basic cookware" -> stringResource(R.string.equipment_basic_cookware)
     else -> value
 }
 
-private fun displayUnit(value: String): String = if (value == "count") "개" else value
+@Composable
+private fun displayUnit(value: String): String = if (value == "count") stringResource(R.string.unit_count) else value
 
 private fun amount(milliUnits: Long): String = BigDecimal.valueOf(milliUnits)
     .movePointLeft(3)
     .stripTrailingZeros()
     .toPlainString()
 
-private fun metric(label: String, value: Double): String =
-    String.format(Locale.ROOT, "%s %.0f%%", label, value * 100)
+@Composable
+private fun metric(labelRes: Int, value: Double): String =
+    stringResource(R.string.metric_format, stringResource(labelRes), value * 100)

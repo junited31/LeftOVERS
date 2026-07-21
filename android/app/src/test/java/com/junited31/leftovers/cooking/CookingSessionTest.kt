@@ -3,6 +3,7 @@ package com.junited31.leftovers.cooking
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.junited31.leftovers.R
 import com.junited31.leftovers.data.LeftoversDatabase
 import com.junited31.leftovers.data.PantryBindings
 import com.junited31.leftovers.data.RecipeSnapshotEntity
@@ -89,8 +90,8 @@ class CookingSessionTest {
         val decoded = CookingAdviceJson.response(validAdvice())
 
         // Then: duration is parsed only for display and Room remains at step two.
-        assertEquals("약 7분", CookingStep.from("약 7분 볶기").durationLabel)
-        assertNull(CookingStep.from("간을 확인하기").durationLabel)
+        assertEquals(7, CookingStep.from("약 7분 볶기").durationMinutes)
+        assertNull(CookingStep.from("간을 확인하기").durationMinutes)
         assertTrue(decoded is CookingAdviceDecodeResult.Success)
         assertEquals(before.session.currentStepIndex, store.resume()?.session?.currentStepIndex)
     }
@@ -152,11 +153,8 @@ class CookingSessionTest {
             val decoded = CookingAdviceJson.response(payload)
             assertTrue(decoded is CookingAdviceDecodeResult.Success)
             val advice = (decoded as CookingAdviceDecodeResult.Success).advice
-            assertEquals(
-                "사진만으로 익음과 안전을 확인할 수 없어요. 시간과 온도를 확인하세요.",
-                advice.safetyNote,
-            )
-            if (index == 0) assertEquals(listOf("표면이 노릇해졌어요"), advice.observations)
+            assertEquals(R.string.safety_guidance, advice.safetyNote)
+            if (index == 0) assertEquals(listOf(R.string.observation_surface_browned), advice.observations)
         }
     }
 

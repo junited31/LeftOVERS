@@ -6,6 +6,7 @@ import android.graphics.Rect
 import android.os.ParcelFileDescriptor
 import android.util.Xml
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.datastore.preferences.core.edit
+import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -61,6 +63,9 @@ class RecipeScreenTest {
 
     @Before
     fun setUp() = runBlocking {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
         database.clearAllTables()
         context.leftoversDataStore.edit { it.clear() }
         database.pantryDao().insertAll(pantry())
@@ -80,6 +85,9 @@ class RecipeScreenTest {
         scenario?.close()
         application.recipeApiOverride = null
         server.shutdown()
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
     }
 
     @Test
@@ -96,17 +104,17 @@ class RecipeScreenTest {
         val recipeCards = compose.onAllNodesWithTag("recipe-card")
         recipeCards.assertCountEquals(3)
         val cardContent = recipeCards.fetchSemanticsNodes().map(::semanticsText)
-        assertEquals(2, cardContent.count { "조리도구: 가스레인지" in it })
+        assertEquals(2, cardContent.count { "Equipment: Gas stove" in it })
         assertTrue(cardContent.all { content ->
-            listOf("추천 이유", "재료 활용 67%", "취향 일치 50%", "새로움 100%").all(content::contains)
+            listOf("Why this recipe", "Ingredient use 67%", "Preference match 50%", "Novelty 100%").all(content::contains)
         })
-        assertEquals(1, cardContent.count { "유통기한 80%" in it })
-        assertEquals(2, cardContent.count { "유통기한 60%" in it })
+        assertEquals(1, cardContent.count { "Expiration priority 80%" in it })
+        assertEquals(2, cardContent.count { "Expiration priority 60%" in it })
         compose.onNodeWithText("Egg fried rice").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("사용 재료:\nRice 300 g\nEggs 2 개").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("부족한 재료: Salt 1 g").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Ingredients used:\nRice 300 g\nEggs 2 item").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Missing ingredients: Salt 1 g").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Rice omelette").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithContentDescription("레시피").assertExists()
+        compose.onNodeWithContentDescription("Recipes").assertExists()
         captureRecipeEvidence()
         compose.onNodeWithTag("save-recipe-0").performScrollTo().performClick()
         compose.waitUntil(5_000) { runBlocking { database.recipeSnapshotDao().count() } == 1 }
@@ -127,7 +135,7 @@ class RecipeScreenTest {
 
         // When
         compose.onNodeWithTag("generate-recipes").performClick()
-        compose.onNodeWithText("서로 다른 세 가지 유효한 레시피를 만들지 못했어요.").assertIsDisplayed()
+        compose.onNodeWithText("Couldn’t create three distinct valid recipes.").assertIsDisplayed()
 
         // Then
         compose.onAllNodesWithTag("recipe-card").assertCountEquals(0)
@@ -137,9 +145,11 @@ class RecipeScreenTest {
 
     private fun launchRecipes() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
+        scenario?.recreate()
+        compose.waitForIdle()
         compose.onNodeWithTag("nav-recipes").performClick()
         compose.onNodeWithTag("generate-recipes").assertIsDisplayed()
-        compose.onNodeWithText("레시피 생성").assertIsDisplayed()
+        compose.onNodeWithText("Generate recipes").assertIsDisplayed()
     }
 
     private fun captureRecipeEvidence() {

@@ -7,6 +7,7 @@ import android.graphics.Rect
 import android.os.ParcelFileDescriptor
 import android.util.Xml
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -63,6 +65,9 @@ class HistoryScreenTest {
 
     @Before
     fun setUp() = runBlocking {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
         database.clearAllTables()
         photos.retainedFinalPhotos().forEach(File::delete)
     }
@@ -72,6 +77,9 @@ class HistoryScreenTest {
         scenario?.close()
         database.clearAllTables()
         photos.retainedFinalPhotos().forEach(File::delete)
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        }
     }
 
     @Test
@@ -79,7 +87,7 @@ class HistoryScreenTest {
         launchHistory()
 
         compose.onNodeWithTag("history-empty").assertIsDisplayed()
-        compose.onNodeWithText("아직 완료한 요리가 없어요.").assertIsDisplayed()
+        compose.onNodeWithText("No completed meals yet.").assertIsDisplayed()
     }
 
     @Test
@@ -97,12 +105,12 @@ class HistoryScreenTest {
         compose.onNodeWithTag("history-detail").assertIsDisplayed()
 
         compose.onNodeWithTag("history-photo").assertIsDisplayed()
-        scrollTo("평점 5 / 5")
+        scrollTo("Rating 5 / 5")
         compose.onNodeWithText("다음에는 덜 짜게").assertIsDisplayed()
-        compose.onNodeWithText("다시 추천하지 않음").assertIsDisplayed()
-        scrollTo("실제 사용량")
+        compose.onNodeWithText("Not recommended again").assertIsDisplayed()
+        scrollTo("Actual use")
         scrollTo("김치 · 5 g")
-        scrollTo("남은 수량")
+        scrollTo("Remaining quantity")
         scrollTo("김치 · 7 g")
         scrollTo("김치 · 4 g · 한 숟갈 적게")
         capture("task-9-history-bottom.png")
@@ -120,7 +128,7 @@ class HistoryScreenTest {
 
         compose.onNodeWithTag("history-row-missing").performClick()
         compose.onNodeWithTag("history-photo-missing").assertIsDisplayed()
-        compose.onNodeWithText("완성 사진 파일을 찾을 수 없어요.").assertIsDisplayed()
+        compose.onNodeWithText("The final photo file can’t be found.").assertIsDisplayed()
 
         assertEquals(before, storedSnapshot("missing"))
         assertEquals(path, runBlocking { database.mealLogDao().get("missing") }
@@ -143,6 +151,8 @@ class HistoryScreenTest {
 
     private fun launchHistory() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
+        scenario?.recreate()
+        compose.waitForIdle()
         compose.onNodeWithTag("nav-history").performClick()
         compose.onNodeWithTag("history-screen").assertIsDisplayed()
     }

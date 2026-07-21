@@ -1,0 +1,27 @@
+{
+  "device": "R5CR91DXA8R",
+  "connectedRegression": {
+    "classes": [
+      "PantryEquipmentTest",
+      "RecipeScreenTest",
+      "MealCompletionFlowTest",
+      "HistoryScreenTest",
+      "AppLocaleDeviceTest"
+    ],
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "checks": {
+    "staleLocaleAfterRecreation": "PASS",
+    "deviceLocaleBleedThrough": "PASS",
+    "missingResourceOrRawId": "PASS",
+    "canonicalEquipmentIdsUnchanged": "PASS",
+    "canonicalUnitValuesUnchanged": "PASS",
+    "cjkClipping": "PASS on captured Korean pantry screen",
+    "connectedResultBackedByXml": true
+  },
+  "debugApkSha256": "E1DC0B6AFE12DF20C7D7413C79BC850A83E7954B601954B5CD3BB02DCCC7256C",
+  "releaseApkSha256": "F6637539426F8713370BF6A80048372251635C65BC9DF1DDE2D11B8CB6376C29"
+}

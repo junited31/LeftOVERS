@@ -1,0 +1,16 @@
+LeftOVERS expansion Task 1 RED
+Date: 2026-07-21 (Asia/Seoul)
+
+Command:
+  cd android
+  .\gradlew.bat :app:testDebugUnitTest --tests com.junited31.leftovers.AppLocaleBootstrapTest --no-daemon --console=plain
+
+Expected result: FAIL (exit 1), 2 tests, 2 expected assertion failures, 0 errors.
+
+1. declares native locales metadata and localized navigation copy
+   java.lang.AssertionError: application localeConfig is missing
+
+2. main activity uses AppCompat and bootstraps English before content
+   org.junit.ComparisonFailure: expected AppCompatActivity but was ComponentActivity
+
+This is the accepted RED: the test compiled and failed only because the locale resources/metadata and AppCompat bootstrap do not exist yet.

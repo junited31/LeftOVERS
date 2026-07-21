@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.junited31.leftovers.R
 import com.junited31.leftovers.data.ActualPantryUse
 import com.junited31.leftovers.data.ActualPantryUses
 import com.junited31.leftovers.data.CompleteCookSessionCommand
@@ -85,7 +87,7 @@ internal fun MealCompletionForm(
     var finalPhoto by remember(active.session.id) { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
     var photoPreparing by remember(active.session.id) { mutableStateOf(false) }
     var submitting by remember(active.session.id) { mutableStateOf(false) }
-    var error by remember(active.session.id) { mutableStateOf<String?>(null) }
+    var error by remember(active.session.id) { mutableStateOf<Int?>(null) }
 
     fun attach(uri: Uri) {
         photoPreparing = true
@@ -96,9 +98,9 @@ internal fun MealCompletionForm(
                 finalPhoto?.let(photos::discard)
                 finalPhoto = prepared
             } catch (_: InvalidPhotoException) {
-                error = "사진을 읽을 수 없어요."
+                error = R.string.error_photo_read
             } catch (_: PhotoTooLargeException) {
-                error = "사진이 너무 커요."
+                error = R.string.error_photo_large
             } finally {
                 photoPreparing = false
             }
@@ -116,19 +118,19 @@ internal fun MealCompletionForm(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "요리 완료",
+            stringResource(R.string.completion_title),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.semantics { heading() }.testTag("completion-form-title"),
         )
-        Text("실제로 사용한 양과 다음 추천에 반영할 내용을 확인해 주세요.")
+        Text(stringResource(R.string.completion_subtitle))
         bindings.forEachIndexed { index, binding ->
             val item = pantryById[binding.pantryItemId]
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(item?.name ?: "재료 ${index + 1}", style = MaterialTheme.typography.titleMedium)
+                Text(item?.name ?: stringResource(R.string.ingredient_number, index + 1), style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = actualAmounts[index],
                     onValueChange = { value -> actualAmounts = actualAmounts.updated(index, value) },
-                    label = { Text("실제 사용량 (${displayUnit(binding.unit.value)})") },
+                    label = { Text(stringResource(R.string.actual_amount_label, displayUnit(binding.unit.value))) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("actual-use-$index"),
@@ -136,7 +138,7 @@ internal fun MealCompletionForm(
                 OutlinedTextField(
                     value = adjustmentAmounts[index],
                     onValueChange = { value -> adjustmentAmounts = adjustmentAmounts.updated(index, value) },
-                    label = { Text("다음 추천량 (${displayUnit(binding.unit.value)}, 선택)") },
+                    label = { Text(stringResource(R.string.next_amount_label, displayUnit(binding.unit.value))) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("adjustment-amount-$index"),
@@ -144,13 +146,13 @@ internal fun MealCompletionForm(
                 OutlinedTextField(
                     value = adjustmentNotes[index],
                     onValueChange = { value -> adjustmentNotes = adjustmentNotes.updated(index, value.take(200)) },
-                    label = { Text("계량 메모 (선택)") },
+                    label = { Text(stringResource(R.string.measurement_note)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("adjustment-note-$index"),
                 )
             }
         }
-        Text("평점", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.rating), style = MaterialTheme.typography.titleMedium)
         Row(
             Modifier.fillMaxWidth().selectableGroup().testTag("rating-group"),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -178,12 +180,12 @@ internal fun MealCompletionForm(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = recommendAgain, onCheckedChange = null)
-            Text("다시 추천해도 좋아요")
+            Text(stringResource(R.string.recommend_again))
         }
         OutlinedTextField(
             value = notes,
             onValueChange = { notes = it.take(1_000) },
-            label = { Text("식사 메모 (기기에만 저장)") },
+            label = { Text(stringResource(R.string.meal_notes)) },
             minLines = 2,
             modifier = Modifier.fillMaxWidth().testTag("meal-notes"),
         )
@@ -195,11 +197,13 @@ internal fun MealCompletionForm(
             },
             enabled = !photoPreparing && !submitting,
             modifier = Modifier.fillMaxWidth().testTag("attach-final-photo"),
-        ) { Text(if (photoPreparing) "사진 준비 중…" else "완성 사진 선택 (선택)") }
-        if (finalPhoto != null) Text("완성 사진이 준비됐어요.", modifier = Modifier.testTag("final-photo-ready"))
+        ) {
+            Text(stringResource(if (photoPreparing) R.string.final_photo_preparing else R.string.choose_final_photo))
+        }
+        if (finalPhoto != null) Text(stringResource(R.string.final_photo_ready), modifier = Modifier.testTag("final-photo-ready"))
         error?.let {
             Text(
-                it,
+                stringResource(it),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                     .testTag("completion-error"),
@@ -207,7 +211,7 @@ internal fun MealCompletionForm(
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = onCancel, enabled = !submitting, modifier = Modifier.weight(1f)) {
-                Text("돌아가기")
+                Text(stringResource(R.string.back))
             }
             Button(
                 onClick = {
@@ -224,7 +228,7 @@ internal fun MealCompletionForm(
                             note.isNotBlank() && adjustmentAmounts[index].isBlank()
                         }
                     ) {
-                        error = "사용량과 다음 추천량을 올바르게 입력해 주세요."
+                        error = R.string.completion_error_input
                         return@Button
                     }
                     val completedAt = System.currentTimeMillis()
@@ -275,11 +279,11 @@ internal fun MealCompletionForm(
                             if (result is CompletionResult.Success) {
                                 onSuccess(result.mealLogId)
                             } else {
-                                error = result.message()
+                                error = result.messageRes()
                             }
                         } catch (_: Exception) {
                             finalPhoto = null
-                            error = "완료 내용을 저장하지 못했어요. 다시 시도해 주세요."
+                            error = R.string.completion_error_save
                         } finally {
                             submitting = false
                         }
@@ -287,16 +291,16 @@ internal fun MealCompletionForm(
                 },
                 enabled = !submitting && !photoPreparing,
                 modifier = Modifier.weight(1f).testTag("complete-meal"),
-            ) { Text(if (submitting) "저장 중…" else "완료 저장") }
+            ) { Text(stringResource(if (submitting) R.string.completion_saving else R.string.save_completion)) }
         }
     }
 }
 
-private fun CompletionResult.message(): String = when (this) {
-    is CompletionResult.StaleInventory -> "재료 수량이 변경됐어요. 다시 확인해 주세요."
-    is CompletionResult.UnitMismatch -> "재료 단위가 변경됐어요. 다시 확인해 주세요."
-    is CompletionResult.InvalidActualUse -> "사용량이 현재 재료보다 많아요."
-    else -> "완료 내용을 저장하지 못했어요. 다시 확인해 주세요."
+private fun CompletionResult.messageRes(): Int = when (this) {
+    is CompletionResult.StaleInventory -> R.string.completion_error_stale
+    is CompletionResult.UnitMismatch -> R.string.completion_error_unit
+    is CompletionResult.InvalidActualUse -> R.string.completion_error_overuse
+    else -> R.string.completion_error_unknown
 }
 
 private fun List<String>.updated(index: Int, value: String): List<String> =
@@ -305,4 +309,5 @@ private fun List<String>.updated(index: Int, value: String): List<String> =
 private fun formatAmount(milliUnits: Long): String = BigDecimal.valueOf(milliUnits)
     .movePointLeft(3).stripTrailingZeros().toPlainString()
 
-private fun displayUnit(value: String): String = if (value == "count") "개" else value
+@Composable
+private fun displayUnit(value: String): String = if (value == "count") stringResource(R.string.unit_count) else value

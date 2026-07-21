@@ -1,0 +1,9 @@
+{
+  "device": "R5CR91DXA8R",
+  "applicationLocales": ["en"],
+  "englishHeadingPresent": true,
+  "taskPrefixedDeviceCapturesRemaining": 0,
+  "gradleDaemonsRunning": 0,
+  "appReinstalledAndDataClearedAfterConnectedRunnerCleanup": true,
+  "result": "PASS"
+}

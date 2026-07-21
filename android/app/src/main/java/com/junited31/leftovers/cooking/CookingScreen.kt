@@ -29,11 +29,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.junited31.leftovers.R
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import com.junited31.leftovers.network.PhotoAdviceCall
@@ -52,10 +54,8 @@ private sealed interface AdviceUiState {
     data object PhotoReady : AdviceUiState
     data object Loading : AdviceUiState
     data class Ready(val advice: CookingAdvice) : AdviceUiState
-    data class Error(val message: String, val retryable: Boolean) : AdviceUiState
+    data class Error(val messageRes: Int, val retryable: Boolean) : AdviceUiState
 }
-
-private const val NETWORK_RETRY_MESSAGE = "네트워크 연결을 확인하고\n다시 시도해 주세요."
 
 internal class PhotoPreparationEpoch {
     private var current = 0
@@ -125,11 +125,11 @@ fun CookingScreen(
                 }
             } catch (_: InvalidPhotoException) {
                 if (photoEpoch.owns(epoch)) {
-                    state = AdviceUiState.Error("사진을 읽을 수 없어요.", false)
+                    state = AdviceUiState.Error(R.string.error_photo_read, false)
                 }
             } catch (_: PhotoTooLargeException) {
                 if (photoEpoch.owns(epoch)) {
-                    state = AdviceUiState.Error("사진이 너무 커요.", false)
+                    state = AdviceUiState.Error(R.string.error_photo_large, false)
                 }
             }
         }
@@ -155,11 +155,11 @@ fun CookingScreen(
                     }
                 } catch (_: InvalidPhotoException) {
                     if (photoEpoch.owns(epoch)) {
-                        state = AdviceUiState.Error("사진을 읽을 수 없어요.", false)
+                        state = AdviceUiState.Error(R.string.error_photo_read, false)
                     }
                 } catch (_: PhotoTooLargeException) {
                     if (photoEpoch.owns(epoch)) {
-                        state = AdviceUiState.Error("사진이 너무 커요.", false)
+                        state = AdviceUiState.Error(R.string.error_photo_large, false)
                     }
                 }
             }
@@ -190,18 +190,18 @@ fun CookingScreen(
                 .testTag("completion-success"),
         ) {
             Text(
-                "요리를 완료했어요.",
+                stringResource(R.string.cooking_complete_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.semantics { heading() }.testTag("completion-success-title"),
             )
-            Text("남은 재료와 다음 추천 취향을 기기에 저장했어요.")
+            Text(stringResource(R.string.cooking_complete_body))
         }
         return
     }
     if (current == null) {
         Column(modifier.fillMaxSize().padding(20.dp)) {
-            Text("진행 중인 요리가 없어요.", style = MaterialTheme.typography.titleMedium)
-            Text("레시피에서 요리 시작을 눌러 주세요.")
+            Text(stringResource(R.string.cooking_none_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.cooking_none_body))
         }
         return
     }
@@ -227,12 +227,14 @@ fun CookingScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(current.recipe.title, style = MaterialTheme.typography.titleLarge)
-        Text("${index + 1} / ${current.recipe.steps.values.size} 단계", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.step_progress, index + 1, current.recipe.steps.values.size), style = MaterialTheme.typography.labelLarge)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(step.text, style = MaterialTheme.typography.titleMedium)
-                step.durationLabel?.let { Text("예상 $it · 안내용") }
-                Text("자동 타이머는 실행되지 않아요.", style = MaterialTheme.typography.bodySmall)
+                step.durationMinutes?.let {
+                    Text(stringResource(R.string.estimated_duration, stringResource(R.string.duration_approx_minutes, it)))
+                }
+                Text(stringResource(R.string.no_automatic_timer), style = MaterialTheme.typography.bodySmall)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -240,12 +242,12 @@ fun CookingScreen(
                 onClick = { changeStep { store.previous(current.session.id) } },
                 enabled = index > 0,
                 modifier = Modifier.weight(1f).testTag("previous-step"),
-            ) { Text("이전 단계") }
+            ) { Text(stringResource(R.string.previous_step)) }
             Button(
                 onClick = { changeStep { store.next(current.session.id) } },
                 enabled = index < current.recipe.steps.values.lastIndex,
                 modifier = Modifier.weight(1f).testTag("next-step"),
-            ) { Text("다음 단계") }
+            ) { Text(stringResource(R.string.next_step)) }
         }
         if (index == current.recipe.steps.values.lastIndex) {
             Button(
@@ -258,13 +260,13 @@ fun CookingScreen(
                     showCompletion = true
                 },
                 modifier = Modifier.fillMaxWidth().testTag("start-completion"),
-            ) { Text("요리 완료 입력") }
+            ) { Text(stringResource(R.string.enter_completion)) }
         }
-        Text("사진 조언", style = MaterialTheme.typography.titleMedium)
-        Text("사진은 현재 상태를 참고하는 용도이며 익음이나 안전을 판정하지 않아요.")
+        Text(stringResource(R.string.photo_advice), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.photo_advice_disclaimer))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = ::pickPhoto, modifier = Modifier.weight(1f).testTag("attach-gallery")) {
-                Text("갤러리")
+                Text(stringResource(R.string.gallery))
             }
             OutlinedButton(
                 onClick = {
@@ -273,9 +275,9 @@ fun CookingScreen(
                     camera.launch(photos.fileProviderUri(input))
                 },
                 modifier = Modifier.weight(1f).testTag("attach-camera"),
-            ) { Text("카메라") }
+            ) { Text(stringResource(R.string.camera)) }
         }
-        if (state == AdviceUiState.PhotoReady) Text("사진이 준비됐어요.")
+        if (state == AdviceUiState.PhotoReady) Text(stringResource(R.string.photo_ready))
         Button(
             onClick = {
                 val photo = attached ?: return@Button
@@ -285,7 +287,7 @@ fun CookingScreen(
                     apiProvider()
                 } catch (_: IllegalStateException) {
                     photos.discard(photo)
-                    state = AdviceUiState.Error(NETWORK_RETRY_MESSAGE, true)
+                    state = AdviceUiState.Error(R.string.error_network_retry, true)
                     return@Button
                 }
                 val call = api.newPhotoAdviceCall(CookingAdviceJson.request(step.text), photo)
@@ -300,21 +302,23 @@ fun CookingScreen(
             },
             enabled = attached != null && state != AdviceUiState.Loading,
             modifier = Modifier.fillMaxWidth().testTag("request-advice"),
-        ) { Text(if (state == AdviceUiState.Loading) "확인 중…" else "이 사진으로 조언 받기") }
+        ) {
+            Text(stringResource(if (state == AdviceUiState.Loading) R.string.photo_checking else R.string.request_photo_advice))
+        }
         when (val adviceState = state) {
             AdviceUiState.Idle, AdviceUiState.PhotoReady -> Unit
-            AdviceUiState.PreparingPhoto -> Text("사진을 준비하는 중…")
-            AdviceUiState.Loading -> Text("사진을 한 번 전송해 확인하는 중…")
+            AdviceUiState.PreparingPhoto -> Text(stringResource(R.string.photo_preparing))
+            AdviceUiState.Loading -> Text(stringResource(R.string.photo_sending))
             is AdviceUiState.Error -> {
                 Text(
-                    adviceState.message,
+                    stringResource(adviceState.messageRes),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }
                         .testTag("advice-error"),
                 )
                 if (adviceState.retryable) {
                     Button(onClick = ::pickPhoto, modifier = Modifier.testTag("retry-advice")) {
-                        Text("사진 다시 선택해 재시도")
+                        Text(stringResource(R.string.photo_retry))
                     }
                 }
             }
@@ -326,15 +330,15 @@ fun CookingScreen(
 private fun adviceState(result: ApiResult): AdviceUiState = when (result) {
     is ApiResult.Success -> when (val decoded = CookingAdviceJson.response(result.body)) {
         is CookingAdviceDecodeResult.Success -> AdviceUiState.Ready(decoded.advice)
-        CookingAdviceDecodeResult.Invalid -> AdviceUiState.Error("조언 형식을 확인할 수 없어요.", true)
+        CookingAdviceDecodeResult.Invalid -> AdviceUiState.Error(R.string.advice_error_format, true)
     }
-    ApiResult.NetworkFailure, ApiResult.UpstreamUnavailable -> AdviceUiState.Error(NETWORK_RETRY_MESSAGE, true)
-    ApiResult.Cancelled -> AdviceUiState.Error("요청이 취소됐어요.", true)
-    ApiResult.Unauthorized, ApiResult.AuthUnavailable -> AdviceUiState.Error("인증 정보를 확인할 수 없어요.", true)
-    is ApiResult.QuotaLimited -> AdviceUiState.Error("오늘의 사진 조언 횟수를 모두 사용했어요.", false)
-    ApiResult.PayloadTooLarge, ApiResult.InvalidPhoto -> AdviceUiState.Error("사진을 처리할 수 없어요.", false)
-    ApiResult.InvalidRequest -> AdviceUiState.Error("조언 형식을 확인할 수 없어요.", true)
-    ApiResult.AlreadyExecuted, is ApiResult.UnexpectedHttp -> AdviceUiState.Error("사진 조언에 실패했어요.", true)
+    ApiResult.NetworkFailure, ApiResult.UpstreamUnavailable -> AdviceUiState.Error(R.string.error_network_retry, true)
+    ApiResult.Cancelled -> AdviceUiState.Error(R.string.advice_error_cancelled, true)
+    ApiResult.Unauthorized, ApiResult.AuthUnavailable -> AdviceUiState.Error(R.string.error_auth, true)
+    is ApiResult.QuotaLimited -> AdviceUiState.Error(R.string.advice_error_quota, false)
+    ApiResult.PayloadTooLarge, ApiResult.InvalidPhoto -> AdviceUiState.Error(R.string.advice_error_photo, false)
+    ApiResult.InvalidRequest -> AdviceUiState.Error(R.string.advice_error_format, true)
+    ApiResult.AlreadyExecuted, is ApiResult.UnexpectedHttp -> AdviceUiState.Error(R.string.advice_error_unknown, true)
 }
 
 @Composable
@@ -342,27 +346,27 @@ private fun AdviceCard(advice: CookingAdvice) {
     Card(Modifier.fillMaxWidth().testTag("advice-card")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                "관찰 결과",
+                stringResource(R.string.observations),
                 modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
             )
-            advice.observations.forEach { Text("• $it") }
+            advice.observations.forEach { Text(stringResource(R.string.bullet_item, stringResource(it))) }
             Text(
-                "다음 행동",
+                stringResource(R.string.next_actions),
                 modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
             )
-            advice.nextActions.forEach { Text("• $it") }
-            Text("신뢰도 ${advice.confidencePercent}%")
+            advice.nextActions.forEach { Text(stringResource(R.string.bullet_item, stringResource(it))) }
+            Text(stringResource(R.string.confidence, advice.confidencePercent))
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     Text(
-                        "안전 안내",
+                        stringResource(R.string.safety_guidance_title),
                         modifier = Modifier.semantics { heading() },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
-                    Text(advice.safetyNote.replace(Regex("(?<=[.!?。！？])\\s+"), "\n"))
+                    Text(stringResource(advice.safetyNote).replace(Regex("(?<=[.!?。！？])\\s+"), "\n"))
                 }
             }
         }
