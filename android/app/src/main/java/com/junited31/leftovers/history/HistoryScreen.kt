@@ -170,26 +170,42 @@ private fun HistoryDetailScreen(
         }
         item {
             DetailSection(stringResource(R.string.recipe_snapshot), buildList {
-                log.recipeSnapshot.steps.values.forEachIndexed { index, step -> add("${index + 1}. $step") }
+                log.recipeSnapshot.steps.values.forEachIndexed { index, step ->
+                    add(stringResource(R.string.numbered_step_format, index + 1, step))
+                }
             })
         }
         item {
             DetailSection(stringResource(R.string.actual_use), log.actualUses.values.mapIndexed { index, use ->
-                "${ingredientLabel(use.displayName, index, use.pantryItemId)} · " +
-                    "${amount(use.actualMilliUnits)} ${unit(use.unit)}"
+                stringResource(
+                    R.string.history_amount_line,
+                    ingredientLabel(use.displayName, index, use.pantryItemId),
+                    amount(use.actualMilliUnits),
+                    unit(use.unit),
+                )
             }.ifEmpty { listOf(stringResource(R.string.no_ingredients_used)) })
         }
         item {
             DetailSection(stringResource(R.string.remaining_quantity), log.remainingPantry.values.mapIndexed { index, remaining ->
-                "${ingredientLabel(displayNamesByPantryId[remaining.pantryItemId], index, remaining.pantryItemId)} · " +
-                    "${amount(remaining.quantityMilliUnits)} ${unit(remaining.unit)}"
+                stringResource(
+                    R.string.history_amount_line,
+                    ingredientLabel(displayNamesByPantryId[remaining.pantryItemId], index, remaining.pantryItemId),
+                    amount(remaining.quantityMilliUnits),
+                    unit(remaining.unit),
+                )
             }.ifEmpty { listOf(stringResource(R.string.no_remaining_record)) })
         }
         item {
             DetailSection(stringResource(R.string.next_cooking_adjustment), feedback.measurementAdjustments.map { adjustment ->
-                val note = adjustment.note.takeIf(String::isNotBlank)?.let { " · $it" }.orEmpty()
-                "${adjustment.ingredientName} · ${amount(adjustment.preferredAmountMilliUnits)} " +
-                    "${unit(adjustment.unit)}$note"
+                val note = adjustment.note.takeIf(String::isNotBlank)
+                    ?.let { stringResource(R.string.history_adjustment_note, it) }.orEmpty()
+                stringResource(
+                    R.string.history_adjustment_line,
+                    adjustment.ingredientName,
+                    amount(adjustment.preferredAmountMilliUnits),
+                    unit(adjustment.unit),
+                    note,
+                )
             }.ifEmpty { listOf(stringResource(R.string.no_adjustment_record)) })
         }
         item { Spacer(Modifier.height(12.dp)) }
@@ -204,11 +220,10 @@ private fun DetailSection(title: String, lines: List<String>) {
     }
 }
 
-private val completedAtFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
-
+@Composable
 private fun completedAt(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis)
     .atZone(ZoneId.systemDefault())
-    .format(completedAtFormatter)
+    .format(DateTimeFormatter.ofPattern(stringResource(R.string.completed_at_pattern)))
 
 @Composable
 private fun ingredientLabel(displayName: String?, index: Int, id: PantryItemId) =

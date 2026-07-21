@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,10 +27,9 @@ class AppLocaleDeviceTest {
         composeRule.onNodeWithText("Ingredients available now").assertExists()
     }
 
-    @Test
+    @After
     fun restoreEnglish() {
         setLocaleAndRecreate("en")
-        composeRule.onNodeWithText("Ingredients available now").assertExists()
     }
 
     private fun setLocaleAndRecreate(languageTag: String) {

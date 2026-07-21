@@ -141,6 +141,11 @@ private fun LeftoversApp(
     var screen by rememberSaveable { mutableStateOf(AppScreen.PANTRY) }
     var editId by rememberSaveable { mutableStateOf<String?>(null) }
     var showForm by rememberSaveable { mutableStateOf(false) }
+    val pantryLabel = stringResource(R.string.nav_pantry)
+    val recipesLabel = stringResource(R.string.nav_recipes)
+    val cookingLabel = stringResource(R.string.nav_cooking)
+    val historyLabel = stringResource(R.string.nav_history)
+    val equipmentLabel = stringResource(R.string.nav_equipment)
 
     MaterialTheme {
         Scaffold(
@@ -157,10 +162,10 @@ private fun LeftoversApp(
                             screen = AppScreen.PANTRY
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.Inventory2, contentDescription = stringResource(R.string.nav_pantry)) },
-                        label = { Text(stringResource(R.string.nav_pantry)) },
+                        icon = { Icon(Icons.Outlined.Inventory2, contentDescription = pantryLabel) },
+                        label = { Text(pantryLabel) },
                         modifier = Modifier.testTag("nav-pantry").semantics {
-                            contentDescription = context.getString(R.string.nav_pantry)
+                            contentDescription = pantryLabel
                         },
                     )
                     NavigationBarItem(
@@ -169,10 +174,10 @@ private fun LeftoversApp(
                             screen = AppScreen.RECIPES
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.RestaurantMenu, contentDescription = stringResource(R.string.nav_recipes)) },
-                        label = { Text(stringResource(R.string.nav_recipes)) },
+                        icon = { Icon(Icons.Outlined.RestaurantMenu, contentDescription = recipesLabel) },
+                        label = { Text(recipesLabel) },
                         modifier = Modifier.testTag("nav-recipes").semantics {
-                            contentDescription = context.getString(R.string.nav_recipes)
+                            contentDescription = recipesLabel
                         },
                     )
                     NavigationBarItem(
@@ -181,10 +186,10 @@ private fun LeftoversApp(
                             screen = AppScreen.COOKING
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = stringResource(R.string.nav_cooking)) },
-                        label = { Text(stringResource(R.string.nav_cooking)) },
+                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = cookingLabel) },
+                        label = { Text(cookingLabel) },
                         modifier = Modifier.testTag("nav-cooking").semantics {
-                            contentDescription = context.getString(R.string.nav_cooking)
+                            contentDescription = cookingLabel
                         },
                     )
                     NavigationBarItem(
@@ -193,10 +198,10 @@ private fun LeftoversApp(
                             screen = AppScreen.HISTORY
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.History, contentDescription = stringResource(R.string.nav_history)) },
-                        label = { Text(stringResource(R.string.nav_history)) },
+                        icon = { Icon(Icons.Outlined.History, contentDescription = historyLabel) },
+                        label = { Text(historyLabel) },
                         modifier = Modifier.testTag("nav-history").semantics {
-                            contentDescription = context.getString(R.string.nav_history)
+                            contentDescription = historyLabel
                         },
                     )
                     NavigationBarItem(
@@ -205,10 +210,10 @@ private fun LeftoversApp(
                             screen = AppScreen.EQUIPMENT
                             showForm = false
                         },
-                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = stringResource(R.string.nav_equipment)) },
-                        label = { Text(stringResource(R.string.nav_equipment)) },
+                        icon = { Icon(Icons.Outlined.Kitchen, contentDescription = equipmentLabel) },
+                        label = { Text(equipmentLabel) },
                         modifier = Modifier.testTag("nav-equipment").semantics {
-                            contentDescription = context.getString(R.string.nav_equipment)
+                            contentDescription = equipmentLabel
                         },
                     )
                 }

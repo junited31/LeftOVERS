@@ -67,6 +67,7 @@
     <string name="missing_ingredients">부족한 재료: %1$s</string>
     <string name="save_and_start">저장하고 요리 시작</string>
     <string name="no_pantry_used">사용한 식재료 없음</string>
+    <string name="ingredient_amount_format">%1$s %2$s %3$s</string>
 
     <string name="cooking_complete_title">요리를 완료했어요.</string>
     <string name="cooking_complete_body">남은 재료와 다음 추천 취향을 기기에 저장했어요.</string>
@@ -158,4 +159,9 @@
     <string name="next_cooking_adjustment">다음 조리 조정</string>
     <string name="no_adjustment_record">조정 기록 없음</string>
     <string name="ingredient_fallback">재료 %1$d (%2$s)</string>
+    <string name="numbered_step_format">%1$d. %2$s</string>
+    <string name="history_amount_line">%1$s · %2$s %3$s</string>
+    <string name="history_adjustment_note"> · %1$s</string>
+    <string name="history_adjustment_line">%1$s · %2$s %3$s %4$s</string>
+    <string name="completed_at_pattern">yyyy.MM.dd HH:mm</string>
 </resources>

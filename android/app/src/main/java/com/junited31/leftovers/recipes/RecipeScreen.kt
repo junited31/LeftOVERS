@@ -215,14 +215,24 @@ private fun uses(
     pantryById: Map<PantryItemId, PantryItemEntity>,
 ): String = buildList {
     candidate.trackedUses.forEach { use ->
-        add("${pantryById.getValue(use.pantryItemId).name} ${amount(use.proposedMilliUnits)} ${displayUnit(use.unit.value)}")
+        add(stringResource(
+            R.string.ingredient_amount_format,
+            pantryById.getValue(use.pantryItemId).name,
+            amount(use.proposedMilliUnits),
+            displayUnit(use.unit.value),
+        ))
     }
 }.joinToString("\n").ifEmpty { stringResource(R.string.no_pantry_used) }
 
 @Composable
 private fun missing(candidate: RecommendationCandidate): String = buildList {
     candidate.missingIngredients.forEach {
-        add("${it.name} ${amount(it.amountMilliUnits)} ${displayUnit(it.unit.value)}")
+        add(stringResource(
+            R.string.ingredient_amount_format,
+            it.name,
+            amount(it.amountMilliUnits),
+            displayUnit(it.unit.value),
+        ))
     }
 }.joinToString().ifEmpty { stringResource(R.string.none) }
 

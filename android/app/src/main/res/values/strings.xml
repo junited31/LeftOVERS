@@ -38,7 +38,7 @@
     <string name="equipment_rice_cooker">Rice cooker</string>
     <string name="equipment_toaster">Toaster</string>
     <string name="equipment_basic_cookware">Basic cookware</string>
-    <string name="unit_count">item</string>
+    <string name="unit_count">pcs</string>
 
     <string name="recipe_heading">Three meals from your pantry</string>
     <string name="recipe_subtitle">Only complete combinations you can make with your selected equipment are shown.</string>
@@ -67,6 +67,7 @@
     <string name="missing_ingredients">Missing ingredients: %1$s</string>
     <string name="save_and_start">Save and start cooking</string>
     <string name="no_pantry_used">No pantry ingredients used</string>
+    <string name="ingredient_amount_format">%1$s %2$s %3$s</string>
 
     <string name="cooking_complete_title">Meal completed.</string>
     <string name="cooking_complete_body">Remaining ingredients and future recommendation preferences were saved on this device.</string>
@@ -158,4 +159,9 @@
     <string name="next_cooking_adjustment">Next cooking adjustment</string>
     <string name="no_adjustment_record">No adjustment record</string>
     <string name="ingredient_fallback">Ingredient %1$d (%2$s)</string>
+    <string name="numbered_step_format">%1$d. %2$s</string>
+    <string name="history_amount_line">%1$s · %2$s %3$s</string>
+    <string name="history_adjustment_note"> · %1$s</string>
+    <string name="history_adjustment_line">%1$s · %2$s %3$s %4$s</string>
+    <string name="completed_at_pattern">yyyy.MM.dd HH:mm</string>
 </resources>

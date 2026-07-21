@@ -111,7 +111,7 @@ class RecipeScreenTest {
         assertEquals(1, cardContent.count { "Expiration priority 80%" in it })
         assertEquals(2, cardContent.count { "Expiration priority 60%" in it })
         compose.onNodeWithText("Egg fried rice").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Ingredients used:\nRice 300 g\nEggs 2 item").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Ingredients used:\nRice 300 g\nEggs 2 pcs").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Missing ingredients: Salt 1 g").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Rice omelette").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Recipes").assertExists()
