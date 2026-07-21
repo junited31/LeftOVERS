@@ -1,0 +1,12 @@
+Task 3 baseline
+Base commit: 17e187a47dfad053519ab9a0c1dfd6459bc43a09
+Device: R5CR91DXA8R / SM-F711N / Android 15
+Command: Push-Location android; .\gradlew.bat :app:testDebugUnitTest --tests '*LeftoversDatabaseTest' --tests '*Pantry*' :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest" --no-daemon --console=plain; if ($LASTEXITCODE) { exit $LASTEXITCODE }; Pop-Location
+Result: BUILD SUCCESSFUL in 34s
+Unit XML: 5 tests, 0 failures, 0 errors, 0 skipped
+  LeftoversDatabaseTest: 3 tests
+  PantryEditVersionTest: 2 tests
+Connected XML: 9 tests, 0 failures, 0 errors, 0 skipped
+Existing parser assertions: 1.234 -> 1234; -0.001 -> -1; rejects 1.2345, 1., .5, 1e3, NaN, empty
+Existing pantry assertions: blank name and invalid/non-positive quantity make zero Room inserts; save/edit and unsaved drafts survive activity recreation
+Room schema v1 SHA-256 before Task 3: 89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E

@@ -1,0 +1,23 @@
+Task 3 RED
+Base commit: 17e187a47dfad053519ab9a0c1dfd6459bc43a09
+Device: R5CR91DXA8R / SM-F711N / Android 15
+
+Unit RED command: Push-Location android; .\gradlew.bat :app:testDebugUnitTest --tests '*Pantry*' --no-daemon --console=plain; Pop-Location
+Result: expected failure; 4 tests completed, 1 failed, 0 errors, 0 skipped.
+Expected failure: PantrySuggestionResourcesTest.allStaplesHaveExactEnglishAndKoreanLabels -> Missing pantry_suggestion_eggs. Actual: 0.
+
+Connected RED command: Push-Location android; .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest" --no-daemon --console=plain; Pop-Location
+Result: expected failure; 15 tests, 6 failed, 0 errors, 0 skipped; all 9 pre-existing tests passed.
+Expected missing-feature failures:
+- no suggestion-onion node
+- no suggestion-milk node
+- no suggestion-eggs node
+- no unit-count test node
+- exact canonical onion did not localize to Korean 양파
+
+The first attempted RED compile exposed two invalid explicit Compose extension imports. They were removed and RED was rerun; the recorded failures above are product-behavior failures, not test compilation/setup errors.
+
+Review-driven RED before fixes:
+- PantryEquipmentTest.suggestedQuarterAndHalfSurviveEditRecreationAndTypedCanonicalLocalizesTheSame: expected a fresh Add quantity of empty, actual EditableText was 0.5.
+- MealCompletionFlowTest.editsActualUseFeedbackAndPhotoThenCompletesOfflineWithExactRemaining: expected persisted adjustment name `Onion `, actual was normalized `onion`.
+- HistoryScreenTest.adjustmentHistoryLocalizesOnlyExactCanonicalNames: exact `onion` adjustment did not render as Korean `양파`; the exact-only and near-match history expectation failed.

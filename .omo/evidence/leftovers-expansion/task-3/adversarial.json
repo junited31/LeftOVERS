@@ -1,0 +1,27 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "codeTree": "27ae36fa45e608347f3fb52663e1b5f6c383f5d1",
+  "exactMappings": [
+    "eggs=count", "milk=ml", "butter=g", "cheese=g", "onion=count", "garlic=count", "rice=g", "bread=count", "flour=g", "sugar=g", "salt=g", "black pepper=g", "cooking oil=ml", "tomato=count", "potato=count", "carrot=count", "spinach=g"
+  ],
+  "tested": {
+    "rapidSuggestionReplacement": true,
+    "suggestionSelectionDaoWrites": 0,
+    "suggestionQuantityBlank": true,
+    "countChipDecimals": {"1/4": "0.25", "1/2": "0.5", "1": "1", "2": "2"},
+    "nonCountChipsAbsent": true,
+    "freeDecimal375Stored": 375,
+    "quarterStored": 250,
+    "halfStoredAfterEditRecreation": 500,
+    "freshAddDoesNotRestorePriorHalf": true,
+    "exactLowercaseLocalizesAcrossLocale": true,
+    "caseSpaceUnicodeNearMatchesRemainUtf8Verbatim": true,
+    "completionAdjustmentPersistsRawNearMatch": true,
+    "historyAdjustmentLocalizesOnlyExactCanonical": true,
+    "preferenceConsumptionStillNormalizesDownstream": true
+  },
+  "forbiddenSystemsAbsent": ["provenance", "entity field", "converter field", "migration", "catalog API", "fraction parser", "g/ml conversion"],
+  "targetedUnitXml": {"tests": 7, "failures": 0, "errors": 0, "skipped": 0},
+  "connectedXml": {"tests": 15, "failures": 0, "errors": 0, "skipped": 0},
+  "schemaByteIdentical": true
+}

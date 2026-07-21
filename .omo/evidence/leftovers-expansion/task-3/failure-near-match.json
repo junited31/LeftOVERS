@@ -1,0 +1,16 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "device": "R5CR91DXA8R",
+  "localeSwitchRecreatedActivity": true,
+  "processStoppedBeforeRoomCopy": true,
+  "roomRows": [
+    {"name": "onion", "utf8Hex": "6F6E696F6E", "localizedEn": "Onion", "localizedKo": "양파"},
+    {"name": "Onion", "utf8Hex": "4F6E696F6E", "displayedVerbatim": true},
+    {"name": "Onion ", "utf8Hex": "4F6E696F6E20", "displayedVerbatim": true},
+    {"name": "onion ", "utf8Hex": "6F6E696F6E20", "displayedVerbatim": true},
+    {"name": "\u043enion", "utf8Hex": "D0BE6E696F6E", "displayedVerbatim": true}
+  ],
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

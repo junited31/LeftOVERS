@@ -1,0 +1,17 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "codeTree": "27ae36fa45e608347f3fb52663e1b5f6c383f5d1",
+  "cleanedAtUtc": "2026-07-21T12:59:00Z",
+  "activityScenariosClosed": true,
+  "appProcessCount": 0,
+  "gradleProcessCount": 0,
+  "deviceTaskCaptureFiles": 0,
+  "hostTaskTemporaryFiles": 0,
+  "taskPantryRowsRemaining": 0,
+  "explicitAppDataClearUsed": false,
+  "normalPreferencesModifiedByCleanup": false,
+  "packageInstalledAfterConnectedRunner": false,
+  "packageStateMatchesPreDirectEvidenceState": true,
+  "lastTestTeardownLocale": "en",
+  "deviceStillConnected": true
+}

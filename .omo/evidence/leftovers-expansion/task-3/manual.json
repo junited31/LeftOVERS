@@ -1,0 +1,26 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "codeTree": "27ae36fa45e608347f3fb52663e1b5f6c383f5d1",
+  "debugApkSha256": "C3E9A71274028DBACA19ACC361D3768834F03116B64ED960826B05D4F2EB974C",
+  "releaseApkSha256": "DC33B6D06970DDD34918B55B2372BAD45DE4F10F88693C61AFDA529F23257714",
+  "device": {"serial": "R5CR91DXA8R", "model": "SM-F711N", "api": 35},
+  "physicalDeviceInstrumentation": true,
+  "suggestionSelection": {"canonicalId": "onion", "unit": "count", "quantityBeforeChip": "", "daoRowsAfterSelection": 0},
+  "quarterStoredMilliUnits": 250,
+  "halfStoredAfterEditRecreationAndProcessStopMilliUnits": 500,
+  "roomRowsAfterProcessStop": [
+    {"name": "onion", "nameUtf8Hex": "6F6E696F6E", "quantityMilliUnits": 500, "unit": "count", "version": 2},
+    {"name": "onion", "nameUtf8Hex": "6F6E696F6E", "quantityMilliUnits": 1000, "unit": "count", "version": 1}
+  ],
+  "koreanDisplay": ["양파", "0.5 개", "양파", "1 개"],
+  "roomCheckedDirectly": true,
+  "processStoppedBeforeRoomCopy": true,
+  "artifacts": {
+    "suggestions-en.png": "6777262ABEE04BE00419984DEE2D8C9BB88976A814C568899A4B76C718E6834F",
+    "suggestions-en.xml": "FDB510EC86C7EF4090EE35591AC217A3DE3E2F1222E7B2A12487C1D8E0346CA8",
+    "fraction-half-ko.png": "A4F482C559A3ABA8EF483C5801002735F3B0AF54CEE5DDF28FC2E383739F6D26",
+    "fraction-half-ko.xml": "A2C352FE0AC843066FD98EDD4EEDE0B930CD2A31CD0427338E77C6961524FDAD",
+    "typed-onion-ko.png": "E3EE85841D129EA302123215F491D2F8612CF06B055657C2BFC0373623FA1ED3",
+    "typed-onion-ko.xml": "8E9241AD6D6FEDDB133F732C7CC9802DD4F53A2C947F48A7D6127A1C379D3D02"
+  }
+}

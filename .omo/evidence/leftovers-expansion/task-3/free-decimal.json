@@ -1,0 +1,7 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "device": "R5CR91DXA8R",
+  "input": "0.375",
+  "roomAfterProcessStop": {"name": "milk", "nameUtf8Hex": "6D696C6B", "quantityMilliUnits": 375, "unit": "ml"},
+  "roomCheckedDirectly": true
+}

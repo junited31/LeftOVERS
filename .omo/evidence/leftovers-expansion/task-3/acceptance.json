@@ -1,0 +1,17 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "codeTree": "27ae36fa45e608347f3fb52663e1b5f6c383f5d1",
+  "debugApkSha256": "C3E9A71274028DBACA19ACC361D3768834F03116B64ED960826B05D4F2EB974C",
+  "releaseApkSha256": "DC33B6D06970DDD34918B55B2372BAD45DE4F10F88693C61AFDA529F23257714",
+  "recordedAtUtc": "2026-07-21T12:57:57Z",
+  "device": {"serial": "R5CR91DXA8R", "model": "SM-F711N", "api": 35},
+  "targetedUnit": {"tests": 7, "failures": 0, "errors": 0, "skipped": 0},
+  "connected": {"tests": 15, "failures": 0, "errors": 0, "skipped": 0},
+  "fullUnit": {"tests": 85, "failures": 0, "errors": 0, "skipped": 0},
+  "schemaV1Sha256Before": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E",
+  "schemaV1Sha256After": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E",
+  "schemaByteIdentical": true,
+  "gitDiffCheck": "pass",
+  "secretScan": "pass (332 files inspected)",
+  "sourceAssertions": "pass"
+}

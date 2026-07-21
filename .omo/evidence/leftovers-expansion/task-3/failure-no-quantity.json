@@ -1,0 +1,11 @@
+{
+  "codeHead": "e55395ed310050b709017397e6d3222a546f0d2e",
+  "device": "R5CR91DXA8R",
+  "selected": {"canonicalId": "milk", "unit": "ml", "quantity": ""},
+  "daoRowsBeforeSelection": 0,
+  "daoRowsAfterSelection": 0,
+  "daoRowsAfterBlankSave": 0,
+  "inlineQuantityErrorDisplayed": true,
+  "sameTestThenSavedFreeDecimal": {"input": "0.375", "storedMilliUnits": 375, "finalDaoRows": 1},
+  "instrumentation": {"tests": 1, "failures": 0, "errors": 0, "skipped": 0}
+}
