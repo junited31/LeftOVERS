@@ -1,10 +1,39 @@
 LeftOVERS expansion Task 1 GREEN
 Date: 2026-07-21 (Asia/Seoul)
+Evidence HEAD: 7de1f8cce618a49984dd496911a3a7d83a7d929d
 
-Command:
+Fresh clean:
   cd android
-  .\gradlew.bat :app:testDebugUnitTest --tests com.junited31.leftovers.AppLocaleBootstrapTest --no-daemon --console=plain
+  .\gradlew.bat clean --no-daemon --console=plain
+Result: PASS (exit 0), BUILD SUCCESSFUL in 5s.
 
-Result: PASS (exit 0), 2 tests, 0 failures, 0 errors, 0 skipped.
+Required full gate:
+  cd android
+  .\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:compileDebugAndroidTestKotlin --no-daemon --console=plain
+Result: PASS (exit 0), fresh build completed in approximately 67.2s.
+  Unit XML: 84 tests, 0 failures, 0 errors, 0 skipped across 13 suites.
+  lintDebug: PASS.
+  assembleDebug: PASS.
+  assembleRelease: PASS.
+  compileDebugAndroidTestKotlin: PASS.
 
-The accepted RED failures are green: compiled locales_config contains en/ko, AppCompat metadata and localized nav resources resolve, MainActivity extends AppCompatActivity, and the English bootstrap is ordered after super.onCreate and before setContent.
+Relevant connected regression on R5CR91DXA8R:
+  cd android
+  .\gradlew.bat :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.PantryEquipmentTest,com.junited31.leftovers.ui.RecipeScreenTest,com.junited31.leftovers.cooking.MealCompletionFlowTest,com.junited31.leftovers.history.HistoryScreenTest,com.junited31.leftovers.AppLocaleDeviceTest' --no-daemon --console=plain
+Result: PASS (exit 0), BUILD SUCCESSFUL in 1m 3s.
+  Total: 20 tests, 0 failures, 0 errors, 0 skipped.
+  PantryEquipmentTest: 9.
+  RecipeScreenTest: 2.
+  MealCompletionFlowTest: 3.
+  HistoryScreenTest: 4.
+  AppLocaleDeviceTest: 2 (with deterministic @After English cleanup).
+
+Current artifacts and captures (SHA-256):
+  app-debug.apk: A3EAEF7F556C726D369CB346D39775187EBBA8E174BEC5827416A93764F685AA
+  app-release.apk: 92B2A4FA328B7CEECDF02E14AD192BE3FA353963059735102A1C438726B7A3B0
+  manual-en.png: 477EE0F8E0FEC108F7FBDC2E99FD7D3991E3E60577FF4A50D4B6314656380913
+  manual-en.xml: 3248714461B0F0E1D0223B9581C93F476A35F8B4E3DDD5C1BFFBFCCB4F81C1D9
+  manual-ko-harness.png: 77EF5B1625D0F0A4021E25AAEFD8A99959537B281BCB6A640C24DEF52FDA8FB5
+  manual-ko-harness.xml: C74ADAA8419D62B4CD1AF7314AD239EB0D8959DA6AE5EB0B4223E860EB047BA5
+
+The accepted historical RED remains in red.txt and the pre-change baseline remains in baseline.txt.

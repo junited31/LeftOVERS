@@ -1,17 +1,24 @@
 {
+  "evidenceHead": "7de1f8cce618a49984dd496911a3a7d83a7d929d",
+  "generatedAtUtc": "2026-07-21T11:07:28Z",
   "device": "R5CR91DXA8R",
   "connectedRegression": {
-    "classes": [
-      "PantryEquipmentTest",
-      "RecipeScreenTest",
-      "MealCompletionFlowTest",
-      "HistoryScreenTest",
-      "AppLocaleDeviceTest"
-    ],
-    "tests": 21,
+    "classes": {
+      "com.junited31.leftovers.ui.PantryEquipmentTest": 9,
+      "com.junited31.leftovers.ui.RecipeScreenTest": 2,
+      "com.junited31.leftovers.cooking.MealCompletionFlowTest": 3,
+      "com.junited31.leftovers.history.HistoryScreenTest": 4,
+      "com.junited31.leftovers.AppLocaleDeviceTest": 2
+    },
+    "tests": 20,
     "failures": 0,
     "errors": 0,
-    "skipped": 0
+    "skipped": 0,
+    "result": "PASS"
+  },
+  "localeHarness": {
+    "behaviorTests": 2,
+    "cleanup": "@After restoreEnglish runs after every behavior test"
   },
   "checks": {
     "staleLocaleAfterRecreation": "PASS",
@@ -22,6 +29,6 @@
     "cjkClipping": "PASS on captured Korean pantry screen",
     "connectedResultBackedByXml": true
   },
-  "debugApkSha256": "E1DC0B6AFE12DF20C7D7413C79BC850A83E7954B601954B5CD3BB02DCCC7256C",
-  "releaseApkSha256": "F6637539426F8713370BF6A80048372251635C65BC9DF1DDE2D11B8CB6376C29"
+  "debugApkSha256": "A3EAEF7F556C726D369CB346D39775187EBBA8E174BEC5827416A93764F685AA",
+  "releaseApkSha256": "92B2A4FA328B7CEECDF02E14AD192BE3FA353963059735102A1C438726B7A3B0"
 }

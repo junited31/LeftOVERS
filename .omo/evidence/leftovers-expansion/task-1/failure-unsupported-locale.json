@@ -1,13 +1,15 @@
 {
+  "evidenceHead": "7de1f8cce618a49984dd496911a3a7d83a7d929d",
+  "capturedAtUtc": "2026-07-21T11:05:48.0926023Z",
   "device": "R5CR91DXA8R",
+  "method": "Android LocaleManager shell command followed by a cold relaunch",
   "injectedApplicationLocale": "ja",
-  "harness": "AppLocaleDeviceTest#setUnsupportedJapaneseAndVerifyEnglishFallback",
-  "tests": 1,
-  "failures": 0,
-  "applicationLocalesAfterRecreate": ["ja"],
+  "applicationLocalesAfterRelaunch": ["ja"],
   "englishFallbackHeadingPresent": true,
   "koreanHeadingPresent": false,
   "rawResourceIdPatternPresent": false,
   "processAliveAfterRelaunch": true,
-  "result": "PASS"
+  "processId": 13269,
+  "result": "PASS",
+  "debugApkSha256": "A3EAEF7F556C726D369CB346D39775187EBBA8E174BEC5827416A93764F685AA"
 }

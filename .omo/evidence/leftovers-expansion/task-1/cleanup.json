@@ -1,9 +1,13 @@
 {
+  "evidenceHead": "7de1f8cce618a49984dd496911a3a7d83a7d929d",
+  "completedAtUtc": "2026-07-21T11:08:49.6497978Z",
   "device": "R5CR91DXA8R",
   "applicationLocales": ["en"],
-  "englishHeadingPresent": true,
+  "englishUiPresent": true,
+  "koreanUiPresent": false,
   "taskPrefixedDeviceCapturesRemaining": 0,
   "gradleDaemonsRunning": 0,
   "appReinstalledAndDataClearedAfterConnectedRunnerCleanup": true,
+  "taskCreatedAndroidKotlinDirectoryPresent": false,
   "result": "PASS"
 }

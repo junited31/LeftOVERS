@@ -1,4 +1,6 @@
 {
+  "evidenceHead": "7de1f8cce618a49984dd496911a3a7d83a7d929d",
+  "generatedAtUtc": "2026-07-21T11:05:54.1244464Z",
   "device": {
     "serial": "R5CR91DXA8R",
     "model": "SM-F711N",
@@ -6,19 +8,28 @@
     "systemLocale": "ko-KR"
   },
   "firstRun": {
+    "capturedAtUtc": "2026-07-21T11:05:07.3461218Z",
     "appDataCleared": true,
     "applicationLocales": ["en"],
     "englishHeadingPresent": true,
-    "screenshotSha256": "8155D77355A98C600CF7BAD0D9AEDF747DBEC083785BBC0CA22E86AE79740266",
+    "koreanHeadingPresent": false,
+    "rawResourceIdPatternPresent": false,
+    "result": "PASS",
+    "screenshotSha256": "477EE0F8E0FEC108F7FBDC2E99FD7D3991E3E60577FF4A50D4B6314656380913",
     "xmlSha256": "3248714461B0F0E1D0223B9581C93F476A35F8B4E3DDD5C1BFFBFCCB4F81C1D9"
   },
-  "koreanHarness": {
-    "test": "AppLocaleDeviceTest#setKoreanAndVerifyPersistence",
-    "result": "PASS",
+  "koreanPersistence": {
+    "capturedAtUtc": "2026-07-21T11:05:30.6333321Z",
+    "method": "Android LocaleManager shell command followed by two cold relaunches",
     "applicationLocales": ["ko"],
-    "koreanHeadingPresentAfterRecreateAndRelaunch": true,
-    "screenshotSha256": "9F47874FEA056EDE96FB66E0C011350ABE3EF848B491E20AF08AC6A755C19D01",
+    "coldRelaunches": 2,
+    "koreanHeadingPresent": true,
+    "englishHeadingPresent": false,
+    "rawResourceIdPatternPresent": false,
+    "result": "PASS",
+    "screenshotSha256": "77EF5B1625D0F0A4021E25AAEFD8A99959537B281BCB6A640C24DEF52FDA8FB5",
     "xmlSha256": "C74ADAA8419D62B4CD1AF7314AD239EB0D8959DA6AE5EB0B4223E860EB047BA5"
   },
-  "debugApkSha256": "E1DC0B6AFE12DF20C7D7413C79BC850A83E7954B601954B5CD3BB02DCCC7256C"
+  "debugApkSha256": "A3EAEF7F556C726D369CB346D39775187EBBA8E174BEC5827416A93764F685AA",
+  "releaseApkSha256": "92B2A4FA328B7CEECDF02E14AD192BE3FA353963059735102A1C438726B7A3B0"
 }
