@@ -1,0 +1,37 @@
+T12 failing-first baseline receipt
+
+Baseline media SHA-256: 099faa3a7c366ebe676b69b8b82de57d7b7842a1df5d64b8114720855cb37e24
+Baseline duration: 99.2 seconds
+Baseline streams: H.264 1080x2640 at 30 fps; AAC mono at 96000 Hz
+
+The baseline failed privacy sanitization and multi-run provenance disclosure. It was replaced rather than relabeled.
+
+All three potentially sensitive failing-first baseline PNGs were deleted. Only this sanitized text receipt remains; it intentionally contains no location value.
+
+Round 2 rejected-media repro
+
+Rejected media SHA-256: 1a224f595383858751870b6de6d458be0dfcba95611620fd10775dd701e7eef1
+
+Exact-frame decoding reproduced an undisclosed post-transition Run 3 -> Run 1 -> Run 3 splice: confidence was 8% at 73.4 seconds, 72% at 73.5 and 77.4 seconds, then 8% at 77.5 seconds. The rejected timeline bound 73.5-77.5 seconds to Run 1.
+
+Two reviewers disagreed about a possible opening column slice. Local original-detail inspection of all 30 rejected opening frames did not reproduce it, so the replacement did not rely on that disputed result: the final first second uses one continuous, stable, genuine pantry app frame sequence with no personal content or source boundary.
+
+No rejected-media frame or potentially sensitive PNG is retained; this sanitized text receipt records only the minimum red evidence.
+
+Round 3 rejected-media boundary repro
+
+Rejected media SHA-256: 168eb343a7f259a9854159cc7c9af156914b4c9c4d574e06d3c8cb1945d6ed5e
+
+Linear decoding of every frame from 54.5 through 55.8 seconds exposed a partial-width transition/app composite at the non-frame-aligned 55.05-second splice. Full decode, black, silence, and audio-stream gates had all passed and therefore did not detect this visual defect.
+
+The active demo script also mislabeled the actual Run 3 recipe as Crispy Tofu; the UI and offline history show Microwave Spinach Egg Rice Custard. The replacement binds the exact title and durable per-run decoded-segment hashes.
+
+No rejected Round 3 image is retained. This historical text is the only active-artifact location where the rejected SHA and stale recipe description are intentionally preserved.
+
+Round 4 rejected-media deterministic H.264 corruption repro
+
+Rejected media SHA-256: 7a02221191881ce999d02594237263963127f8601ffad77c636b078eca9d59a1
+
+Linear decoding showed deterministic alternating corruption that the older full-decode, black-frame, silence, and sparse state-hash gates did not catch: opening frames alternated between complete and column-sliced states, the disclosure alternated between complete, blank, and partial-width states, and the Run 3 start contained torn frames.
+
+The replacement uses only the rejected timeline/audio as its base, overlays independent full-resolution PNG frames at exact decoded frame numbers, and fully re-encodes the complete 3101-frame H.264 stream. No rejected image or raw screenrecord is retained; this sanitized historical receipt is the only active-artifact location for the rejected SHA.

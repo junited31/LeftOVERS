@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "final_media_path": ".omo/evidence/leftovers/task-12-demo.mp4",
+  "final_media_sha256": "91c3452b4bf29112401eb1646c060a9fe9c459dfd3be9e990707547270ac9af3",
+  "exact_capture_run_count": 3,
+  "continuous_run_claimed": false,
+  "segment_binding_method": "SHA-256 of the canonical FFmpeg framemd5 manifest produced from decoded video frames after trim=start:end,setpts=PTS-STARTPTS. Frame ranges are half-open and independently reproducible from the bound final media.",
+  "fresh_real_cloud_verification": {
+    "command": "adb shell am instrument -w -r -e class com.junited31.leftovers.e2e.RealCloudE2eTest#realFirebaseCloudRunRecipesAdviceCompletionAndOfflineHistory com.junited31.leftovers.test/androidx.test.runner.AndroidJUnitRunner",
+    "started_at_utc": "2026-07-20T14:47:02.1063863Z",
+    "ended_at_utc": "2026-07-20T14:48:34.1883896Z",
+    "wall_duration_seconds": 92.082,
+    "reported_time_seconds": 90.427,
+    "exit_code": 0,
+    "result": "OK (1 test)",
+    "device_model": "SM-F711N",
+    "android_release": 15,
+    "deployed_host": "leftovers-api-rlm4ngxglq-du.a.run.app",
+    "sanitized_observables": {
+      "firebase_anonymous_auth": true,
+      "recipe_count": 3,
+      "photo_input_pixels": "256x256",
+      "photo_advice_schema_rendered": true,
+      "safety_guidance_rendered": true,
+      "meal_log_count": 1,
+      "offline_before_history_read": true,
+      "history_title_rendered": true,
+      "temporary_photo_cache_count": 0
+    },
+    "retained_sanitized_raw_test_output": {
+      "path": ".omo/evidence/leftovers/task-12-demo-cloud-proof.txt",
+      "sha256": "332eb82d932f7805e865aafcc63b89bb2cb6984ee6fdb3fcfcd68acbe6c67fb7",
+      "raw_stdout_sha256": "2fbeda882fb4aea349c9de33e3cf9043144361a6c81672f19d83a46aa769194b",
+      "raw_stdout_bytes": 1686,
+      "secret_scan_match_count": 0,
+      "relationship": "A genuinely new focused execution retained its sanitized instrumentation stdout, command, UTC bounds, duration, exit/result, device, host, observables, and raw-output hash."
+    },
+    "corroborative_repository_proof": {
+      "path": ".omo/evidence/leftovers/task-11-cloud.json",
+      "sha256": "c1d0f2d3712072de3eddb8e7322b7599fcf2fbb74c569d595e0b5d89e5366ea2",
+      "relationship": "The fresh focused run regenerated the same sanitized observable JSON bytes as the retained T11 receipt. This older JSON is corroborative only; freshness is proven by the separate retained raw instrumentation output above."
+    }
+  },
+  "runs": [
+    {
+      "id": 1,
+      "kind": "physical_device_local_fixture",
+      "real_cloud": false,
+      "final_range_seconds": [0.0, 18.0],
+      "decoded_video_frame_count": 540,
+      "video_framemd5_manifest_sha256": "60f1d36f0caded7b55dd48e72f1f57ed0a7a2530645412f5c1245e4ac58f4514",
+      "observable_bindings": [
+        {"timestamp_seconds": 5.0, "state": "pantry", "frame_sha256": "ab190d2fc81cd98e3f1a75e87f5f8051521ce5aeed13b894c865edc5fa0d34a6"},
+        {"timestamp_seconds": 13.0, "state": "equipment", "frame_sha256": "30d4571a625533c7a20066fa761e73a0c05e0693f984f12124844a49f1d45104"}
+      ],
+      "evidence_source": "Exact final decoded segment and freshly regenerated final-state frames; local MockWebServer fixture, no real-cloud claim."
+    },
+    {
+      "id": 2,
+      "kind": "physical_device_real_cloud_recipe_cards",
+      "real_cloud": true,
+      "final_range_seconds": [18.0, 50.0],
+      "decoded_video_frame_count": 960,
+      "video_framemd5_manifest_sha256": "974e7855ba0fd3e5b4fe36a1589a9a3652cda6e3174730b39d17acfb0f2af9fc",
+      "observable_bindings": [
+        {"timestamp_seconds": 32.0, "state": "recipe_card_1", "title": "Indian Spinach Egg Rice Pilaf", "frame_sha256": "eb1fb1431ac943e1ec06c58deb5cd52b53d00571dc8c624ee332cb0f04f3e0df"},
+        {"timestamp_seconds": 38.0, "state": "recipe_card_2", "title": "Japanese Air-Fried Spinach Rice Patties", "frame_sha256": "6cd740f345cebee83ac5e830e6e9ff5b86f7a7bcd6be0b570a49e70fbbe08849"},
+        {"timestamp_seconds": 48.5, "state": "recipe_card_3", "title": "Korean Spinach and Egg Fried Rice", "frame_sha256": "63489baef85d81a1bdfe196dd2035abaa2a4f75845b7cb0499279e055670f61f"}
+      ],
+      "evidence_source": "Exact current final Run 2 decoded segment and its three bound card frames, linked to the newly retained fresh raw instrumentation proof above.",
+      "raw_capture_retained": false,
+      "raw_capture_note": "The raw screenrecord was not retained; provenance binds the exact final segment pixels instead of inventing a raw-capture timestamp."
+    },
+    {
+      "id": 3,
+      "kind": "physical_device_real_cloud_cooking_e2e",
+      "real_cloud": true,
+      "recipe_title": "Microwave Spinach Egg Rice Custard",
+      "final_range_seconds": [55.333333, 103.366667],
+      "decoded_video_frame_count": 1441,
+      "video_framemd5_manifest_sha256": "f4933f526a0014244a5a8805ec491089848ef8d93243e25e76964621b0d39fbe",
+      "observable_bindings": [
+        {"timestamp_seconds": 58.0, "state": "cook_step", "frame_sha256": "7511029fbc65007523181cb1b035289b424055b97049db023662e6081d33f5eb"},
+        {"timestamp_seconds": 75.0, "state": "full_advice", "confidence": "15%", "frame_sha256": "5d7f70b991d78118623bfb40c22a79230c53f3573b9396c9a771a533087f4815"},
+        {"timestamp_seconds": 80.0, "state": "completion_form", "frame_sha256": "fcd39ee8fd51fba3cc5a20b6c6cb18ff7b6c1ed02d5932fe281e125ac562ece7"},
+        {"timestamp_seconds": 85.0, "state": "completion_success", "frame_sha256": "c8eebcdf3c89af2ce2b9ab563fe6fd904bbada953e592937593ecab657334cf3"},
+        {"timestamp_seconds": 90.0, "state": "offline_history", "frame_sha256": "aafceca2155382fbc584f9d328dfab7e7b694b1c0e4bafa12d6c56355617ed85"},
+        {"timestamp_seconds": 98.0, "state": "repository_close", "frame_sha256": "25a70cd87e9024552c92cffdb8ed25f52c20b30546e0d6fe8d9dbce3002add19"}
+      ],
+      "evidence_source": "Exact final Run 3 decoded segment from the new physical-device recording plus the fresh focused real-cloud verification above. Only waiting intervals were shortened; no Run 1 pixels occur after the disclosed boundary."
+    }
+  ],
+  "credentials_or_tokens_retained": false,
+  "generated_at_utc": "2026-07-20T14:53:42.4533216Z"
+}

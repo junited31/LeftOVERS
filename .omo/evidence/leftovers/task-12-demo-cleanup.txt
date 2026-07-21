@@ -1,0 +1,53 @@
+T12 demo final cleanup and adversarial receipt
+
+Exact final media
+- SHA-256: 91c3452b4bf29112401eb1646c060a9fe9c459dfd3be9e990707547270ac9af3
+- Size: 7,463,533 bytes
+- Duration: 103.366667 seconds
+- Streams: H.264 1080x2640 at 30 fps; one AAC mono 48 kHz stream.
+- Two independent full audio/video decodes exited 0; black segments at least 0.5 seconds: 0; silent segments at least 2 seconds below -50 dB: 0; audio streams: 1; mean volume -16.6 dB and maximum -0.6 dB.
+
+Boundary and semantic verification
+- Linear decode produced exactly 60 opening frames n0-n59 and exactly 225 adversarial-window frames n1485-n1709. All 285 were inspected in original-detail contact sheets; six boundary frames were also opened individually.
+- Frames n1502-n1659 are a stable full-frame disclosure card, n1660-n1679 are a stable full-frame Run 3 start, and verified original pixels resume at n1680 / 56.0 seconds. Torn, overlap, blank, alternating, or partial-width frames: 0.
+- The entire 3101-frame stream was linearly decoded to a 108x264 grayscale scan. Blank frames: 0; alternating/same-regime anomalies: 0; alternating or column-slice anomalies: 0.
+- The final video was fully re-encoded from the rejected timeline/audio with independent full-resolution PNG overlays. No stream copy, partial concat, or non-frame splice was used.
+- All 60 opening frames are a stable pantry app sequence with no personal content or column slice.
+- Fourteen physical state-frame hashes across eleven logical states match and are newer than the final media.
+- Canonical decoded segment bindings reproduce exactly: Run 1 540 frames, Run 2 960 frames, Run 3 1441 frames. Exact hashes and the sanitized live cloud receipt are stored in `task-12-demo-runs.json`.
+- Active Run 3 recipe: Microwave Spinach Egg Rice Custard.
+
+Fresh real-cloud proof
+- Physical device: SM-F711N, Android 15.
+- Focused instrumentation ran from 2026-07-20T14:47:02.1063863Z to 2026-07-20T14:48:34.1883896Z.
+- Result: exit 0, wall duration 92.082 seconds, reported Time 90.427 seconds, OK (1 test).
+- Newly retained sanitized raw proof: `task-12-demo-cloud-proof.txt`, SHA-256 332eb82d932f7805e865aafcc63b89bb2cb6984ee6fdb3fcfcd68acbe6c67fb7.
+- Embedded fresh raw stdout: 1,686 bytes, SHA-256 2fbeda882fb4aea349c9de33e3cf9043144361a6c81672f19d83a46aa769194b; secret-pattern matches: 0.
+- Sanitized observables: deployed host, Firebase anonymous auth true, three recipes, advice schema and safety rendered, one meal log, offline history rendered, temporary photo cache zero.
+- No credential, token, API key, request body, or personal photo was retained.
+
+Repository gates
+- Twenty-two verifier tests passed.
+- Ruff passed.
+- basedpyright passed with 0 errors and 0 warnings when the isolated checker environment included the repository's Pydantic dependency.
+- Secret scan passed with 273 files inspected.
+- PRE-COMMIT draft fixture reproduction: `python scripts/verify_submission.py --record scripts/tests/fixtures/submission_draft.json` exited 1 with 14 issues; one is the current dirty worktree, so the count is state-dependent and expected to change after commit/publication.
+- `git diff --check` passed.
+- Unsafe `task-12-baseline*.png` count: 0.
+
+Cleanup completed
+- Removed fresh device proof JSON/PNG files and verified exact absence before stopping ADB.
+- Uninstalled `com.junited31.leftovers.test` and `com.junited31.leftovers`; both returned Success.
+- Stopped ADB; remaining ADB process count: 0.
+- Remaining Gradle daemon process count: 0.
+- Uninstalled temporary FFmpeg 8.1.1; `winget list` found no installed match.
+- Deleted every exact `%TEMP%\leftovers-t12-round4-*` directory after resolving and verifying each path remained below the Windows temporary directory; remaining count: 0.
+- Promotion stage and backup files are absent.
+- `RealCloudE2eTest.kt` remains restored at SHA-256 `6313dc0874c6d03f1f57bb8af2d327068f188ee361d27a267d692031aaabcfdf` with zero diff.
+- Temporary debug journal and its one `.git/info/exclude` entry are removed as the final cleanup step; the exclude file is restored to its original SHA-256.
+- Cloud Run deployment/configuration and Boulder state were not changed.
+
+Preserved intentionally
+- Final media, regenerated state/opening/transition/judge captures, and the new sanitized raw cloud-test proof.
+- Media, capture, and exact per-run provenance JSON.
+- Sanitized historical failing-first text receipt only; no rejected image or raw screenrecord is retained.

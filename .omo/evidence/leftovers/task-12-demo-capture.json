@@ -1,0 +1,216 @@
+{
+  "schema_version": 2,
+  "head": "3265f6f2d3ddeb3911597c54e45f7cf78a1d0040",
+  "final_media_path": ".omo/evidence/leftovers/task-12-demo.mp4",
+  "final_media_sha256": "91c3452b4bf29112401eb1646c060a9fe9c459dfd3be9e990707547270ac9af3",
+  "per_run_provenance_path": ".omo/evidence/leftovers/task-12-demo-runs.json",
+  "device": {
+    "model": "SM-F711N",
+    "android_release": 15,
+    "api_level": 35,
+    "capture_dimensions": "1080x2640"
+  },
+  "capture_runs": {
+    "exact_count": 3,
+    "is_continuous_run": false,
+    "continuous_run_claimed": false,
+    "real_cloud_run_ids": [2, 3],
+    "runs": [
+      {
+        "id": 1,
+        "kind": "physical_device_local_fixture",
+        "real_cloud": false,
+        "content": "Fresh physical-device local-fixture pantry and equipment capture only.",
+        "final_segments_seconds": [[0.0, 18.0]]
+      },
+      {
+        "id": 2,
+        "kind": "physical_device_real_cloud_recipe_cards",
+        "real_cloud": true,
+        "content": "Fresh physical-device run that exercised the deployed real-cloud recipe-card flow.",
+        "final_segments_seconds": [[18.0, 50.0]]
+      },
+      {
+        "id": 3,
+        "kind": "physical_device_real_cloud_cooking_e2e",
+        "real_cloud": true,
+        "content": "One new uninterrupted physical-device recording of Microwave Spinach Egg Rice Custard that exercised the deployed real-cloud cooking/advice E2E, then produced completion, saved success, offline history, and the repository close. Only waiting intervals were shortened in the edit; no other run appears after the transition.",
+        "final_segments_seconds": [[55.333333, 103.366667]]
+      }
+    ],
+    "transition": {
+      "start_seconds": 50.05,
+      "end_seconds": 55.333333,
+      "visible_text": "Separate real-cloud E2E run \u2014 cooking flow shown next.",
+      "spoken_text": "Separate real-cloud E2E run \u2014 cooking flow shown next.",
+      "following_run_starts_seconds": 55.333333
+    }
+  },
+  "run3_runtime_proof": {
+    "instrumentation_test": "com.junited31.leftovers.e2e.RealCloudE2eTest#realFirebaseCloudRunRecipesAdviceCompletionAndOfflineHistory",
+    "instrumentation_result": "OK (1 test)",
+    "device_model": "SM-F711N",
+    "api_host": "leftovers-api-rlm4ngxglq-du.a.run.app",
+    "firebase_anonymous_auth": true,
+    "recipe_count": 3,
+    "photo_input_pixels": "256x256",
+    "photo_advice_schema_rendered": true,
+    "safety_guidance_rendered": true,
+    "meal_log_count": 1,
+    "offline_before_history_read": true,
+    "history_title_rendered": true,
+    "temporary_photo_cache_count": 0,
+    "fresh_execution_started_at_utc": "2026-07-20T14:47:02.1063863Z",
+    "fresh_execution_ended_at_utc": "2026-07-20T14:48:34.1883896Z",
+    "retained_sanitized_raw_test_output_path": ".omo/evidence/leftovers/task-12-demo-cloud-proof.txt",
+    "retained_sanitized_raw_test_output_sha256": "332eb82d932f7805e865aafcc63b89bb2cb6984ee6fdb3fcfcd68acbe6c67fb7"
+  },
+  "narration": {
+    "engine": "Windows System.Speech",
+    "voice": "Microsoft Zira Desktop",
+    "culture": "en-US"
+  },
+  "logical_state_map": [
+    {
+      "id": 1,
+      "state": "pantry",
+      "timestamp_seconds": 5.0,
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/01-pantry.png",
+      "frame_sha256": "ab190d2fc81cd98e3f1a75e87f5f8051521ce5aeed13b894c865edc5fa0d34a6",
+      "extracted_at_utc": "2026-07-20T14:51:18.1156706Z",
+      "semantic_check": "Manually inspected at original detail: pantry is visible and no personal location or external device UI is visible."
+    },
+    {
+      "id": 2,
+      "state": "equipment",
+      "timestamp_seconds": 13.0,
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/02-equipment.png",
+      "frame_sha256": "30d4571a625533c7a20066fa761e73a0c05e0693f984f12124844a49f1d45104",
+      "extracted_at_utc": "2026-07-20T14:51:18.4745154Z",
+      "semantic_check": "Manually inspected at original detail: selected equipment controls are visible."
+    },
+    {
+      "id": 3,
+      "state": "recipe_cards",
+      "choices": [
+        {
+          "timestamp_seconds": 32.0,
+          "title": "Indian Spinach Egg Rice Pilaf",
+          "frame": ".omo/evidence/leftovers/task-12-demo-states/03-recipe-card-1-indian.png",
+          "frame_sha256": "eb1fb1431ac943e1ec06c58deb5cd52b53d00571dc8c624ee332cb0f04f3e0df",
+          "extracted_at_utc": "2026-07-20T14:51:18.1462143Z",
+          "semantic_check": "Manually inspected at original detail: first distinct structured recipe card is visible."
+        },
+        {
+          "timestamp_seconds": 38.0,
+          "title": "Japanese Air-Fried Spinach Rice Patties",
+          "frame": ".omo/evidence/leftovers/task-12-demo-states/04-recipe-card-2-japanese.png",
+          "frame_sha256": "6cd740f345cebee83ac5e830e6e9ff5b86f7a7bcd6be0b570a49e70fbbe08849",
+          "extracted_at_utc": "2026-07-20T14:51:18.4795314Z",
+          "semantic_check": "Manually inspected at original detail: second distinct structured recipe card is visible."
+        },
+        {
+          "timestamp_seconds": 48.5,
+          "title": "Korean Spinach and Egg Fried Rice",
+          "frame": ".omo/evidence/leftovers/task-12-demo-states/05-recipe-card-3-korean.png",
+          "frame_sha256": "63489baef85d81a1bdfe196dd2035abaa2a4f75845b7cb0499279e055670f61f",
+          "extracted_at_utc": "2026-07-20T14:51:18.4735136Z",
+          "semantic_check": "Manually inspected at original detail: third distinct structured recipe card is visible."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "state": "cook_step",
+      "timestamp_seconds": 58.0,
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/06-cook-step.png",
+      "recipe_title": "Microwave Spinach Egg Rice Custard",
+      "frame_sha256": "7511029fbc65007523181cb1b035289b424055b97049db023662e6081d33f5eb",
+      "extracted_at_utc": "2026-07-20T14:51:18.0816197Z",
+      "semantic_check": "Manually inspected at original detail: the new real-cloud Run 3 Microwave Spinach Egg Rice Custard cooking step is visible after the disclosed run boundary."
+    },
+    {
+      "id": 5,
+      "state": "structured_observations",
+      "timestamp_seconds": 75.0,
+      "visible_label": "\uad00\ucc30 \uacb0\uacfc",
+      "visible_content": "\ud45c\uba74 \uc0c9\uc774 \uc544\uc9c1 \uc605\uc5b4 \ubcf4\uc5ec\uc694",
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/07-structured-advice.png",
+      "frame_sha256": "5d7f70b991d78118623bfb40c22a79230c53f3573b9396c9a771a533087f4815",
+      "extracted_at_utc": "2026-07-20T14:51:18.4715151Z",
+      "semantic_check": "Manually inspected at original detail: the new Run 3 observations are fully visible."
+    },
+    {
+      "id": 6,
+      "state": "next_actions",
+      "timestamp_seconds": 75.0,
+      "visible_label": "\ub2e4\uc74c \ud589\ub3d9",
+      "visible_content": ["\uc2dc\uac04\uc744 \ud655\uc778\ud558\uba70 \ub354 \uc870\ub9ac\ud558\uc138\uc694", "\uc911\uc2ec \uc628\ub3c4\ub97c \ud655\uc778\ud558\uc138\uc694"],
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/07-structured-advice.png",
+      "frame_sha256": "5d7f70b991d78118623bfb40c22a79230c53f3573b9396c9a771a533087f4815",
+      "extracted_at_utc": "2026-07-20T14:51:18.4715151Z",
+      "semantic_check": "Manually inspected at original detail: both next actions are fully visible."
+    },
+    {
+      "id": 7,
+      "state": "confidence",
+      "timestamp_seconds": 75.0,
+      "visible_label": "\uc2e0\ub8b0\ub3c4",
+      "visible_content": "15%",
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/07-structured-advice.png",
+      "frame_sha256": "5d7f70b991d78118623bfb40c22a79230c53f3573b9396c9a771a533087f4815",
+      "extracted_at_utc": "2026-07-20T14:51:18.4715151Z",
+      "semantic_check": "Manually inspected at original detail: new Run 3 confidence is 15 percent."
+    },
+    {
+      "id": 8,
+      "state": "safety_note",
+      "timestamp_seconds": 75.0,
+      "visible_label": "\uc548\uc804 \uc548\ub0b4",
+      "visible_content": "\uc0ac\uc9c4\ub9cc\uc73c\ub85c \uc775\uc74c\uacfc \uc548\uc804\uc744 \ud655\uc778\ud560 \uc218 \uc5c6\uc5b4\uc694. \uc2dc\uac04\uacfc \uc628\ub3c4\ub97c \ud655\uc778\ud558\uc138\uc694.",
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/07-structured-advice.png",
+      "frame_sha256": "5d7f70b991d78118623bfb40c22a79230c53f3573b9396c9a771a533087f4815",
+      "extracted_at_utc": "2026-07-20T14:51:18.4715151Z",
+      "semantic_check": "Manually inspected at original detail: the complete safety note is visible and unobscured above bottom navigation."
+    },
+    {
+      "id": 9,
+      "state": "completion_form_success",
+      "form_timestamp_seconds": 80.0,
+      "form_frame": ".omo/evidence/leftovers/task-12-demo-states/08-completion-form.png",
+      "form_frame_sha256": "fcd39ee8fd51fba3cc5a20b6c6cb18ff7b6c1ed02d5932fe281e125ac562ece7",
+      "form_extracted_at_utc": "2026-07-20T14:51:18.8614753Z",
+      "success_timestamp_seconds": 85.0,
+      "success_frame": ".omo/evidence/leftovers/task-12-demo-states/09-completion-success.png",
+      "success_frame_sha256": "c8eebcdf3c89af2ce2b9ab563fe6fd904bbada953e592937593ecab657334cf3",
+      "success_extracted_at_utc": "2026-07-20T14:51:19.1910594Z",
+      "semantic_check": "Manually inspected at original detail: new Run 3 completion form and saved-success state are visible."
+    },
+    {
+      "id": 10,
+      "state": "offline_history",
+      "timestamp_seconds": 90.0,
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/10-offline-history.png",
+      "frame_sha256": "aafceca2155382fbc584f9d328dfab7e7b694b1c0e4bafa12d6c56355617ed85",
+      "extracted_at_utc": "2026-07-20T14:51:18.8394388Z",
+      "semantic_check": "Manually inspected at original detail: offline history from the same new Run 3 is visible."
+    },
+    {
+      "id": 11,
+      "state": "repository_overlay_final_state",
+      "timestamp_seconds": 98.0,
+      "frame": ".omo/evidence/leftovers/task-12-demo-states/11-repository-final.png",
+      "frame_sha256": "25a70cd87e9024552c92cffdb8ed25f52c20b30546e0d6fe8d9dbce3002add19",
+      "extracted_at_utc": "2026-07-20T14:51:18.9146117Z",
+      "semantic_check": "Manually inspected at original detail: the same new Run 3 history remains visible beneath the project-authored repository overlay."
+    }
+  ],
+  "state_binding": {
+    "logical_state_count": 11,
+    "all_frames_extracted_from_final_media": true,
+    "all_frames_newer_than_final_media": true,
+    "semantic_validation_method": "Manual original-detail inspection of all eleven captures regenerated from the exact current final media; extraction alone was not treated as semantic validation.",
+    "bound_media_sha256": "91c3452b4bf29112401eb1646c060a9fe9c459dfd3be9e990707547270ac9af3"
+  },
+  "captured_at_utc": "2026-07-20T14:51:19.1910594Z"
+}

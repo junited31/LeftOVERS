@@ -1,0 +1,56 @@
+Task 12 fresh real-cloud instrumentation proof
+================================================
+This file retains the sanitized raw test output from a new focused execution.
+It is not a copy of task-11-cloud.json and does not contain credentials or tokens.
+
+COMMAND: adb shell am instrument -w -r -e class com.junited31.leftovers.e2e.RealCloudE2eTest#realFirebaseCloudRunRecipesAdviceCompletionAndOfflineHistory com.junited31.leftovers.test/androidx.test.runner.AndroidJUnitRunner
+START_UTC: 2026-07-20T14:47:02.1063863Z
+END_UTC: 2026-07-20T14:48:34.1883896Z
+WALL_DURATION_SECONDS: 92.082
+REPORTED_TEST_TIME_SECONDS: 90.427
+EXIT_CODE: 0
+RESULT: OK (1 test)
+DEVICE_MODEL: SM-F711N
+ANDROID_RELEASE: 15
+API_HOST: leftovers-api-rlm4ngxglq-du.a.run.app
+RAW_STDOUT_BYTES: 1686
+RAW_STDOUT_SHA256: 2fbeda882fb4aea349c9de33e3cf9043144361a6c81672f19d83a46aa769194b
+FRESH_SANITIZED_OBSERVABLES_SHA256: c1d0f2d3712072de3eddb8e7322b7599fcf2fbb74c569d595e0b5d89e5366ea2
+SECRET_SCAN_MATCH_COUNT: 0
+
+SANITIZED_OBSERVABLES:
+- firebase_anonymous_auth: true
+- recipe_count: 3
+- photo_input_pixels: 256x256
+- photo_advice_schema_rendered: true
+- safety_guidance_rendered: true
+- meal_log_count: 1
+- offline_before_history_read: true
+- history_title_rendered: true
+- temporary_photo_cache_count: 0
+
+RAW_INSTRUMENTATION_STDOUT_BEGIN
+INSTRUMENTATION_STATUS: class=com.junited31.leftovers.e2e.RealCloudE2eTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.junited31.leftovers.e2e.RealCloudE2eTest:
+INSTRUMENTATION_STATUS: test=realFirebaseCloudRunRecipesAdviceCompletionAndOfflineHistory
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.junited31.leftovers.e2e.RealCloudE2eTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=realFirebaseCloudRunRecipesAdviceCompletionAndOfflineHistory
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 90.427
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1
+RAW_INSTRUMENTATION_STDOUT_END

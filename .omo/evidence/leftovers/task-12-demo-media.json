@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "media_path": ".omo/evidence/leftovers/task-12-demo.mp4",
+  "media_sha256": "91c3452b4bf29112401eb1646c060a9fe9c459dfd3be9e990707547270ac9af3",
+  "file_size_bytes": 7463533,
+  "duration_seconds": 103.366667,
+  "audio_stream_count": 1,
+  "probe_tool": "ffprobe",
+  "probe_tool_version": "8.1.1-essentials_build-www.gyan.dev",
+  "streams": {
+    "video": {
+      "codec": "h264",
+      "width": 1080,
+      "height": 2640,
+      "frame_rate": "30/1"
+    },
+    "audio": {
+      "codec": "aac",
+      "channels": 1,
+      "sample_rate_hz": 48000
+    }
+  },
+  "validation": {
+    "full_decode": "passed_twice",
+    "full_decode_pass_count": 2,
+    "black_segments_at_least_0_5_seconds": 0,
+    "silent_segments_at_least_2_seconds_below_minus_50_db": 0,
+    "duration_below_180_seconds": true,
+    "opening_first_two_seconds_frame_count": 60,
+    "opening_frames_opened_at_original_detail": 60,
+    "opening_continuous_stable_app_frame_sequence": true,
+    "opening_column_slice_visible": false,
+    "opening_personal_location_visible": false,
+    "opening_overlay_frames": [0, 29],
+    "opening_original_resume_frame": 30,
+    "adversarial_window_linear_decode_scan": {
+      "start_frame": 1485,
+      "end_frame_inclusive": 1709,
+      "decoded_frame_count": 225,
+      "frames_opened_at_original_detail": 225,
+      "stable_disclosure_frames": [1502, 1659],
+      "stable_run3_repair_frames": [1660, 1679],
+      "verified_original_resume_frame": 1680,
+      "torn_or_overlap_frame_count": 0,
+      "blank_or_partial_width_frame_count": 0
+    },
+    "entire_video_anomaly_scan": {
+      "decoded_frame_count": 3101,
+      "scan_representation": "108x264 grayscale linear decode",
+      "blank_frame_count": 0,
+      "alternating_same_regime_frame_count": 0,
+      "alternating_or_column_slice_anomaly_count": 0,
+      "opening_mean_range": [225.127, 226.166],
+      "disclosure_mean_range": [72.1957, 72.1964],
+      "run3_repair_mean_range": [231.922, 231.924],
+      "verified_original_resume_mean": 232.942
+    },
+    "transition_card_visible": true,
+    "transition_narration_audible": true,
+    "repair_method": "The entire 3101-frame H.264 stream was decoded and fully re-encoded with independent 1080x2640 PNG full-frame overlays; no stream copy, partial concat, non-frame splice, or source/test edit was used.",
+    "semantic_validation_method": "Manual original-detail inspection of all 60 opening frames, all 225 linearly decoded adversarial-window frames, six exact boundary frames, and all 11 regenerated final state captures; an entire-video alternating/slice/blank scan supplemented rather than replaced visual inspection."
+  },
+  "final_media_written_at_utc": "2026-07-20T14:41:48.8676208Z",
+  "validated_at_utc": "2026-07-20T14:53:42.4533216Z"
+}

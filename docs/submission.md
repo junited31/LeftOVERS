@@ -33,6 +33,7 @@ This is the canonical machine-readable publication record and human checklist. I
 
 - Public repository and deployed backend URLs are known.
 - The backend health, authenticated GPT-5.6 text/image flow, real Android device flow, offline history, and cache cleanup have evidence.
+- A 103.366667-second narrated local judge demo has been decoded and inspected. It edits exactly three fresh physical-device capture runs: Run 1 contains only local-fixture pantry/equipment states, Run 2 is real-cloud recipe-card generation, and Run 3 is one new real-cloud Microwave Spinach Egg Rice Custard cooking/full-advice/completion/success/offline-history E2E recording. Exactly Runs 2 and 3 exercised the deployed real cloud. No continuous-run claim is made, and no Run 1 pixels appear after the disclosed transition ending at 55.333333 seconds. Exact segment hashes and the fresh retained sanitized physical-device cloud-test stdout are bound in `.omo/evidence/leftovers/task-12-demo-runs.json` and `.omo/evidence/leftovers/task-12-demo-cloud-proof.txt`.
 - The current Codex session ID is recorded.
 - English build, test, ADB seed/reset, privacy, quota, AI, license, and provenance documentation is present.
 - The verifier requires a strict, release-APK-SHA-bound JSON proof with zero manifest, DEX, resource, and archive debug-hook matches.
@@ -43,13 +44,13 @@ This is the canonical machine-readable publication record and human checklist. I
 - Write `dist/app-debug.apk.sha256` from the exact debug APK.
 - Create `dist/release-debug-hooks.json` from the final release APK and the four release hook scans.
 - Create public GitHub release `v0.1.0-demo`; attach `app-debug.apk` and `app-debug.apk.sha256`.
-- Record `dist/leftovers-demo.mp4`, use `ffprobe` to observe a duration below 180 seconds and at least one audio stream, then write those observations and the exact media SHA-256 to `dist/leftovers-demo-media.json`.
-- Watch that exact media file end to end and upload it as Public to YouTube.
+- Copy the approved local demo to `dist/leftovers-demo.mp4` only after publication review, then regenerate strict schema-1 `dist/leftovers-demo-media.json` from those exact bytes.
+- Watch that exact publication media end to end and upload it as Public to YouTube.
 - Populate the Apps for Your Life Devpost entry with the description, technologies, repository, release/testing instructions, video, screenshots, Codex/GPT-5.6 explanation, and session ID.
 - Immediately before Devpost Submit, obtain action-time confirmation; then submit, verify dashboard state `Submitted`, and anonymously verify the public page.
 - Replace every blank field above with the real reachable value and set the status/timestamp only after submission succeeds.
 
-The local media proof and signed-out public YouTube check are distinct gates: the former binds duration and audio evidence to the uploaded bytes, while the latter proves public reachability. No release, YouTube, or Devpost URL is guessed here. `python scripts/verify_submission.py` is expected to name pending fields and exit nonzero in this state.
+The local media proof and signed-out public YouTube check are distinct gates: the former binds duration and audio evidence to reviewed bytes, while the latter proves public reachability. No release, YouTube, or Devpost URL is guessed here. `python scripts/verify_submission.py` is expected to name pending fields and exit nonzero in this state.
 
 ## Devpost copy
 
