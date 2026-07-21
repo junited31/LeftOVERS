@@ -1,10 +1,19 @@
 {
+  "codeHead": "011ca5905e52f951e02a898569e17b771f5571d5",
+  "codeTree": "9687ef65a4d71de4ab83afaa9b0af3b1c792240d",
+  "debugApkSha256": "1932CACDE567D0F16E107D48D15FCE0425F7FD690D3D1FFC777F6377951735E1",
   "device": "R5CR91DXA8R",
-  "source": "Android screenrecord during clear-and-launch",
+  "model": "SM-F711N",
+  "api": 35,
+  "captureStartedUtc": "2026-07-21T11:59:41.7892382Z",
+  "launchUtc": "2026-07-21T11:59:42.3648900Z",
+  "captureCommand": "adb -s R5CR91DXA8R shell screenrecord --bugreport --bit-rate 4000000 --time-limit 4 /sdcard/Download/leftovers-expansion-task-2-failure-loading.mp4",
+  "normalizationCommand": "OpenCV decode source timestamps; duplicate the latest captured frame onto a 30 fps mp4v timeline; no synthetic frames claimed",
+  "sourceSha256": "7064D427431154B9A6656116FB488AB119FAB5C418F3B5E73F73D1634244B495",
+  "videoSha256": "1E77530A441950CD1A53639C45E96403CC841A343703D284739768739BABE265",
   "outputFps": 30,
-  "outputFrames": 60,
+  "outputFrames": 95,
   "width": 1080,
   "height": 2640,
-  "normalization": "Variable-rate device capture normalized to constant 30 fps by frame duplication; no frames were synthesized or removed.",
-  "assertion": "No onboarding or main-navigation frame rendered before preferences loaded."
+  "claim": "The normalized video preserves decoded source-frame order and timing by duplication; exact encoded-pixel lineage is not claimed."
 }

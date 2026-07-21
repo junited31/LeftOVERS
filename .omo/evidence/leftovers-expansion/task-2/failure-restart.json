@@ -1,0 +1,20 @@
+{
+  "codeHead": "011ca5905e52f951e02a898569e17b771f5571d5",
+  "codeTree": "9687ef65a4d71de4ab83afaa9b0af3b1c792240d",
+  "debugApkSha256": "1932CACDE567D0F16E107D48D15FCE0425F7FD690D3D1FFC777F6377951735E1",
+  "device": "R5CR91DXA8R",
+  "model": "SM-F711N",
+  "api": 35,
+  "steps": [
+    {"utc":"2026-07-21T12:01:01.7625273Z","command":"adb -s R5CR91DXA8R shell pm clear com.junited31.leftovers","exitCode":0},
+    {"utc":"2026-07-21T12:01:01.9709656Z","command":"adb -s R5CR91DXA8R shell am start -n com.junited31.leftovers/.MainActivity","exitCode":0},
+    {"utc":"2026-07-21T12:01:03.0751584Z","command":"adb -s R5CR91DXA8R shell input tap 400 590","exitCode":0},
+    {"utc":"2026-07-21T12:01:03.1914150Z","command":"adb -s R5CR91DXA8R shell input tap 400 1620","exitCode":0},
+    {"utc":"2026-07-21T12:01:04.3896103Z","command":"adb -s R5CR91DXA8R shell am force-stop com.junited31.leftovers","exitCode":0},
+    {"utc":"2026-07-21T12:01:04.5667046Z","command":"adb -s R5CR91DXA8R shell am start -n com.junited31.leftovers/.MainActivity","exitCode":0}
+  ],
+  "directDataStore": {"equipmentIds":["gas_burner","basic_cookware"],"onboardingComplete":false,"method":"run-as od of leftovers_preferences.preferences_pb; onboarding_complete key absent"},
+  "bottomNavCount": 0,
+  "checkedEquipmentCount": 2,
+  "xmlSha256": "C9C8E67B160D53500404FF92A0444490DA15104170EB380C40ACCAC3E1BCF7D9"
+}

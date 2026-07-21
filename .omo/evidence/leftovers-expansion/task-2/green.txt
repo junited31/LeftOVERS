@@ -1,3 +1,4 @@
 Focused GREEN: OnboardingSettingsTest, 2 passed, 0 failed, 0 skipped.
-Acceptance GREEN: testDebugUnitTest passed; OnboardingSettingsTest + PantryEquipmentTest connected 11 passed, 0 failed, 0 skipped.
+Acceptance GREEN after safe-inset fix: 84 unit passed; OnboardingSettingsTest + PantryEquipmentTest connected 12 passed, 0 failed, 0 errors, 0 skipped.
+Safe-inset focused RED: 1 expected bounds failure. Focused GREEN: 1 passed.
 Device: R5CR91DXA8R (SM-F711N, API 35)

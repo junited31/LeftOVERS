@@ -1,4 +1,8 @@
 {
+  "codeHead": "011ca5905e52f951e02a898569e17b771f5571d5",
+  "codeTree": "9687ef65a4d71de4ab83afaa9b0af3b1c792240d",
+  "debugApkSha256": "1932CACDE567D0F16E107D48D15FCE0425F7FD690D3D1FFC777F6377951735E1",
+  "releaseApkSha256": "1159383E92A108D60BF618FB98838854FB9FF7767C3CE6F7376151C923191EDF",
   "navigationBarItemCalls": 5,
   "appScreenEquipmentReferences": 0,
   "equipmentToggleWritesOnboardingComplete": false,
