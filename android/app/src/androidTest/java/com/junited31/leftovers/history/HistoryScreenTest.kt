@@ -78,12 +78,16 @@ class HistoryScreenTest {
 
     @After
     fun tearDown() = runBlocking {
-        scenario?.close()
         database.clearAllTables()
         photos.retainedFinalPhotos().forEach(File::delete)
         compose.runOnUiThread {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
+        compose.waitUntil(5_000) {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags() == "en"
+        }
+        scenario?.close()
+        Unit
     }
 
     @Test
@@ -181,6 +185,9 @@ class HistoryScreenTest {
 
     private fun launchHistory() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
+        compose.waitUntil(5_000) {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags() == "en"
+        }
         scenario?.recreate()
         compose.waitForIdle()
         compose.onNodeWithTag("nav-history").performClick()
