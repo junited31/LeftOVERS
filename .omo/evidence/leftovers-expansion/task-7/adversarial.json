@@ -30,7 +30,9 @@
   "configuration": {
     "projectRequired": true,
     "legacyOpenAiSecretReferenceRetained": true,
-    "legacyOpenAiSecretRequiredByGemini": false
+    "legacyOpenAiSecretRequiredByGemini": false,
+    "legacyOpenAiCloudBindingOptIn": true,
+    "defaultDeploymentUsesAdc": true
   },
   "fallbackOnSafety": false,
   "moreThanSixProviderCallsPossible": false,
