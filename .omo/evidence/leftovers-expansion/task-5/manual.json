@@ -1,0 +1,34 @@
+{
+  "codeHead": "45513ce374d01cb566a4ae2e47d570cbacd33aeb",
+  "codeTree": "483f9290211e1383480cabe38a088631aff977b3",
+  "device": {"serial": "R5CR91DXA8R", "model": "SM-F711N", "api": 35},
+  "englishHappy": {
+    "noSelection": {"kindCount": 4, "generateEnabled": false, "requestCount": 0},
+    "requestJson": {"locale": "en", "recipeKind": "drink"},
+    "responseCards": {"count": 3, "localizedKind": "Drink"},
+    "snapshotDao": {"count": 1, "title": "Crispy spinach rice", "recipeKind": "drink"},
+    "completionDao": {"result": "Success", "mealLogId": "task-5-drink"},
+    "historyDaoUi": {"rowCount": 1, "detailKind": "Drink"}
+  },
+  "koreanHappy": {
+    "requestJson": {"locale": "ko", "recipeKind": "dessert"},
+    "selectedLabel": "디저트",
+    "cardLabel": "디저트",
+    "wireStayedCanonical": true
+  },
+  "fallbackLocaleAfterRestart": {"inputLanguage": "ja", "requestLocale": "en", "recipeKind": "meal"},
+  "artifacts": {
+    "kind-unselected.png": "4BFF125CEDA9C9AD5E5591AD04A826651DE29BF8751268C29B79BC172AB2F09C",
+    "kind-unselected.xml": "620FEE6042A0B44BE65C9649F02DB3AF56C97B3F94FB47C82A994A730495119F",
+    "drink-results.png": "09204113065CBECCB792F57F5AA7F184851DFC5C1DE49877870485E6B6DF87ED",
+    "drink-results.xml": "C88F0D2CC0490DDF16287C8DC5F795690F2411ACE7544933B5C6D245BC60963D",
+    "history-drink.png": "A8C7641ACB51C2497CC8DC40516BF0394D0F0416467A4264E5CE7C3ACD0F0230",
+    "history-drink.xml": "F57BA136637BB7C71F645C652DD611FE81FB062448469F897FFBBA539DA9DC79",
+    "dessert-ko.png": "BAB24A92CB9999BD969F3C7508FE2C5630A2268622C5671F4D58FC5D38ABF01E",
+    "dessert-ko.xml": "03171310484F809F846998B2938ABE400F66BC926B1A41671C0742C09C8607AE"
+  },
+  "apkSha256": {
+    "debug": "A9EEFFB271785F9387CDD87795E9E40F88670B2EFE0C0DEAA0A5308E0C211A3B",
+    "releaseUnsigned": "B1036C8CA94AD897ABCC34AC4919707DFEEFCA7DFF4A501060F2EDC03FEF8F8B"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "codeHead": "45513ce374d01cb566a4ae2e47d570cbacd33aeb",
+  "codeTree": "483f9290211e1383480cabe38a088631aff977b3",
+  "checks": {
+    "localeProcessOrActivityRestart": {"ko": "ko", "unsupportedJa": "en", "status": "pass"},
+    "noSelectionClickRace": {"enabled": false, "requestCount": 0, "status": "pass"},
+    "multipleSelectionSemantics": {"controls": 4, "selectedAtOnce": 1, "status": "pass"},
+    "networkDefaultLeakage": {"missingKind": "Invalid", "status": "pass"},
+    "legacyNetworkDecoderConfusion": {"legacyArray": "meal", "legacyObject": "meal", "httpMissing": "Invalid", "status": "pass"},
+    "responseLocaleEcho": {"rootLocale": "Invalid", "candidateLocale": "Invalid", "status": "pass"},
+    "roomSchemaDrift": {"before": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E", "after": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E", "status": "pass"},
+    "rankingMutation": {"before": "5421EB8EF2E5B0453679889F9DCBF865304033E82CCC302236089845CDA16361", "after": "5421EB8EF2E5B0453679889F9DCBF865304033E82CCC302236089845CDA16361", "status": "pass"},
+    "translatedWireValues": {"koDessertRequest": "dessert", "koCardLabel": "디저트", "status": "pass"}
+  }
+}

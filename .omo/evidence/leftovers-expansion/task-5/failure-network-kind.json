@@ -1,0 +1,16 @@
+{
+  "codeHead": "45513ce374d01cb566a4ae2e47d570cbacd33aeb",
+  "codeTree": "483f9290211e1383480cabe38a088631aff977b3",
+  "device": "R5CR91DXA8R",
+  "requestedKind": "drink",
+  "cases": [
+    {"candidateKind": "missing", "decode": "Invalid", "ui": "recipe-error", "cards": 0, "snapshots": 0, "sessions": 0, "mealLogs": 0},
+    {"candidateKind": "Meal", "decode": "Invalid", "ui": "recipe-error", "cards": 0, "snapshots": 0, "sessions": 0, "mealLogs": 0},
+    {"candidateKind": "unknown", "decode": "Invalid", "ui": "recipe-error", "cards": 0, "snapshots": 0, "sessions": 0, "mealLogs": 0},
+    {"candidateKind": "snack", "decode": "Invalid", "ui": "recipe-error", "cards": 0, "snapshots": 0, "sessions": 0, "mealLogs": 0}
+  ],
+  "rankerInvocationLedger": [],
+  "rankerResultLedger": [],
+  "boundaryProof": "rankedState invokes RecommendationRanker only for RecipeDecodeResult.Success; every case returned Invalid",
+  "rankerSha256": "5421EB8EF2E5B0453679889F9DCBF865304033E82CCC302236089845CDA16361"
+}

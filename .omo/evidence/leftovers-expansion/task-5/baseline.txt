@@ -1,0 +1,27 @@
+Task 5 unchanged baseline
+Date: 2026-07-21 Asia/Seoul
+Code HEAD: 9331855bdaf80f40889045277d79cb97f686cd6f
+Branch: feat/leftovers-mvp
+Device: R5CR91DXA8R (SM-F711N, API 35)
+Command policy: rtk was declared unavailable for this delegated task; raw commands were used under the AGENTS debugging exception.
+
+Exact acceptance command run before product edits:
+Push-Location android; .\gradlew.bat :app:testDebugUnitTest --tests '*RecipeJsonTest' --tests '*RecipeSnapshotSaverTest' --tests '*HistoryRepositoryTest' --tests '*RecommendationRankerTest' :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.RecipeScreenTest,com.junited31.leftovers.history.HistoryScreenTest" --no-daemon --console=plain; if ($LASTEXITCODE) { exit $LASTEXITCODE }; Pop-Location
+
+Unit XML: 4 suites, 30 tests, 0 failures, 0 errors, 0 skipped.
+Connected XML: 1 suite, 7 tests, 3 failures, 0 errors, 0 skipped.
+The same three connected failures reproduced after clearing only the app/test packages:
+- RecipeScreenTest.production_recipe_screen_displays_exactly_three_complete_ranked_cards_and_saves_snapshot: nav-recipes absent.
+- RecipeScreenTest.typed_diversity_failure_shows_no_partial_cards_and_preserves_snapshot_count: nav-recipes absent.
+- HistoryScreenTest.emptyHistoryShowsAUsefulState: history-empty asynchronous state not displayed yet.
+These are test setup/wait defects in the unchanged baseline: RecipeScreenTest clears ONBOARDING_COMPLETE before launching MainActivity, and the empty-history assertion does not wait for repository loading.
+
+Current contract evidence before Task 5:
+- RecipeJsonTest exercises complete JSON decoding and request serialization without recipe kind/locale.
+- RecipeScreenTest expects exactly three complete ranked cards and the invalid-set UI to expose zero partial cards/snapshots.
+- RecommendationRankerTest proves exactly-three rejection and deterministic ordered ranking.
+- RecipeSnapshotSaverTest/HistoryRepositoryTest prove selected snapshot/history JSON persistence without recipe kind.
+
+Invariant hashes before Task 5:
+- Room v1 schema SHA-256: 89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E
+- RecommendationRanker.kt SHA-256: 5421EB8EF2E5B0453679889F9DCBF865304033E82CCC302236089845CDA16361

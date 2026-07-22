@@ -1,0 +1,14 @@
+{
+  "date": "2026-07-22T09:38:00+09:00",
+  "device": "R5CR91DXA8R",
+  "injectedResponsesRemaining": 0,
+  "taskRowsRemaining": 0,
+  "taskPhotosRemaining": 0,
+  "deviceCaptureFilesRemoved": 8,
+  "deviceCaptureFilesRemaining": 0,
+  "appPackageAfterConnectedTests": "absent",
+  "appDataAndLocalesAfterConnectedTests": "absent",
+  "englishRestorationAssertedInEveryLocaleTestTeardown": true,
+  "gradleDaemons": 0,
+  "roomSchemaSha256": "89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E"
+}

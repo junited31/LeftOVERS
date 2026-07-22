@@ -1,0 +1,34 @@
+Task 5 product-only RED
+Date: 2026-07-22 Asia/Seoul
+Code HEAD: d508ef7634fa6fd2f758f7293e90817d1a988250
+Branch: feat/leftovers-mvp
+Device: R5CR91DXA8R (SM-F711N, API 35)
+Production edits before RED: none
+Command policy: rtk read was unavailable; raw commands were used under the brief/AGENTS debugging exception.
+
+Focused unit command:
+Push-Location android; .\gradlew.bat :app:testDebugUnitTest --tests '*RecipeJsonTest' --tests '*RecipeSnapshotSaverTest' --tests '*HistoryRepositoryTest' --tests '*RecommendationRankerTest' --no-daemon --console=plain; Pop-Location
+
+Focused unit result: exit 1; 34 tests, 11 failures, 0 errors, 0 skipped.
+Expected missing-feature failures:
+- RecipeJsonTest: RecipeKind class and required request/response methods absent; 7 failures.
+- RecipeSnapshotSaverTest: RecipeKind class absent; 1 failure.
+- HistoryRepositoryTest: required RecipeSteps.recipeKind/legacy defaults absent; 3 failures.
+- RecommendationRankerTest stayed green and unchanged.
+
+Connected command:
+$env:ANDROID_SERIAL='R5CR91DXA8R'; Push-Location android; .\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.RecipeScreenTest,com.junited31.leftovers.history.HistoryScreenTest" --no-daemon --console=plain; Pop-Location
+
+Connected result after test-only locale-lifecycle stabilization: exit 1; 12 tests, 7 failures, 0 errors, 0 skipped.
+Expected missing-feature failures:
+- recipe-kind-drink missing in existing happy and typed-error flows.
+- recipe-kind-control count is 0 instead of exactly 4.
+- localized Dessert control is absent after Korean restart.
+- Generate remains enabled without a kind.
+- history RecipeSteps cannot require/retain RecipeKind (isolated rerun fails at stepsWithKind with `RecipeSteps must require RecipeKind`).
+
+Harness stabilization before production edits:
+- RecipeScreenTest restores and awaits English while MainActivity remains active, preventing the unsupported-locale restart case from leaking into later tests.
+- HistoryScreenTest opens a teardown Activity only when setup/test failed before a scenario existed, so locale restoration can complete and the primary product failure is not masked.
+
+RED conclusion: tests compile and fail only because required RecipeKind domain, JSON, UI, persistence, and history behavior does not exist. Minimum GREEN may begin.
