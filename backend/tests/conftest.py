@@ -1,18 +1,12 @@
 from __future__ import annotations
 
 import json
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Final
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-
-BACKEND_ROOT: Final = Path(__file__).resolve().parents[1]
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
 
 PANTRY_ID: Final = "10000000-0000-4000-8000-000000000001"
 OTHER_PANTRY_ID: Final = "10000000-0000-4000-8000-000000000002"
