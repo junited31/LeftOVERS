@@ -265,11 +265,11 @@ class MealCompletionFlowTest {
             compose.onAllNodesWithTag("completion-photo-preview").fetchSemanticsNodes().size == 1
         }
         compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("final-photo-ready").performScrollTo().assertIsDisplayed()
         assertEquals(1, photos.ownedCacheFiles().size)
         scenario?.recreate()
         compose.onNodeWithTag("nav-cooking").performClick()
         compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("final-photo-ready").assertIsDisplayed()
         val cacheCountAfterRecreation = photos.ownedCacheFiles().size
         assertEquals(1, cacheCountAfterRecreation)
         writeExternalEvidence(
