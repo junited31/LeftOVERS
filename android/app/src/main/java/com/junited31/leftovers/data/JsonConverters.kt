@@ -57,8 +57,11 @@ class JsonConverters {
                 values = stringList(json.getJSONArray("steps")),
                 metadata = json.optJSONObject("metadata")?.let(::metadata),
                 // Legacy meal-log snapshots predate recipeKind.
-                recipeKind = json.optString("recipeKind").takeIf(String::isNotEmpty)
-                    ?.let { requireNotNull(RecipeKind.parse(it)) } ?: RecipeKind.MEAL,
+                recipeKind = if (json.has("recipeKind")) {
+                    requireNotNull(RecipeKind.parse(json.getString("recipeKind")))
+                } else {
+                    RecipeKind.MEAL
+                },
             ),
             createdAtEpochMillis = json.getLong("createdAtEpochMillis"),
             feedback = json.optJSONObject("feedback")?.let(::feedback) ?: MealFeedback(),

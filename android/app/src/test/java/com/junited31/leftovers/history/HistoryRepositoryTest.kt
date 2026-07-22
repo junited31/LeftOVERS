@@ -25,6 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,6 +91,26 @@ class HistoryRepositoryTest {
         val snapshot = converters.jsonToRecipeSnapshot(legacy)
         assertEquals(MealFeedback(), snapshot.feedback)
         assertEquals("MEAL", recipeKind(snapshot.steps))
+    }
+
+    @Test
+    fun legacySnapshotDefaultsKindOnlyWhenKeyIsAbsent() {
+        listOf("\"\"", "null").forEach { encodedKind ->
+            val snapshot = """
+                {
+                  "id":"recipe",
+                  "title":"Rice",
+                  "pantryBindings":[],
+                  "steps":["Cook"],
+                  "recipeKind":$encodedKind,
+                  "createdAtEpochMillis":1000
+                }
+            """.trimIndent()
+
+            assertThrows(IllegalArgumentException::class.java) {
+                converters.jsonToRecipeSnapshot(snapshot)
+            }
+        }
     }
 
     @Test
