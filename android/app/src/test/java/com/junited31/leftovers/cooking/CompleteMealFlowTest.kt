@@ -220,7 +220,7 @@ class CompleteMealFlowTest {
 
     @Test
     fun failedCompensationLeavesOneManagedOrphanForRetry() = runTest {
-        val deniedPhotos = PhotoLifecycle(context) { false }
+        val deniedPhotos = PhotoLifecycle(context, deleteRetainedFile = { false })
         val photo = deniedPhotos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(19, 20, 21)) }
 
         runCatching {
@@ -230,7 +230,7 @@ class CompleteMealFlowTest {
         assertEquals(0, database.mealLogDao().count())
         assertTrue(deniedPhotos.ownedCacheFiles().isEmpty())
         assertEquals(1, deniedPhotos.retainedFinalPhotos().size)
-        assertEquals(1, photos.reconcileRetained(emptyList()))
+        assertEquals(1, photos.reconcileRetained { emptyList() })
         assertTrue(photos.retainedFinalPhotos().isEmpty())
     }
 
@@ -244,6 +244,41 @@ class CompleteMealFlowTest {
         assertEquals(null, success.retainedPhotoPath)
         assertEquals(null, database.mealLogDao().get("meal")?.recipeSnapshot?.feedback?.finalPhotoPath)
         assertTrue(photos.retainedFinalPhotos().isEmpty())
+    }
+
+    @Test
+    fun deletedCacheSourceCreatesNoLogOrRetainedPhoto() = runTest {
+        givenSession(version = 1, quantity = 10_000)
+        val photo = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(40, 41, 42)) }
+        assertTrue(photo.file.delete())
+
+        val failure = runCatching {
+            MealCompletionStore(database.inventoryCompletionDao(), photos).complete(command(), photo)
+        }.exceptionOrNull()
+
+        assertNotNull(failure)
+        assertEquals(0, database.mealLogDao().count())
+        assertTrue(photos.ownedCacheFiles().isEmpty())
+        assertTrue(photos.retainedFinalPhotos().isEmpty())
+    }
+
+    @Test
+    fun duplicateMealLogIdKeepsTheSingleCommittedLogAndPhoto() = runTest {
+        givenSession(version = 1, quantity = 10_000)
+        val firstPhoto = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(43, 44, 45)) }
+        val first = MealCompletionStore(database.inventoryCompletionDao(), photos).complete(command(), firstPhoto)
+        val retained = File(requireNotNull((first as CompletionResult.Success).retainedPhotoPath))
+        val secondPhoto = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(46, 47, 48)) }
+
+        val failure = runCatching {
+            MealCompletionStore(database.inventoryCompletionDao(), photos).complete(command(), secondPhoto)
+        }.exceptionOrNull()
+
+        assertNotNull(failure)
+        assertEquals(1, database.mealLogDao().count())
+        assertTrue(retained.isFile)
+        assertEquals(listOf(retained), photos.retainedFinalPhotos())
+        assertTrue(photos.ownedCacheFiles().isEmpty())
     }
 
     @Test
@@ -268,6 +303,102 @@ class CompleteMealFlowTest {
         assertEquals(1, database.mealLogDao().count())
         assertFalse(referenced.exists())
     } }
+
+    @Test
+    fun startupReconciliationCannotDeleteRetainedPhotoBeforeRoomCommit() = runTest { supervisorScope {
+        givenSession(version = 1, quantity = 10_000)
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val photo = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(25, 26, 27)) }
+        val store = MealCompletionStore(
+            BarrierCompletionDao(database.inventoryCompletionDao(), beforeCommit = entered, release = release),
+            photos,
+        )
+
+        val completion = async { store.complete(command(), photo) }
+        entered.await()
+        assertEquals(1, photos.retainedFinalPhotos().size)
+        val referenceLoadStarted = CompletableDeferred<Unit>()
+        val reconciliation = async {
+            PhotoLifecycle(context).reconcileRetained {
+                referenceLoadStarted.complete(Unit)
+                database.mealLogDao().latest().mapNotNull {
+                    it.recipeSnapshot.feedback.finalPhotoPath
+                }
+            }
+        }
+        runCurrent()
+        val referenceLoadedBeforeCommit = referenceLoadStarted.isCompleted
+        release.complete(Unit)
+        val result = completion.await() as CompletionResult.Success
+        reconciliation.await()
+
+        val log = requireNotNull(database.mealLogDao().get("meal"))
+        val retained = File(requireNotNull(log.recipeSnapshot.feedback.finalPhotoPath))
+        assertFalse(referenceLoadedBeforeCommit)
+        assertEquals(retained.absolutePath, result.retainedPhotoPath)
+        assertTrue(retained.isFile)
+    } }
+
+    @Test
+    fun throwingCompensationNeverReplacesTypedFailure() = runTest {
+        val throwingPhotos = PhotoLifecycle(
+            context,
+            deleteRetainedFile = { throw IllegalStateException("delete failed") },
+        )
+        val photo = throwingPhotos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(28, 29, 30)) }
+
+        val result = MealCompletionStore(
+            ResultCompletionDao(CompletionResult.InvalidFeedback),
+            throwingPhotos,
+        ).complete(command(), photo)
+
+        assertEquals(CompletionResult.InvalidFeedback, result)
+        assertEquals(1, throwingPhotos.retainedFinalPhotos().size)
+    }
+
+    @Test
+    fun throwingCompensationNeverReplacesRoomException() = runTest {
+        val throwingPhotos = PhotoLifecycle(
+            context,
+            deleteRetainedFile = { throw IllegalStateException("delete failed") },
+        )
+        val photo = throwingPhotos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(31, 32, 33)) }
+
+        val failure = runCatching {
+            MealCompletionStore(FailingCompletionDao(), throwingPhotos).complete(command(), photo)
+        }.exceptionOrNull()
+
+        assertEquals("synthetic Room failure", failure?.message)
+        assertEquals(1, throwingPhotos.retainedFinalPhotos().size)
+    }
+
+    @Test
+    fun throwingCanonicalizationNeverReplacesTypedFailureOrRoomException() = runTest {
+        var canonicalizationFails = false
+        val canonicalFailure = { file: File ->
+            if (canonicalizationFails) throw java.io.IOException("canonical failed")
+            file.canonicalFile
+        }
+        val typedPhotos = PhotoLifecycle(context, File::delete, canonicalFailure)
+        val typedPhoto = typedPhotos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(34, 35, 36)) }
+        val typed = MealCompletionStore(
+            ResultCompletionDao(CompletionResult.InvalidFeedback) { canonicalizationFails = true },
+            typedPhotos,
+        ).complete(command(), typedPhoto)
+        assertEquals(CompletionResult.InvalidFeedback, typed)
+
+        canonicalizationFails = false
+        val roomPhotos = PhotoLifecycle(context, File::delete, canonicalFailure)
+        val roomPhoto = roomPhotos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(37, 38, 39)) }
+        val failure = runCatching {
+            MealCompletionStore(
+                FailingCompletionDao { canonicalizationFails = true },
+                roomPhotos,
+            ).complete(command(mealId = "canonical-room"), roomPhoto)
+        }.exceptionOrNull()
+        assertEquals("synthetic Room failure", failure?.message)
+    }
 
     private suspend fun givenSession(version: Int, quantity: Long) {
         database.pantryDao().insertAll(
@@ -333,10 +464,30 @@ private class BarrierCompletionDao(
     override suspend fun insertMealLog(mealLog: com.junited31.leftovers.data.MealLogEntity) = Unit
 }
 
-private class FailingCompletionDao : InventoryCompletionDao() {
-    override suspend fun complete(command: CompleteCookSessionCommand): CompletionResult =
+private class FailingCompletionDao(
+    private val beforeThrow: () -> Unit = {},
+) : InventoryCompletionDao() {
+    override suspend fun complete(command: CompleteCookSessionCommand): CompletionResult {
+        beforeThrow()
         throw IllegalStateException("synthetic Room failure")
+    }
 
+    override suspend fun session(id: String): CookSessionEntity? = null
+    override suspend fun recipe(id: String): RecipeSnapshotEntity? = null
+    override suspend fun pantryRows(ids: List<PantryItemId>): List<PantryItemEntity> = emptyList()
+    override suspend fun updatePantry(rows: List<PantryItemEntity>) = Unit
+    override suspend fun updateSession(session: CookSessionEntity) = Unit
+    override suspend fun insertMealLog(mealLog: com.junited31.leftovers.data.MealLogEntity) = Unit
+}
+
+private class ResultCompletionDao(
+    private val result: CompletionResult,
+    private val beforeReturn: () -> Unit = {},
+) : InventoryCompletionDao() {
+    override suspend fun complete(command: CompleteCookSessionCommand): CompletionResult {
+        beforeReturn()
+        return result
+    }
     override suspend fun session(id: String): CookSessionEntity? = null
     override suspend fun recipe(id: String): RecipeSnapshotEntity? = null
     override suspend fun pantryRows(ids: List<PantryItemId>): List<PantryItemEntity> = emptyList()

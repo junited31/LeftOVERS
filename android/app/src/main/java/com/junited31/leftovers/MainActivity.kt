@@ -99,10 +99,11 @@ class MainActivity : AppCompatActivity() {
         }
         val database = LeftoversDatabase.get(applicationContext)
         lifecycleScope.launch(Dispatchers.IO) {
-            val references = database.mealLogDao().latest().mapNotNull {
-                it.recipeSnapshot.feedback.finalPhotoPath
+            PhotoLifecycle(applicationContext).reconcileRetained {
+                database.mealLogDao().latest().mapNotNull {
+                    it.recipeSnapshot.feedback.finalPhotoPath
+                }
             }
-            PhotoLifecycle(applicationContext).reconcileRetained(references)
         }
         val recipeApiProvider = { (application as LeftoversApplication).createRecipeApi() }
         setContent {

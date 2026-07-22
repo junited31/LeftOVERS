@@ -24,6 +24,7 @@ import java.io.RandomAccessFile
 import java.lang.reflect.Modifier
 import java.nio.file.Files
 import java.time.Duration
+import kotlinx.coroutines.runBlocking
 
 @RunWith(RobolectricTestRunner::class)
 class PhotoLifecycleTest {
@@ -31,7 +32,9 @@ class PhotoLifecycleTest {
     fun retainedPhotoReconciliationSurfaceExists() {
         assertTrue(
             PhotoLifecycle::class.java.methods.any {
-                it.name == "reconcileRetained" && it.parameterCount == 1
+                it.name == "reconcileRetained" && it.parameterTypes.any { parameter ->
+                    kotlin.jvm.functions.Function1::class.java.isAssignableFrom(parameter)
+                }
             },
         )
     }
@@ -40,8 +43,16 @@ class PhotoLifecycleTest {
     fun retainedDeleteCanBeMadeDeterministicallyRetryable() {
         assertTrue(
             PhotoLifecycle::class.java.declaredConstructors.any { constructor ->
-                constructor.parameterTypes.size == 2 &&
-                    kotlin.jvm.functions.Function1::class.java.isAssignableFrom(constructor.parameterTypes[1])
+                constructor.parameterTypes.any {
+                    kotlin.jvm.functions.Function1::class.java.isAssignableFrom(it)
+                }
+            },
+        )
+        assertTrue(
+            PhotoLifecycle::class.java.declaredConstructors.any { constructor ->
+                constructor.parameterTypes.count {
+                    kotlin.jvm.functions.Function1::class.java.isAssignableFrom(it)
+                } >= 2
             },
         )
     }
@@ -85,6 +96,35 @@ class PhotoLifecycleTest {
     }
 
     @Test
+    fun symlinkedRetainedDirectoryNeverOwnsOrDeletesOutsideFiles() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val directory = requireNotNull(retained(lifecycle, "directory-link-probe").also(File::delete).parentFile)
+        assertTrue(directory.delete())
+        val outside = File(context.filesDir, "outside-final-directory").apply { mkdirs() }
+        val outsideManaged = File(outside, "leftovers-final-${"b".repeat(64)}.jpg").apply {
+            writeText("outside")
+        }
+        createDirectoryLink(directory, outside)
+        assertTrue(isLink(directory))
+        val transient = lifecycle.createManagedPhoto().also { it.file.writeText("transient") }
+
+        try {
+            val deleted = reconcile(lifecycle, emptyList())
+            val retainFailure = runCatching { lifecycle.retainFinal(transient, "must-not-escape") }.exceptionOrNull()
+            assertEquals(0, deleted)
+            assertTrue(outsideManaged.exists())
+            assertTrue(retainFailure != null)
+            assertTrue(transient.file.exists())
+        } finally {
+            Files.deleteIfExists(directory.toPath())
+            outside.listFiles().orEmpty().forEach(File::delete)
+            outside.delete()
+            transient.file.delete()
+        }
+    }
+
+    @Test
     fun failedOrphanDeleteRemainsForNextStartupRetry() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val orphan = retained(PhotoLifecycle(context), "retry")
@@ -94,6 +134,25 @@ class PhotoLifecycleTest {
         assertTrue(orphan.exists())
         assertEquals(1, reconcile(PhotoLifecycle(context), emptyList()))
         assertFalse(orphan.exists())
+    }
+
+    @Test
+    fun orphanDeleteRetriesUntilTheThirdStartup() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val orphan = retained(PhotoLifecycle(context), "retry-twice")
+        var attempts = 0
+        val retrying = lifecycleWithDelete(context) {
+            attempts += 1
+            if (attempts < 3) false else it.delete()
+        }
+
+        assertEquals(0, reconcile(retrying, emptyList()))
+        assertTrue(orphan.exists())
+        assertEquals(0, reconcile(retrying, emptyList()))
+        assertTrue(orphan.exists())
+        assertEquals(1, reconcile(retrying, emptyList()))
+        assertFalse(orphan.exists())
+        assertEquals(3, attempts)
     }
 
     @Test
@@ -348,23 +407,34 @@ private fun retained(lifecycle: PhotoLifecycle, id: String): File {
 }
 
 private fun reconcile(lifecycle: PhotoLifecycle, references: Collection<String>): Int {
-    val method = PhotoLifecycle::class.java.methods.singleOrNull {
-        it.name == "reconcileRetained" && it.parameterCount == 1
-    } ?: throw AssertionError("PhotoLifecycle.reconcileRetained is missing")
-    return method.invoke(lifecycle, references) as Int
+    return runBlocking { lifecycle.reconcileRetained { references } }
 }
 
 private fun lifecycleWithDelete(
     context: android.content.Context,
     delete: (File) -> Boolean,
 ): PhotoLifecycle {
-    val constructor = PhotoLifecycle::class.java.declaredConstructors.singleOrNull {
-        it.parameterTypes.size == 2 &&
-            kotlin.jvm.functions.Function1::class.java.isAssignableFrom(it.parameterTypes[1])
-    } ?: throw AssertionError("PhotoLifecycle retained-delete seam is missing")
-    constructor.isAccessible = true
-    return constructor.newInstance(context, delete) as PhotoLifecycle
+    return PhotoLifecycle(context, delete)
 }
+
+private fun createDirectoryLink(link: File, target: File) {
+    if (System.getProperty("os.name").orEmpty().startsWith("Windows")) {
+        val process = ProcessBuilder(
+            "cmd", "/c", "mklink", "/J", link.absolutePath, target.absolutePath,
+        ).redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }.orEmpty()
+        assertEquals(output, 0, process.waitFor())
+    } else {
+        Files.createSymbolicLink(link.toPath(), target.toPath())
+    }
+}
+
+private fun isLink(file: File): Boolean =
+    Files.isSymbolicLink(file.toPath()) || Files.readAttributes(
+        file.toPath(),
+        java.nio.file.attribute.BasicFileAttributes::class.java,
+        java.nio.file.LinkOption.NOFOLLOW_LINKS,
+    ).isOther
 
 private class UnknownLengthProvider(private val source: File) : ContentProvider() {
     override fun onCreate() = true

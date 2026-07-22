@@ -184,6 +184,8 @@ class MealCompletionFlowTest {
         writeExternalEvidence(
             "failure-compensation.json",
             JSONObject()
+                .put("executionSurface", "physical-device-instrumentation")
+                .put("testCase", "competingQuantityEditShowsStaleAndRollsBackLogAndFinalPhoto")
                 .put("result", "StaleInventory")
                 .put("mealLogCount", 0)
                 .put("cachePhotoCount", 0)
@@ -252,15 +254,9 @@ class MealCompletionFlowTest {
         compose.onNodeWithTag("capture-final-photo").performScrollTo().performClick()
         compose.onNodeWithTag("completion-photo-preview").assertDoesNotExist()
         assertTrue(photos.ownedCacheFiles().isEmpty())
-        writeExternalEvidence(
-            "failure-camera.json",
-            JSONObject()
-                .put("captured", false)
-                .put("mealLogCount", runBlocking { database.mealLogDao().count() })
-                .put("cachePhotoCount", photos.ownedCacheFiles().size)
-                .put("retainedPhotoCount", photos.retainedFinalPhotos().size)
-                .toString(2),
-        )
+        val cancelLogCount = runBlocking { database.mealLogDao().count() }
+        val cancelCacheCount = photos.ownedCacheFiles().size
+        val cancelRetainedCount = photos.retainedFinalPhotos().size
 
         application.completionCameraFixtureBytes = syntheticJpeg()
         application.completionCameraFixtureResult = true
@@ -270,6 +266,25 @@ class MealCompletionFlowTest {
         }
         compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
         assertEquals(1, photos.ownedCacheFiles().size)
+        scenario?.recreate()
+        compose.onNodeWithTag("nav-cooking").performClick()
+        compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("final-photo-ready").assertIsDisplayed()
+        val cacheCountAfterRecreation = photos.ownedCacheFiles().size
+        assertEquals(1, cacheCountAfterRecreation)
+        writeExternalEvidence(
+            "failure-camera.json",
+            JSONObject()
+                .put("executionSurface", "physical-device-instrumentation-synthetic-camera")
+                .put("testCase", "completionCameraActionHasSyntheticCancelSurface")
+                .put("cancelResult", false)
+                .put("cancelMealLogCount", cancelLogCount)
+                .put("cancelCachePhotoCount", cancelCacheCount)
+                .put("cancelRetainedPhotoCount", cancelRetainedCount)
+                .put("capturedPreviewSurvivedActivityRecreation", true)
+                .put("cachePhotoCountAfterRecreation", cacheCountAfterRecreation)
+                .toString(2),
+        )
     }
 
     @Test
@@ -297,6 +312,8 @@ class MealCompletionFlowTest {
         writeExternalEvidence(
             "manual.json",
             JSONObject()
+                .put("executionSurface", "physical-device-instrumentation-synthetic-gallery")
+                .put("testCase", "immediateSuccessAndHistoryUseTheRetainedBytes")
                 .put("deviceSerial", "R5CR91DXA8R")
                 .put("syntheticOnly", true)
                 .put("preparedSha256", preparedHash)
@@ -309,16 +326,9 @@ class MealCompletionFlowTest {
         writeExternalEvidence(
             "adversarial.json",
             JSONObject()
-                .put("navigationCancellationCovered", true)
-                .put("processDeathCovered", true)
-                .put("deleteDenialRetryCovered", true)
-                .put("canonicalSymlinkEscapeCovered", true)
-                .put("unknownNamePreserved", true)
-                .put("referencedFilePreserved", retained.isFile)
-                .put("cameraCancelAndRecreationCovered", true)
-                .put("duplicateMealLogIdBounded", true)
-                .put("deletedCacheSourceCovered", true)
-                .put("misleadingPreviewRejected", true)
+                .put("executionSurface", "physical-device-instrumentation-synthetic-gallery")
+                .put("testCase", "immediateSuccessAndHistoryUseTheRetainedBytes")
+                .put("referencedFileExists", retained.isFile)
                 .put("daoReferences", org.json.JSONArray().put(retained.absolutePath))
                 .put("retainedSha256", retainedHash)
                 .toString(2),
@@ -339,6 +349,8 @@ class MealCompletionFlowTest {
         writeExternalEvidence(
             "failure-reconcile.json",
             JSONObject()
+                .put("executionSurface", "physical-device-instrumentation-simulated-process-death")
+                .put("testCase", "activityStartupReconcilesAProcessDeathOrphan")
                 .put("simulatedProcessDeathOrphan", true)
                 .put("orphanExistsAfterStartup", retained.exists())
                 .put("mealLogCount", runBlocking { database.mealLogDao().count() })

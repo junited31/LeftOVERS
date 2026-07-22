@@ -14,7 +14,11 @@ import java.io.IOException
 import java.time.Duration
 import java.security.MessageDigest
 import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Locale
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 object PhotoContracts {
     val pick = ActivityResultContracts.PickVisualMedia()
@@ -24,6 +28,7 @@ object PhotoContracts {
 class PhotoLifecycle internal constructor(
     private val context: Context,
     private val deleteRetainedFile: (File) -> Boolean = File::delete,
+    private val canonicalize: (File) -> File = { it.canonicalFile },
 ) {
     private val cacheDirectory = File(context.cacheDir, CACHE_DIRECTORY).apply { mkdirs() }
     private val finalPhotoDirectory = File(context.filesDir, FINAL_DIRECTORY).apply { mkdirs() }
@@ -63,9 +68,15 @@ class PhotoLifecycle internal constructor(
 
     fun discard(photo: ManagedPhoto) = photo.delete()
 
+    suspend fun <T> withRetainedOwnership(block: suspend () -> T): T =
+        RETAINED_OWNERSHIP.withLock { block() }
+
     fun retainFinal(photo: ManagedPhoto, mealLogId: String): String {
-        val destination = File(finalPhotoDirectory, "$FINAL_PREFIX${sha256(mealLogId)}.jpg")
-        check(!destination.exists()) { "Final photo already exists" }
+        val directory = checkNotNull(ownedFinalDirectory()) { "Invalid final photo directory" }
+        val destination = File(directory, "$FINAL_PREFIX${sha256(mealLogId)}.jpg")
+        check(!isLink(destination) && !destination.exists()) {
+            "Final photo already exists"
+        }
         return try {
             photo.file.copyTo(destination)
             photo.delete()
@@ -76,28 +87,33 @@ class PhotoLifecycle internal constructor(
         }
     }
 
-    fun discardRetained(path: String) {
-        ownedFinalFile(File(path))?.let(deleteRetainedFile)
-    }
+    fun discardRetained(path: String): Boolean = runCatching {
+        ownedFinalFile(File(path))?.let(deleteRetainedFile) ?: false
+    }.getOrDefault(false)
 
     fun retainedFinalPhotos(): List<File> = finalPhotoDirectory.listFiles()?.mapNotNull(::ownedFinalFile).orEmpty()
 
     fun retainedExists(path: String): Boolean = ownedFinalFile(File(path)) != null
 
-    fun reconcileRetained(referencePaths: Collection<String>): Int {
+    suspend fun reconcileRetained(loadReferencePaths: suspend () -> Collection<String>): Int =
+        RETAINED_OWNERSHIP.withLock {
+            reconcileRetainedPaths(loadReferencePaths())
+        }
+
+    private fun reconcileRetainedPaths(referencePaths: Collection<String>): Int {
         val references = referencePaths.mapNotNull { path ->
-            runCatching { File(path).canonicalFile }.getOrNull()
+            runCatching { canonicalize(File(path)) }.getOrNull()
         }.toSet()
-        val directory = finalPhotoDirectory.canonicalFile
+        val directory = ownedFinalDirectory() ?: return 0
         return directory.listFiles().orEmpty().count { file ->
-            val candidate = runCatching { file.canonicalFile }.getOrNull()
+            val candidate = runCatching { canonicalize(file) }.getOrNull()
             candidate != null &&
-                !Files.isSymbolicLink(file.toPath()) &&
+                !isLink(file) &&
                 candidate.isFile &&
                 candidate.parentFile == directory &&
                 FINAL_NAME.matches(candidate.name) &&
                 candidate !in references &&
-                deleteRetainedFile(candidate)
+                runCatching { deleteRetainedFile(candidate) }.getOrDefault(false)
         }
     }
 
@@ -191,14 +207,35 @@ class PhotoLifecycle internal constructor(
     }
 
     private fun ownedFinalFile(file: File): File? {
-        val candidate = file.canonicalFile
+        val directory = ownedFinalDirectory() ?: return null
+        val candidate = runCatching { canonicalize(file) }.getOrNull() ?: return null
         return candidate.takeIf {
-            !Files.isSymbolicLink(file.toPath()) &&
+            !isLink(file) &&
             candidate.isFile &&
-                candidate.parentFile == finalPhotoDirectory.canonicalFile &&
+                candidate.parentFile == directory &&
                 FINAL_NAME.matches(candidate.name)
         }
     }
+
+    private fun ownedFinalDirectory(): File? = runCatching {
+        val filesRoot = canonicalize(context.filesDir)
+        val expected = File(filesRoot, FINAL_DIRECTORY).absoluteFile
+        val candidate = canonicalize(finalPhotoDirectory)
+        candidate.takeIf {
+            !isLink(finalPhotoDirectory) &&
+                candidate == expected &&
+                candidate.parentFile == filesRoot &&
+                candidate.isDirectory
+        }
+    }.getOrNull()
+
+    private fun isLink(file: File): Boolean = runCatching {
+        Files.isSymbolicLink(file.toPath()) || Files.readAttributes(
+            file.toPath(),
+            BasicFileAttributes::class.java,
+            LinkOption.NOFOLLOW_LINKS,
+        ).isOther
+    }.getOrDefault(false)
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(Charsets.UTF_8))
@@ -276,6 +313,8 @@ class PhotoLifecycle internal constructor(
         private const val FINAL_PREFIX = "leftovers-final-"
         private val FINAL_NAME = Regex("${FINAL_PREFIX}[0-9a-f]{64}\\.jpg")
         private val MAX_CACHE_AGE = Duration.ofHours(24)
+        // ponytail: one in-process lock; use a DB-coordinated lease only if photos move cross-process.
+        private val RETAINED_OWNERSHIP = Mutex()
     }
 }
 

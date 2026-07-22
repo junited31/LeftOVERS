@@ -17,9 +17,9 @@ class MealCompletionStore(
     suspend fun complete(
         command: CompleteCookSessionCommand,
         finalPhoto: PhotoLifecycle.ManagedPhoto?,
-    ): CompletionResult {
-        return try {
-            currentCoroutineContext().ensureActive()
+    ): CompletionResult = photos.withRetainedOwnership {
+        currentCoroutineContext().ensureActive()
+        try {
             withContext(NonCancellable) {
                 var retainedPath: String? = null
                 try {
