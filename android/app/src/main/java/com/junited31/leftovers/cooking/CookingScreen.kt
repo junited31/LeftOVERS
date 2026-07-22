@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.R
+import com.junited31.leftovers.recipeKindLabel
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import com.junited31.leftovers.network.PhotoAdviceCall
@@ -227,6 +228,7 @@ fun CookingScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(current.recipe.title, style = MaterialTheme.typography.titleLarge)
+        Text(recipeKindLabel(current.recipe.steps.recipeKind), modifier = Modifier.testTag("selected-recipe-kind"))
         Text(stringResource(R.string.step_progress, index + 1, current.recipe.steps.values.size), style = MaterialTheme.typography.labelLarge)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

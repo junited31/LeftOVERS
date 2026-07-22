@@ -180,7 +180,11 @@ class LeftoversFlowE2eTest {
                     "task-10-advice-recipe",
                     "오류 경로 확인 요리",
                     PantryBindings(emptyList()),
-                    RecipeSteps(listOf("재료 상태를 확인하세요")),
+                    RecipeSteps(
+                        values = listOf("재료 상태를 확인하세요"),
+                        metadata = null,
+                        recipeKind = com.junited31.leftovers.data.RecipeKind.MEAL,
+                    ),
                     10,
                 ),
             )

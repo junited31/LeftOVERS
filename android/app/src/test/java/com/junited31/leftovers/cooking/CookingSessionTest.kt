@@ -246,7 +246,11 @@ class CookingSessionTest {
                 id = "recipe-7",
                 title = "볶음밥",
                 pantryBindings = PantryBindings(emptyList()),
-                steps = RecipeSteps(listOf("첫 번째 단계", "약 7분 볶기", "세 번째 단계")),
+                steps = RecipeSteps(
+                    values = listOf("첫 번째 단계", "약 7분 볶기", "세 번째 단계"),
+                    metadata = null,
+                    recipeKind = com.junited31.leftovers.data.RecipeKind.MEAL,
+                ),
                 createdAtEpochMillis = 10,
             ),
         )

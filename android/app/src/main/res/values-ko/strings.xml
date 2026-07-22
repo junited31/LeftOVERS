@@ -66,6 +66,11 @@
 
     <string name="recipe_heading">냉장고 재료로 만드는 세 가지 요리</string>
     <string name="recipe_subtitle">선택한 조리도구로 만들 수 있는 완성된 조합만 보여드려요.</string>
+    <string name="recipe_kind_prompt">레시피 종류</string>
+    <string name="recipe_kind_meal">식사</string>
+    <string name="recipe_kind_drink">음료</string>
+    <string name="recipe_kind_snack">간식</string>
+    <string name="recipe_kind_dessert">디저트</string>
     <string name="recipe_generate">레시피 생성</string>
     <string name="recipe_generating">생성 중…</string>
     <string name="recipe_idle">재료와 조리도구를 준비한 뒤 레시피를 생성해 보세요.</string>

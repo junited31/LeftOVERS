@@ -35,7 +35,7 @@ class LeftoversDatabaseTest {
                 "recipe",
                 "Rice bowl",
                 PantryBindings(listOf(PantryBinding(riceId, 4, PantryUnit.GRAM, 1_500))),
-                RecipeSteps(listOf("Cook rice")),
+                RecipeSteps(listOf("Cook rice"), null, RecipeKind.MEAL),
                 100,
             ),
         )

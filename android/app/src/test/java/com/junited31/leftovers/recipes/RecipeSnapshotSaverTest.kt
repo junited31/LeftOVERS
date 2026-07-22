@@ -72,18 +72,32 @@ class RecipeSnapshotSaverTest {
             RecipePreferenceMetadata("Korean", "stir fry", setOf("Rice")),
             snapshot?.steps?.metadata,
         )
+        val savedSteps = requireNotNull(snapshot).steps
+        assertEquals(
+            "DRINK",
+            requireNotNull(savedSteps.javaClass.getMethod("getRecipeKind").invoke(savedSteps)).toString(),
+        )
     }
 
     private fun ranked(id: String, title: String): RankedRecommendation {
-        val candidate = RecommendationCandidate(
+        val candidate = candidateWithKind(id, title)
+        return RankedRecommendation(id, candidate, 1.0, 1.0, 1.0, 1.0, 1.0)
+    }
+
+    private fun candidateWithKind(id: String, title: String): RecommendationCandidate = try {
+        val kindClass = Class.forName("com.junited31.leftovers.data.RecipeKind")
+        val drink = requireNotNull(kindClass.enumConstants).single { (it as Enum<*>).name == "DRINK" }
+        RecommendationCandidate::class.java.constructors.single { it.parameterCount == 8 }.newInstance(
             title,
             if (id == "two") "Japanese" else "Korean",
             if (id == "three") "bake" else "stir fry",
             listOf("basic cookware"),
             listOf(ProposedPantryUse(pantryId, 1, PantryUnit.GRAM, 100_000)),
-            emptyList(),
+            emptyList<MissingRecipeIngredient>(),
             listOf("Cook"),
-        )
-        return RankedRecommendation(id, candidate, 1.0, 1.0, 1.0, 1.0, 1.0)
+            drink,
+        ) as RecommendationCandidate
+    } catch (error: Throwable) {
+        throw AssertionError("RecommendationCandidate must require RecipeKind", error)
     }
 }

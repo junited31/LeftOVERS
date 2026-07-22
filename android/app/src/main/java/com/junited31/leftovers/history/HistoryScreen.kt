@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.R
 import com.junited31.leftovers.pantryDisplayName
+import com.junited31.leftovers.recipeKindLabel
 import com.junited31.leftovers.data.MealLogEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
@@ -103,6 +104,7 @@ private fun HistoryTimeline(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(log.recipeSnapshot.title, style = MaterialTheme.typography.titleMedium)
+                        Text(recipeKindLabel(log.recipeSnapshot.steps.recipeKind))
                         Text(completedAt(log.completedAtEpochMillis))
                         Text(stringResource(R.string.rating_value, log.recipeSnapshot.feedback.rating))
                     }
@@ -141,6 +143,10 @@ private fun HistoryDetailScreen(
                 log.recipeSnapshot.title,
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                recipeKindLabel(log.recipeSnapshot.steps.recipeKind),
+                modifier = Modifier.testTag("history-recipe-kind"),
             )
             Text(completedAt(log.completedAtEpochMillis))
         }

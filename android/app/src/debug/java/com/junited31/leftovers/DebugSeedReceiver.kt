@@ -11,6 +11,7 @@ import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
 import com.junited31.leftovers.data.PantryBindings
 import com.junited31.leftovers.data.RecipeSnapshotEntity
+import com.junited31.leftovers.data.RecipeKind
 import com.junited31.leftovers.data.RecipeSteps
 import com.junited31.leftovers.data.CookSessionEntity
 import com.junited31.leftovers.data.leftoversDataStore
@@ -38,6 +39,8 @@ class DebugSeedReceiver : BroadcastReceiver() {
                     pantryBindings = PantryBindings(emptyList()),
                     steps = RecipeSteps(
                         listOf("재료를 손질하세요", "약 7분 동안 고르게 볶으세요", "불을 끄고 접시에 담으세요"),
+                        metadata = null,
+                        recipeKind = RecipeKind.MEAL,
                     ),
                     createdAtEpochMillis = System.currentTimeMillis(),
                 ),

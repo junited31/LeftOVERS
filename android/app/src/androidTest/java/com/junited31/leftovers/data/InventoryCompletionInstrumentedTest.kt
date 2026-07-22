@@ -53,7 +53,7 @@ class InventoryCompletionInstrumentedTest {
                         PantryBinding(stockId, 3, PantryUnit.MILLILITER, 8_000),
                     ),
                 ),
-                RecipeSteps(listOf("Cook")),
+                RecipeSteps(listOf("Cook"), null, RecipeKind.MEAL),
                 10,
             ),
         )
@@ -103,7 +103,7 @@ class InventoryCompletionInstrumentedTest {
                     "recipe$suffix",
                     "Concurrent recipe",
                     PantryBindings(listOf(PantryBinding(itemId, 1, PantryUnit.COUNT, 1_000))),
-                    RecipeSteps(listOf("Cook")),
+                    RecipeSteps(listOf("Cook"), null, RecipeKind.MEAL),
                     10,
                 ),
             )

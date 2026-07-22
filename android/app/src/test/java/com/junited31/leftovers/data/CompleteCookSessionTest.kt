@@ -175,7 +175,11 @@ class CompleteCookSessionTest {
                         PantryBinding(milkId, 1, PantryUnit.MILLILITER, 2_000),
                     ),
                 ),
-                steps = RecipeSteps(listOf("Mix", "Cook")),
+                steps = RecipeSteps(
+                    listOf("Mix", "Cook"),
+                    null,
+                    RecipeKind.MEAL,
+                ),
                 createdAtEpochMillis = 1_000,
             ),
         )

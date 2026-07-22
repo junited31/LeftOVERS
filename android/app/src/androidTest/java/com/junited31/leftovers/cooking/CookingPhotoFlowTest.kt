@@ -80,7 +80,11 @@ class CookingPhotoFlowTest {
                 "task-7-recipe",
                 "채소 볶음",
                 PantryBindings(emptyList()),
-                RecipeSteps(listOf("재료를 준비하세요", "약 7분 볶으세요", "불을 끄고 담으세요")),
+                RecipeSteps(
+                    values = listOf("재료를 준비하세요", "약 7분 볶으세요", "불을 끄고 담으세요"),
+                    metadata = null,
+                    recipeKind = com.junited31.leftovers.data.RecipeKind.MEAL,
+                ),
                 10,
             ),
         )

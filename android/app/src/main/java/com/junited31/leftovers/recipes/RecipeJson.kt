@@ -3,6 +3,7 @@ package com.junited31.leftovers.recipes
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
+import com.junited31.leftovers.data.RecipeKind
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,6 +20,8 @@ object RecipeJson {
         equipment: Set<String>,
         history: List<RecommendationHistory>,
         measurementHints: List<MeasurementHint> = emptyList(),
+        locale: String,
+        recipeKind: RecipeKind,
     ): String = JSONObject()
         .put("pantry", JSONArray().apply { pantry.forEach { put(pantryRow(it)) } })
         .put(
@@ -35,11 +38,17 @@ object RecipeJson {
             "measurementHints",
             JSONArray().apply { measurementHints.forEach { put(measurementHint(it)) } },
         )
+        .put("locale", locale)
+        .put("recipeKind", recipeKind.value)
         .toString()
 
-    fun response(body: String): RecipeDecodeResult = try {
-        val recipes = JSONObject(body).getJSONArray("recipes")
-        RecipeDecodeResult.Success(List(recipes.length()) { candidate(recipes.getJSONObject(it)) })
+    fun response(body: String, requestedKind: RecipeKind): RecipeDecodeResult = try {
+        val root = JSONObject(body)
+        require(!root.has("locale"))
+        val recipes = root.getJSONArray("recipes")
+        RecipeDecodeResult.Success(List(recipes.length()) {
+            candidate(recipes.getJSONObject(it), requestedKind)
+        })
     } catch (_: JSONException) {
         RecipeDecodeResult.Invalid
     } catch (_: IllegalArgumentException) {
@@ -72,7 +81,11 @@ object RecipeJson {
         .put("unit", hint.unit.value)
         .apply { if (hint.note.isNotBlank()) put("note", hint.note) }
 
-    private fun candidate(json: JSONObject) = RecommendationCandidate(
+    private fun candidate(json: JSONObject, requestedKind: RecipeKind): RecommendationCandidate {
+        require(!json.has("locale"))
+        val recipeKind = requireNotNull(RecipeKind.parse(json.getString("recipeKind")))
+        require(recipeKind == requestedKind)
+        return RecommendationCandidate(
         title = json.getString("title"),
         cuisine = json.getString("cuisine"),
         primaryTechnique = json.getString("primaryTechnique"),
@@ -80,7 +93,9 @@ object RecipeJson {
         trackedUses = objects(json.getJSONArray("trackedUses")) { trackedUse(it) },
         missingIngredients = objects(json.getJSONArray("missingIngredients")) { missing(it) },
         steps = strings(json.getJSONArray("steps")),
+        recipeKind = recipeKind,
     )
+    }
 
     private fun trackedUse(json: JSONObject) = ProposedPantryUse(
         pantryItemId = requireNotNull(PantryItemId.parse(json.getString("pantryItemId"))),

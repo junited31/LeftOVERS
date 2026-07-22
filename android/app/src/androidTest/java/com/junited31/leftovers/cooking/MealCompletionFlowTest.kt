@@ -88,7 +88,11 @@ class MealCompletionFlowTest {
                 "task-8-recipe",
                 "쌀 요리",
                 PantryBindings(listOf(PantryBinding(riceId, 1, PantryUnit.GRAM, 5_000))),
-                RecipeSteps(listOf("완성하세요"), RecipePreferenceMetadata("Korean", "mix", setOf("쌀"))),
+                RecipeSteps(
+                    listOf("완성하세요"),
+                    RecipePreferenceMetadata("Korean", "mix", setOf("쌀")),
+                    com.junited31.leftovers.data.RecipeKind.MEAL,
+                ),
                 10,
             ),
         )

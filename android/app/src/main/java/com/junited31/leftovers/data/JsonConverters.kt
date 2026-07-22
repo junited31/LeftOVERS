@@ -26,12 +26,11 @@ class JsonConverters {
     fun jsonToPantryBindings(value: String): PantryBindings = bindings(JSONArray(value))
 
     @TypeConverter
-    fun recipeStepsToJson(steps: RecipeSteps): String = steps.metadata?.let { metadata ->
-        JSONObject()
-            .put("values", JSONArray(steps.values))
-            .put("metadata", metadataJson(metadata))
-            .toString()
-    } ?: JSONArray(steps.values).toString()
+    fun recipeStepsToJson(steps: RecipeSteps): String = JSONObject()
+        .put("values", JSONArray(steps.values))
+        .put("metadata", steps.metadata?.let(::metadataJson) ?: JSONObject.NULL)
+        .put("recipeKind", steps.recipeKind.value)
+        .toString()
 
     @TypeConverter
     fun jsonToRecipeSteps(value: String): RecipeSteps = steps(value)
@@ -43,6 +42,7 @@ class JsonConverters {
         .put("pantryBindings", bindingArray(snapshot.pantryBindings))
         .put("steps", JSONArray(snapshot.steps.values))
         .put("metadata", snapshot.steps.metadata?.let(::metadataJson) ?: JSONObject.NULL)
+        .put("recipeKind", snapshot.steps.recipeKind.value)
         .put("createdAtEpochMillis", snapshot.createdAtEpochMillis)
         .put("feedback", feedbackJson(snapshot.feedback))
         .toString()
@@ -54,8 +54,11 @@ class JsonConverters {
             title = json.getString("title"),
             pantryBindings = bindings(json.getJSONArray("pantryBindings")),
             steps = RecipeSteps(
-                values = steps(json.getJSONArray("steps")).values,
+                values = stringList(json.getJSONArray("steps")),
                 metadata = json.optJSONObject("metadata")?.let(::metadata),
+                // Legacy meal-log snapshots predate recipeKind.
+                recipeKind = json.optString("recipeKind").takeIf(String::isNotEmpty)
+                    ?.let { requireNotNull(RecipeKind.parse(it)) } ?: RecipeKind.MEAL,
             ),
             createdAtEpochMillis = json.getLong("createdAtEpochMillis"),
             feedback = json.optJSONObject("feedback")?.let(::feedback) ?: MealFeedback(),
@@ -152,20 +155,26 @@ class JsonConverters {
         },
     )
 
-    private fun steps(array: JSONArray) = RecipeSteps(
-        List(array.length()) { index -> array.getString(index) },
+    private fun legacyRecipeSteps(array: JSONArray) = RecipeSteps(
+        values = stringList(array),
+        metadata = null,
+        // Legacy recipe_snapshot rows stored steps as a bare array.
+        recipeKind = RecipeKind.MEAL,
     )
 
     private fun steps(value: String): RecipeSteps = if (value.trimStart().startsWith("[")) {
-        steps(JSONArray(value))
+        legacyRecipeSteps(JSONArray(value))
     } else {
         JSONObject(value).let { json ->
             RecipeSteps(
-                values = steps(json.getJSONArray("values")).values,
+                values = stringList(json.getJSONArray("values")),
                 metadata = json.optJSONObject("metadata")?.let(::metadata),
+                recipeKind = requireNotNull(RecipeKind.parse(json.getString("recipeKind"))),
             )
         }
     }
+
+    private fun stringList(array: JSONArray) = List(array.length()) { index -> array.getString(index) }
 
     private fun metadataJson(metadata: RecipePreferenceMetadata) = JSONObject()
         .put("cuisine", metadata.cuisine)

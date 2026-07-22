@@ -9,6 +9,10 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -29,6 +33,11 @@ import com.junited31.leftovers.DebugApplication
 import com.junited31.leftovers.MainActivity
 import com.junited31.leftovers.data.LeftoversDatabase
 import com.junited31.leftovers.data.LeftoversPreferenceKeys
+import com.junited31.leftovers.data.ActualPantryUse
+import com.junited31.leftovers.data.ActualPantryUses
+import com.junited31.leftovers.data.CompleteCookSessionCommand
+import com.junited31.leftovers.data.CompletionResult
+import com.junited31.leftovers.data.MealFeedback
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
@@ -45,10 +54,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class RecipeScreenTest {
@@ -83,12 +94,15 @@ class RecipeScreenTest {
 
     @After
     fun tearDown() {
-        scenario?.close()
         application.recipeApiOverride = null
         server.shutdown()
         compose.runOnUiThread {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
+        compose.waitUntil(5_000) {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags() == "en"
+        }
+        scenario?.close()
     }
 
     @Test
@@ -96,9 +110,13 @@ class RecipeScreenTest {
         // Given
         server.enqueue(MockResponse().setResponseCode(200).setBody(validResponse()))
         launchRecipes()
+        compose.onNodeWithTag("recipe-kind-drink").performClick()
 
         // When
         compose.onNodeWithTag("generate-recipes").performClick()
+        val request = JSONObject(requireNotNull(server.takeRequest(5, TimeUnit.SECONDS)).body.readUtf8())
+        assertEquals("en", request.getString("locale"))
+        assertEquals("drink", request.getString("recipeKind"))
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("recipe-card").fetchSemanticsNodes().size == 3 }
 
         // Then
@@ -116,12 +134,46 @@ class RecipeScreenTest {
         compose.onNodeWithText("Missing ingredients: Salt 1 g").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Rice omelette").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Recipes").assertExists()
-        captureRecipeEvidence()
+        captureEvidence("drink-results")
         compose.onNodeWithTag("save-recipe-0").performScrollTo().performClick()
         compose.waitUntil(5_000) { runBlocking { database.recipeSnapshotDao().count() } == 1 }
-        assertEquals("Crispy spinach rice", runBlocking { database.recipeSnapshotDao().get(
+        val snapshot = requireNotNull(runBlocking { database.recipeSnapshotDao().get(
             database.recipeSnapshotDao().getAllIds().single(),
-        )?.title })
+        ) })
+        assertEquals("Crispy spinach rice", snapshot.title)
+        assertEquals("drink", snapshot.steps.recipeKind.value)
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithTag("selected-recipe-kind").assertIsDisplayed() }.isSuccess
+        }
+        compose.onNodeWithTag("selected-recipe-kind").assertTextEquals("Drink")
+        compose.waitUntil(5_000) { runBlocking { database.cookSessionDao().active() } != null }
+        val session = requireNotNull(runBlocking { database.cookSessionDao().active() })
+        val completion = runBlocking {
+            database.inventoryCompletionDao().complete(
+                CompleteCookSessionCommand(
+                    cookSessionId = session.id,
+                    mealLogId = "task-5-drink",
+                    completedAtEpochMillis = System.currentTimeMillis(),
+                    actualUses = ActualPantryUses(snapshot.pantryBindings.values.map { binding ->
+                        ActualPantryUse(
+                            binding.pantryItemId,
+                            binding.sourceVersion,
+                            binding.unit,
+                            binding.proposedMilliUnits,
+                        )
+                    }),
+                    feedback = MealFeedback(),
+                ),
+            )
+        }
+        assertTrue(completion is CompletionResult.Success)
+        compose.onNodeWithTag("nav-history").performClick()
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithTag("history-row-task-5-drink").assertIsDisplayed() }.isSuccess
+        }
+        compose.onNodeWithTag("history-row-task-5-drink").performClick()
+        compose.onNodeWithTag("history-recipe-kind").assertTextEquals("Drink")
+        captureEvidence("history-drink")
     }
 
     @Test
@@ -133,6 +185,7 @@ class RecipeScreenTest {
         )
         launchRecipes()
         val before = runBlocking { database.recipeSnapshotDao().count() }
+        compose.onNodeWithTag("recipe-kind-drink").performClick()
 
         // When
         compose.onNodeWithTag("generate-recipes").performClick()
@@ -144,6 +197,91 @@ class RecipeScreenTest {
         assertEquals(1, server.requestCount)
     }
 
+    @Test
+    fun generateRequiresKindAndDisabledClickRaceSendsNoRequest() {
+        launchRecipes()
+        captureEvidence("kind-unselected")
+
+        compose.onNodeWithTag("generate-recipes").assertIsNotEnabled().performClick()
+
+        assertEquals(0, server.requestCount)
+        compose.onAllNodesWithTag("recipe-card").assertCountEquals(0)
+    }
+
+    @Test
+    fun exactlyFourKindControlsAreMutuallyExclusive() {
+        launchRecipes()
+
+        compose.onAllNodesWithTag("recipe-kind-control").assertCountEquals(4)
+        compose.onNodeWithTag("recipe-kind-meal").performClick().assertIsSelected()
+        compose.onNodeWithTag("recipe-kind-drink").assertIsNotSelected()
+        compose.onNodeWithTag("recipe-kind-snack").performClick().assertIsSelected()
+        compose.onNodeWithTag("recipe-kind-meal").assertIsNotSelected()
+        compose.onNodeWithTag("recipe-kind-drink").assertIsNotSelected()
+        compose.onNodeWithTag("recipe-kind-dessert").assertIsNotSelected()
+    }
+
+    @Test
+    fun requestLocaleNormalizesAcrossActivityRestartAndKeepsCanonicalKindWire() {
+        launchRecipes()
+        setLocale("ko")
+        scenario?.recreate()
+        compose.onNodeWithTag("nav-recipes").performClick()
+        compose.onNodeWithText("디저트").assertIsDisplayed()
+        compose.onNodeWithTag("recipe-kind-dessert").performClick()
+        server.enqueue(MockResponse().setResponseCode(200).setBody(validResponse("dessert")))
+        compose.onNodeWithTag("generate-recipes").performClick()
+        val korean = JSONObject(requireNotNull(server.takeRequest(5, TimeUnit.SECONDS)).body.readUtf8())
+        assertEquals("ko", korean.getString("locale"))
+        assertEquals("dessert", korean.getString("recipeKind"))
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("recipe-card").fetchSemanticsNodes().size == 3 }
+        captureEvidence("dessert-ko")
+
+        setLocale("ja")
+        scenario?.recreate()
+        compose.onNodeWithTag("nav-recipes").performClick()
+        compose.onNodeWithTag("recipe-kind-meal").performClick()
+        server.enqueue(MockResponse().setResponseCode(200).setBody(validResponse("meal")))
+        compose.onNodeWithTag("generate-recipes").performClick()
+        val fallback = JSONObject(requireNotNull(server.takeRequest(5, TimeUnit.SECONDS)).body.readUtf8())
+        assertEquals("en", fallback.getString("locale"))
+        assertEquals("meal", fallback.getString("recipeKind"))
+    }
+
+    @Test
+    fun invalidNetworkKindSetsShowTypedErrorAndNeverPersistSnapshots() {
+        launchRecipes()
+        compose.onNodeWithTag("recipe-kind-drink").performClick()
+        val cases = listOf(
+            JSONObject(validResponse("drink")).apply {
+                getJSONArray("recipes").getJSONObject(0).remove("recipeKind")
+            },
+            JSONObject(validResponse("drink")).apply {
+                getJSONArray("recipes").getJSONObject(0).put("recipeKind", "Meal")
+            },
+            JSONObject(validResponse("drink")).apply {
+                getJSONArray("recipes").getJSONObject(0).put("recipeKind", "unknown")
+            },
+            JSONObject(validResponse("drink")).apply {
+                getJSONArray("recipes").getJSONObject(0).put("recipeKind", "snack")
+            },
+        )
+
+        cases.forEachIndexed { index, body ->
+            server.enqueue(MockResponse().setResponseCode(200).setBody(body.toString()))
+            compose.onNodeWithTag("generate-recipes").performClick()
+            compose.waitUntil(5_000) { server.requestCount == index + 1 }
+            compose.waitUntil(5_000) {
+                runCatching { compose.onNodeWithTag("recipe-error").assertIsDisplayed() }.isSuccess
+            }
+            compose.onNodeWithTag("recipe-error").assertIsDisplayed()
+            compose.onAllNodesWithTag("recipe-card").assertCountEquals(0)
+            assertEquals(0, runBlocking { database.recipeSnapshotDao().count() })
+            assertEquals(null, runBlocking { database.cookSessionDao().active() })
+            assertEquals(0, runBlocking { database.mealLogDao().count() })
+        }
+    }
+
     private fun launchRecipes() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
         scenario?.recreate()
@@ -153,38 +291,37 @@ class RecipeScreenTest {
         compose.onNodeWithText("Generate recipes").assertIsDisplayed()
     }
 
-    private fun captureRecipeEvidence() {
+    private fun setLocale(languageTag: String) {
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag))
+        }
+        compose.waitUntil(5_000) {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags() == languageTag
+        }
+    }
+
+    private fun captureEvidence(stem: String) {
         val directory = requireNotNull(context.getExternalFilesDir(null))
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val appScreenshot = File(directory, "task-6-korean-recipes.png")
+        val appScreenshot = File(directory, "task-5-$stem.png")
         FileOutputStream(appScreenshot).use { output ->
             automation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, output)
         }
         shell(automation.executeShellCommand(
-            "cp ${appScreenshot.absolutePath} /sdcard/Download/task-6-korean-recipes.png",
+            "cp ${appScreenshot.absolutePath} /sdcard/Download/task-5-$stem.png",
         ))
-        val appXml = File(directory, "task-6-korean-recipes.xml")
+        val appXml = File(directory, "task-5-$stem.xml")
         FileOutputStream(appXml).use { output ->
-            val recipeCards = compose.onAllNodesWithTag("recipe-card").fetchSemanticsNodes()
             val serializer = Xml.newSerializer()
             serializer.setOutput(output, "UTF-8")
             serializer.startDocument("UTF-8", true)
             serializer.startTag(null, "hierarchy")
-            serializer.attribute(null, "recipe-card-count", recipeCards.size.toString())
-            serializer.startTag(null, "recipe-cards")
-            recipeCards.forEachIndexed { index, node ->
-                serializer.startTag(null, "recipe-card")
-                serializer.attribute(null, "index", index.toString())
-                serializer.attribute(null, "text", semanticsText(node))
-                serializer.endTag(null, "recipe-card")
-            }
-            serializer.endTag(null, "recipe-cards")
             writeNode(serializer, requireNotNull(automation.rootInActiveWindow))
             serializer.endTag(null, "hierarchy")
             serializer.endDocument()
         }
         shell(automation.executeShellCommand(
-            "cp ${appXml.absolutePath} /sdcard/Download/task-6-korean-recipes.xml",
+            "cp ${appXml.absolutePath} /sdcard/Download/task-5-$stem.xml",
         ))
     }
 
@@ -234,11 +371,11 @@ class RecipeScreenTest {
             version,
         )
 
-    private fun validResponse() = """
+    private fun validResponse(kind: String = "drink") = """
         {"recipes":[
-          {"title":"Egg fried rice","cuisine":"Korean","primaryTechnique":"stir fry","requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":300000},{"pantryItemId":"00000000-0000-0000-0000-000000000403","version":3,"unit":"count","proposedMilliUnits":2000}],"missingIngredients":[],"steps":["Cook rice","Add eggs"]},
-          {"title":"Rice omelette","cuisine":"Japanese","primaryTechnique":"pan fry","requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":200000},{"pantryItemId":"00000000-0000-0000-0000-000000000403","version":3,"unit":"count","proposedMilliUnits":2000}],"missingIngredients":[{"name":"Salt","amountMilliUnits":1000,"unit":"g"}],"steps":["Beat eggs","Fold rice"]},
-          {"title":"Crispy spinach rice","cuisine":"Korean","primaryTechnique":"bake","requiredEquipment":["basic cookware"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":250000},{"pantryItemId":"00000000-0000-0000-0000-000000000402","version":2,"unit":"g","proposedMilliUnits":100000}],"missingIngredients":[],"steps":["Mix","Bake"]}
+          {"recipeKind":"$kind","title":"Egg fried rice","cuisine":"Korean","primaryTechnique":"stir fry","requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":300000},{"pantryItemId":"00000000-0000-0000-0000-000000000403","version":3,"unit":"count","proposedMilliUnits":2000}],"missingIngredients":[],"steps":["Cook rice","Add eggs"]},
+          {"recipeKind":"$kind","title":"Rice omelette","cuisine":"Japanese","primaryTechnique":"pan fry","requiredEquipment":["gas burner"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":200000},{"pantryItemId":"00000000-0000-0000-0000-000000000403","version":3,"unit":"count","proposedMilliUnits":2000}],"missingIngredients":[{"name":"Salt","amountMilliUnits":1000,"unit":"g"}],"steps":["Beat eggs","Fold rice"]},
+          {"recipeKind":"$kind","title":"Crispy spinach rice","cuisine":"Korean","primaryTechnique":"bake","requiredEquipment":["basic cookware"],"trackedUses":[{"pantryItemId":"00000000-0000-0000-0000-000000000401","version":1,"unit":"g","proposedMilliUnits":250000},{"pantryItemId":"00000000-0000-0000-0000-000000000402","version":2,"unit":"g","proposedMilliUnits":100000}],"missingIngredients":[],"steps":["Mix","Bake"]}
         ]}
     """.trimIndent()
 }

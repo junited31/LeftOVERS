@@ -80,6 +80,7 @@ class HistoryScreenTest {
     fun tearDown() = runBlocking {
         database.clearAllTables()
         photos.retainedFinalPhotos().forEach(File::delete)
+        if (scenario == null) scenario = ActivityScenario.launch(MainActivity::class.java)
         compose.runOnUiThread {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
@@ -124,6 +125,31 @@ class HistoryScreenTest {
         capture("task-9-history-bottom.png")
         scrollTo("김치볶음밥 newer")
         capture("task-9-history.png")
+    }
+
+    @Test
+    fun historyDetailShowsLocalizedPersistedRecipeKind() {
+        val base = log("kind", 2_500, null)
+        insertLog(base.copy(
+            recipeSnapshot = base.recipeSnapshot.copy(
+                steps = stepsWithKind(base.recipeSnapshot.steps.values, base.recipeSnapshot.steps.metadata, "DRINK"),
+            ),
+        ))
+        launchHistory()
+
+        compose.onNodeWithTag("history-row-kind").performClick()
+        compose.onNodeWithTag("history-recipe-kind").assertIsDisplayed()
+        compose.onNodeWithText("Drink").assertIsDisplayed()
+
+        compose.runOnUiThread {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ko"))
+        }
+        compose.waitUntil(5_000) {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags() == "ko"
+        }
+        compose.waitUntil(5_000) {
+            runCatching { compose.onNodeWithText("음료").assertIsDisplayed() }.isSuccess
+        }
     }
 
     @Test
@@ -239,6 +265,19 @@ class HistoryScreenTest {
         cursor.getString(0)
     }
 
+    private fun stepsWithKind(
+        values: List<String>,
+        metadata: RecipePreferenceMetadata?,
+        kind: String,
+    ): RecipeSteps = try {
+        val kindClass = Class.forName("com.junited31.leftovers.data.RecipeKind")
+        val recipeKind = requireNotNull(kindClass.enumConstants).single { (it as Enum<*>).name == kind }
+        RecipeSteps::class.java.constructors.single { it.parameterCount == 3 }
+            .newInstance(values, metadata, recipeKind) as RecipeSteps
+    } catch (error: Throwable) {
+        throw AssertionError("RecipeSteps must require RecipeKind", error)
+    }
+
     private fun log(id: String, completedAt: Long, photoPath: String?) = MealLogEntity(
         id = id,
         cookSessionId = "session-$id",
@@ -249,6 +288,7 @@ class HistoryScreenTest {
             steps = RecipeSteps(
                 listOf("재료를 볶아요", "밥을 넣어요"),
                 RecipePreferenceMetadata("Korean", "stir-fry", setOf("김치", "밥")),
+                com.junited31.leftovers.data.RecipeKind.MEAL,
             ),
             createdAtEpochMillis = 500,
             feedback = MealFeedback(

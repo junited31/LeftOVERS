@@ -27,6 +27,18 @@ enum class PantryUnit(val value: String) {
     }
 }
 
+enum class RecipeKind(val value: String) {
+    MEAL("meal"),
+    DRINK("drink"),
+    SNACK("snack"),
+    DESSERT("dessert"),
+    ;
+
+    companion object {
+        fun parse(value: String): RecipeKind? = entries.firstOrNull { it.value == value }
+    }
+}
+
 data class PantryBinding(
     val pantryItemId: PantryItemId,
     val sourceVersion: Int,
@@ -44,7 +56,8 @@ data class RecipePreferenceMetadata(
 
 data class RecipeSteps(
     val values: List<String>,
-    val metadata: RecipePreferenceMetadata? = null,
+    val metadata: RecipePreferenceMetadata?,
+    val recipeKind: RecipeKind,
 )
 
 data class MeasurementAdjustment(

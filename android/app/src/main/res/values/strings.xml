@@ -66,6 +66,11 @@
 
     <string name="recipe_heading">Three meals from your pantry</string>
     <string name="recipe_subtitle">Only complete combinations you can make with your selected equipment are shown.</string>
+    <string name="recipe_kind_prompt">Recipe type</string>
+    <string name="recipe_kind_meal">Meal</string>
+    <string name="recipe_kind_drink">Drink</string>
+    <string name="recipe_kind_snack">Snack</string>
+    <string name="recipe_kind_dessert">Dessert</string>
     <string name="recipe_generate">Generate recipes</string>
     <string name="recipe_generating">Generating…</string>
     <string name="recipe_idle">Prepare ingredients and equipment, then generate recipes.</string>

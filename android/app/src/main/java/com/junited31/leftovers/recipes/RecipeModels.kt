@@ -2,6 +2,7 @@ package com.junited31.leftovers.recipes
 
 import com.junited31.leftovers.data.PantryItemId
 import com.junited31.leftovers.data.PantryUnit
+import com.junited31.leftovers.data.RecipeKind
 import java.time.Instant
 
 data class ProposedPantryUse(
@@ -25,6 +26,7 @@ data class RecommendationCandidate(
     val trackedUses: List<ProposedPantryUse>,
     val missingIngredients: List<MissingRecipeIngredient>,
     val steps: List<String>,
+    val recipeKind: RecipeKind,
 )
 
 data class RecommendationHistory(

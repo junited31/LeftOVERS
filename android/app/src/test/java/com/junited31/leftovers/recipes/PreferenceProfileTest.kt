@@ -179,6 +179,7 @@ class PreferenceProfileTest {
             steps = RecipeSteps(
                 values = listOf("Cook"),
                 metadata = RecipePreferenceMetadata(cuisine, technique, ingredients),
+                recipeKind = com.junited31.leftovers.data.RecipeKind.MEAL,
             ),
             createdAtEpochMillis = 1,
             feedback = MealFeedback(rating, "local note", recommendAgain, adjustments, null),
@@ -227,5 +228,6 @@ class PreferenceProfileTest {
             listOf(ProposedPantryUse(id, 1, PantryUnit.GRAM, 1_000)),
             emptyList(),
             listOf("Cook"),
+            com.junited31.leftovers.data.RecipeKind.MEAL,
         )
 }

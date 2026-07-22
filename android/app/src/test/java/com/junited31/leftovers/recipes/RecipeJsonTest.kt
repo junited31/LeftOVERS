@@ -35,7 +35,7 @@ class RecipeJsonTest {
         }
 
         // When
-        val json = JSONObject(RecipeJson.request(pantry, setOf("gas burner"), history))
+        val json = JSONObject(request(pantry, setOf("gas burner"), history))
 
         // Then
         assertEquals(pantryId.value, json.getJSONArray("pantry").getJSONObject(0).getString("pantryItemId"))
@@ -50,15 +50,19 @@ class RecipeJsonTest {
     @Test
     fun response_decodes_real_candidate_fields_and_rejects_malformed_json() {
         // Given
-        val body = """{"recipes":[{"title":"Rice bowl","cuisine":"Korean","primaryTechnique":"mix","requiredEquipment":["basic cookware"],"trackedUses":[{"pantryItemId":"${pantryId.value}","version":7,"unit":"g","proposedMilliUnits":100000}],"missingIngredients":[{"name":"Salt","amountMilliUnits":1000,"unit":"g"}],"steps":["Mix","Serve"]}]}"""
+        val body = candidateBody("meal")
 
         // When
-        val decoded = RecipeJson.response(body)
-        val malformed = RecipeJson.response("{not-json")
+        val decoded = response(body, "MEAL")
+        val malformed = response("{not-json", "MEAL")
 
         // Then
         val candidate = (decoded as RecipeDecodeResult.Success).candidates.single()
         assertEquals("Rice bowl", candidate.title)
+        assertEquals(
+            "MEAL",
+            requireNotNull(candidate.javaClass.getMethod("getRecipeKind").invoke(candidate)).toString(),
+        )
         assertEquals(100_000, candidate.trackedUses.single().proposedMilliUnits)
         assertEquals("Salt", candidate.missingIngredients.single().name)
         assertEquals(listOf("Mix", "Serve"), candidate.steps)
@@ -69,7 +73,7 @@ class RecipeJsonTest {
     fun requestCharacterizationKeepsHistoryEmptyWhenCallerHasNoLogs() {
         val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
 
-        val request = JSONObject(RecipeJson.request(pantry, setOf("gas burner"), emptyList()))
+        val request = JSONObject(request(pantry, setOf("gas burner"), emptyList()))
 
         assertEquals(0, request.getJSONArray("history").length())
         assertEquals("gas burner", request.getJSONArray("equipment").getString(0))
@@ -80,7 +84,7 @@ class RecipeJsonTest {
         val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
         val hints = listOf(MeasurementHint("rice", 125_000, PantryUnit.GRAM, "half cup"))
 
-        val request = JSONObject(RecipeJson.request(pantry, setOf("gas burner"), emptyList(), hints))
+        val request = JSONObject(request(pantry, setOf("gas burner"), emptyList(), hints))
 
         val hint = request.getJSONArray("measurementHints").getJSONObject(0)
         assertEquals("rice", hint.getString("ingredientName"))
@@ -97,9 +101,94 @@ class RecipeJsonTest {
             MeasurementHint("water", 250_000, PantryUnit.MILLILITER, "   \t"),
         )
 
-        val request = JSONObject(RecipeJson.request(pantry, emptySet(), emptyList(), hints))
+        val request = JSONObject(request(pantry, emptySet(), emptyList(), hints))
 
         assertFalse(request.getJSONArray("measurementHints").getJSONObject(0).has("note"))
         assertFalse(request.getJSONArray("measurementHints").getJSONObject(1).has("note"))
+    }
+
+    @Test
+    fun requestRequiresExactLocaleAndRecipeKindAliasesForAllCanonicalWireValues() {
+        val pantry = listOf(PantryItemEntity(pantryId, "Rice", 500_000, PantryUnit.GRAM, null, 1))
+        val expected = mapOf(
+            "MEAL" to "meal",
+            "DRINK" to "drink",
+            "SNACK" to "snack",
+            "DESSERT" to "dessert",
+        )
+
+        expected.forEach { (kind, wire) ->
+            val json = JSONObject(request(pantry, emptySet(), emptyList(), locale = "ko", kind = kind))
+            assertEquals("ko", json.getString("locale"))
+            assertEquals(wire, json.getString("recipeKind"))
+            assertFalse(json.has("recipe_kind"))
+        }
+    }
+
+    @Test
+    fun responseRejectsMissingCaseDriftUnknownMismatchAndLocaleEcho() {
+        assertTrue(response(candidateBody(null), "MEAL") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("Meal"), "MEAL") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("breakfast"), "MEAL") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("snack"), "DRINK") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("meal", rootLocale = "en"), "MEAL") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("meal", candidateLocale = "en"), "MEAL") is RecipeDecodeResult.Invalid)
+        assertTrue(response(candidateBody("meal"), "MEAL") is RecipeDecodeResult.Success)
+    }
+
+    private fun request(
+        pantry: List<PantryItemEntity>,
+        equipment: Set<String>,
+        history: List<RecommendationHistory>,
+        hints: List<MeasurementHint> = emptyList(),
+        locale: String = "en",
+        kind: String = "MEAL",
+    ): String = try {
+        val kindClass = Class.forName("com.junited31.leftovers.data.RecipeKind")
+        val recipeKind = requireNotNull(kindClass.enumConstants).single { (it as Enum<*>).name == kind }
+        val method = RecipeJson::class.java.methods.single {
+            it.name == "request" && it.parameterCount == 6
+        }
+        method.invoke(RecipeJson, pantry, equipment, history, hints, locale, recipeKind) as String
+    } catch (error: Throwable) {
+        throw AssertionError("RecipeJson.request must require locale and RecipeKind", error)
+    }
+
+    private fun response(body: String, kind: String): RecipeDecodeResult = try {
+        val kindClass = Class.forName("com.junited31.leftovers.data.RecipeKind")
+        val recipeKind = requireNotNull(kindClass.enumConstants).single { (it as Enum<*>).name == kind }
+        val method = RecipeJson::class.java.methods.single {
+            it.name == "response" && it.parameterCount == 2
+        }
+        method.invoke(RecipeJson, body, recipeKind) as RecipeDecodeResult
+    } catch (error: Throwable) {
+        throw AssertionError("RecipeJson.response must require the requested RecipeKind", error)
+    }
+
+    private fun candidateBody(
+        kind: String?,
+        rootLocale: String? = null,
+        candidateLocale: String? = null,
+    ): String {
+        val candidate = JSONObject()
+            .put("title", "Rice bowl")
+            .put("cuisine", "Korean")
+            .put("primaryTechnique", "mix")
+            .put("requiredEquipment", org.json.JSONArray().put("basic cookware"))
+            .put("trackedUses", org.json.JSONArray().put(JSONObject()
+                .put("pantryItemId", pantryId.value)
+                .put("version", 7)
+                .put("unit", "g")
+                .put("proposedMilliUnits", 100_000)))
+            .put("missingIngredients", org.json.JSONArray().put(JSONObject()
+                .put("name", "Salt")
+                .put("amountMilliUnits", 1_000)
+                .put("unit", "g")))
+            .put("steps", org.json.JSONArray().put("Mix").put("Serve"))
+        kind?.let { candidate.put("recipeKind", it) }
+        candidateLocale?.let { candidate.put("locale", it) }
+        return JSONObject().put("recipes", org.json.JSONArray().put(candidate)).apply {
+            rootLocale?.let { put("locale", it) }
+        }.toString()
     }
 }

@@ -1,16 +1,21 @@
 package com.junited31.leftovers.recipes
 
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,22 +23,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.junited31.leftovers.data.PantryItemEntity
 import com.junited31.leftovers.data.PantryItemId
+import com.junited31.leftovers.data.RecipeKind
 import com.junited31.leftovers.data.RecipeSnapshotDao
 import com.junited31.leftovers.data.CookSessionDao
 import com.junited31.leftovers.data.MealLogDao
 import com.junited31.leftovers.cooking.CookingSessionStore
 import com.junited31.leftovers.R
 import com.junited31.leftovers.pantryDisplayName
+import com.junited31.leftovers.recipeKindLabel
 import com.junited31.leftovers.network.ApiResult
 import com.junited31.leftovers.network.LeftoversApi
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +77,7 @@ fun RecipeScreen(
     val cooking = remember(snapshotDao, cookSessionDao) { CookingSessionStore(snapshotDao, cookSessionDao) }
     var state by remember { mutableStateOf<RecipeUiState>(RecipeUiState.Idle) }
     var savedTitle by remember { mutableStateOf<String?>(null) }
+    var selectedKind by remember { mutableStateOf<RecipeKind?>(null) }
     val pantryById = remember(pantry) { pantry.associateBy { it.id } }
 
     Column(
@@ -81,8 +91,28 @@ fun RecipeScreen(
             modifier = Modifier.semantics { heading() },
         )
         Text(stringResource(R.string.recipe_subtitle))
+        Text(stringResource(R.string.recipe_kind_prompt), style = MaterialTheme.typography.labelLarge)
+        RecipeKind.entries.forEach { kind ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().selectable(
+                    selected = selectedKind == kind,
+                    role = Role.RadioButton,
+                    onClick = { selectedKind = kind },
+                ).testTag("recipe-kind-control"),
+            ) {
+                RadioButton(
+                    selected = selectedKind == kind,
+                    onClick = { selectedKind = kind },
+                    modifier = Modifier.testTag("recipe-kind-${kind.value}"),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(recipeKindLabel(kind))
+            }
+        }
         Button(
             onClick = {
+                val requestedKind = selectedKind ?: return@Button
                 state = RecipeUiState.Loading
                 savedTitle = null
                 scope.launch {
@@ -95,13 +125,17 @@ fun RecipeScreen(
                                 equipment,
                                 loadedProfile.history,
                                 loadedProfile.measurementHints,
+                                AppCompatDelegate.getApplicationLocales().get(0)?.language
+                                    .takeIf { it == "ko" } ?: "en",
+                                requestedKind,
                             ),
                         )
                     }
-                    state = rankedState(apiResult, pantry, equipment, profile.history)
+                    state = rankedState(apiResult, pantry, equipment, profile.history, requestedKind)
                 }
             },
-            enabled = state != RecipeUiState.Loading && pantry.isNotEmpty() && equipment.isNotEmpty(),
+            enabled = state != RecipeUiState.Loading && pantry.isNotEmpty() &&
+                equipment.isNotEmpty() && selectedKind != null,
             modifier = Modifier.fillMaxWidth().testTag("generate-recipes"),
         ) {
             Text(stringResource(if (state == RecipeUiState.Loading) R.string.recipe_generating else R.string.recipe_generate))
@@ -142,8 +176,9 @@ private fun rankedState(
     pantry: List<PantryItemEntity>,
     equipment: Set<String>,
     history: List<RecommendationHistory>,
+    requestedKind: RecipeKind,
 ): RecipeUiState = when (apiResult) {
-    is ApiResult.Success -> when (val decoded = RecipeJson.response(apiResult.body)) {
+    is ApiResult.Success -> when (val decoded = RecipeJson.response(apiResult.body, requestedKind)) {
         is RecipeDecodeResult.Success -> when (
             val ranked = RecommendationRanker.rank(
                 decoded.candidates,
@@ -186,6 +221,7 @@ private fun RecipeCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(candidate.title, style = MaterialTheme.typography.titleMedium)
+            Text(recipeKindLabel(candidate.recipeKind), modifier = Modifier.testTag("recipe-card-kind-$index"))
             Text(stringResource(R.string.recipe_meta, candidate.cuisine, candidate.primaryTechnique))
             Text(stringResource(R.string.recipe_uses, uses(candidate, pantryById)))
             val equipment = buildList {

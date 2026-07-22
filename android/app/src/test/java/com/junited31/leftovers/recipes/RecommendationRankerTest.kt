@@ -331,6 +331,7 @@ class RecommendationRankerTest {
         trackedUses = tracked,
         missingIngredients = missing,
         steps = listOf("Prepare", "Cook"),
+        recipeKind = com.junited31.leftovers.data.RecipeKind.MEAL,
     )
 
     private fun use(id: PantryItemId, version: Int, unit: PantryUnit, amount: Long) =

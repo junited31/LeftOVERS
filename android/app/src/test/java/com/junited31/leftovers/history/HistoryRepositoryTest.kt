@@ -87,7 +87,38 @@ class HistoryRepositoryTest {
             }
         """.trimIndent()
 
-        assertEquals(MealFeedback(), converters.jsonToRecipeSnapshot(legacy).feedback)
+        val snapshot = converters.jsonToRecipeSnapshot(legacy)
+        assertEquals(MealFeedback(), snapshot.feedback)
+        assertEquals("MEAL", recipeKind(snapshot.steps))
+    }
+
+    @Test
+    fun legacyLocalArrayMissingKindDefaultsOnlyToMeal() {
+        assertEquals("MEAL", recipeKind(converters.jsonToRecipeSteps("""["Cook"]""")))
+    }
+
+    @Test
+    fun normalLocalJsonAndRepositoryHistoryRetainRequiredKind() = runTest {
+        val steps = stepsWithKind(
+            listOf("Mix", "Serve"),
+            RecipePreferenceMetadata("Korean", "mix", setOf("Rice")),
+            "DESSERT",
+        )
+        val stepsJson = converters.recipeStepsToJson(steps)
+        assertEquals("dessert", JSONObject(stepsJson).getString("recipeKind"))
+        assertEquals("DESSERT", recipeKind(converters.jsonToRecipeSteps(stepsJson)))
+
+        val source = completeLog("kind", 2_500).let { log ->
+            log.copy(recipeSnapshot = log.recipeSnapshot.copy(steps = steps))
+        }
+        val snapshotJson = converters.recipeSnapshotToJson(source.recipeSnapshot)
+        assertEquals("dessert", JSONObject(snapshotJson).getString("recipeKind"))
+        insertRawLog(source.id, source.completedAtEpochMillis, snapshotJson, source)
+
+        assertEquals(
+            "DESSERT",
+            recipeKind(requireNotNull(repository.detail(source.id)).mealLog.recipeSnapshot.steps),
+        )
     }
 
     @Test
@@ -246,6 +277,25 @@ class HistoryRepositoryTest {
         cursor.getString(0)
     }
 
+    private fun stepsWithKind(
+        values: List<String>,
+        metadata: RecipePreferenceMetadata?,
+        kind: String,
+    ): RecipeSteps = try {
+        val kindClass = Class.forName("com.junited31.leftovers.data.RecipeKind")
+        val recipeKind = requireNotNull(kindClass.enumConstants).single { (it as Enum<*>).name == kind }
+        RecipeSteps::class.java.constructors.single { it.parameterCount == 3 }
+            .newInstance(values, metadata, recipeKind) as RecipeSteps
+    } catch (error: Throwable) {
+        throw AssertionError("RecipeSteps must require RecipeKind", error)
+    }
+
+    private fun recipeKind(steps: RecipeSteps): String = try {
+        requireNotNull(steps.javaClass.getMethod("getRecipeKind").invoke(steps)).toString()
+    } catch (error: Throwable) {
+        throw AssertionError("RecipeSteps must retain RecipeKind", error)
+    }
+
     private fun completeLog(id: String, completedAt: Long) = MealLogEntity(
         id = id,
         cookSessionId = "session-$id",
@@ -258,6 +308,7 @@ class HistoryRepositoryTest {
             steps = RecipeSteps(
                 listOf("재료를 볶아요", "밥을 넣어요"),
                 RecipePreferenceMetadata("Korean", "stir-fry", setOf("김치", "밥")),
+                com.junited31.leftovers.data.RecipeKind.MEAL,
             ),
             createdAtEpochMillis = 500,
             feedback = MealFeedback(

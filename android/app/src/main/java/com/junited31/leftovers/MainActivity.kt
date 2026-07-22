@@ -500,6 +500,14 @@ internal fun pantryDisplayName(name: String): String =
     pantrySuggestions.firstOrNull { it.canonicalId == name }?.let { stringResource(it.labelRes) } ?: name
 
 @Composable
+internal fun recipeKindLabel(kind: com.junited31.leftovers.data.RecipeKind): String = stringResource(when (kind) {
+    com.junited31.leftovers.data.RecipeKind.MEAL -> R.string.recipe_kind_meal
+    com.junited31.leftovers.data.RecipeKind.DRINK -> R.string.recipe_kind_drink
+    com.junited31.leftovers.data.RecipeKind.SNACK -> R.string.recipe_kind_snack
+    com.junited31.leftovers.data.RecipeKind.DESSERT -> R.string.recipe_kind_dessert
+})
+
+@Composable
 private fun PantryForm(
     existingItem: PantryItemEntity?,
     modifier: Modifier,

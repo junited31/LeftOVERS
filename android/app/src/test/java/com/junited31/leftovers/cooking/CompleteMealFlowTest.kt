@@ -134,7 +134,11 @@ class CompleteMealFlowTest {
                 "recipe",
                 "Rice bowl",
                 PantryBindings(listOf(PantryBinding(riceId, 1, PantryUnit.GRAM, 5_000))),
-                RecipeSteps(listOf("Cook"), RecipePreferenceMetadata("Korean", "mix", setOf("Rice"))),
+                RecipeSteps(
+                    listOf("Cook"),
+                    RecipePreferenceMetadata("Korean", "mix", setOf("Rice")),
+                    com.junited31.leftovers.data.RecipeKind.MEAL,
+                ),
                 1,
             ),
         )

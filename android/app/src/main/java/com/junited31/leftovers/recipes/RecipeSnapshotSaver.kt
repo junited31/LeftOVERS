@@ -40,6 +40,7 @@ class RecipeSnapshotSaver(private val dao: RecipeSnapshotDao) {
                         primaryTechnique = candidate.primaryTechnique,
                         ingredientNames = RecipeFingerprint.candidateIngredientNames(candidate, pantryById).toSet(),
                     ),
+                    recipeKind = candidate.recipeKind,
                 ),
                 createdAtEpochMillis = nowEpochMillis,
             ),
