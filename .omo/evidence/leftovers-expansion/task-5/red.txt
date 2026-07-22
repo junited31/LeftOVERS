@@ -32,3 +32,9 @@ Harness stabilization before production edits:
 - HistoryScreenTest opens a teardown Activity only when setup/test failed before a scenario existed, so locale restoration can complete and the primary product failure is not masked.
 
 RED conclusion: tests compile and fail only because required RecipeKind domain, JSON, UI, persistence, and history behavior does not exist. Minimum GREEN may begin.
+
+Review-boundary RED after the initial GREEN:
+- Focused command: .\gradlew.bat :app:testDebugUnitTest --tests '*HistoryRepositoryTest.legacySnapshotDefaultsKindOnlyWhenKeyIsAbsent' --no-daemon --console=plain
+- Result before the decoder fix: exit 1; 1 test, 1 failure, 0 errors, 0 skipped.
+- Failure proof: the present empty-string recipeKind did not throw IllegalArgumentException; JSON null was included in the same boundary test.
+- Required behavior retained: only an absent legacy snapshot key defaults to Meal.

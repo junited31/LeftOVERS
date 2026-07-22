@@ -1,7 +1,7 @@
 Task 5 final GREEN
 Date: 2026-07-22 Asia/Seoul
-Code HEAD: 45513ce374d01cb566a4ae2e47d570cbacd33aeb
-Code tree: 483f9290211e1383480cabe38a088631aff977b3
+Code HEAD: 3fffb079db8f391a1fce50a46a8675b2368de148
+Code tree: 70a41f960dc7052fa60193273f7c3651d25b10c2
 Branch: feat/leftovers-mvp
 Device: R5CR91DXA8R (SM-F711N, API 35)
 
@@ -9,20 +9,24 @@ Exact acceptance command:
 Push-Location android; .\gradlew.bat :app:testDebugUnitTest --tests '*RecipeJsonTest' --tests '*RecipeSnapshotSaverTest' --tests '*HistoryRepositoryTest' --tests '*RecommendationRankerTest' :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.junited31.leftovers.ui.RecipeScreenTest,com.junited31.leftovers.history.HistoryScreenTest" --no-daemon --console=plain; if ($LASTEXITCODE) { exit $LASTEXITCODE }; Pop-Location
 
 Exact acceptance result: exit 0.
-- Focused unit XML: 4 suites, 34 tests, 0 failures, 0 errors, 0 skipped.
+- Focused unit XML: 4 suites, 35 tests, 0 failures, 0 errors, 0 skipped.
 - Connected XML: 1 suite, 12 tests, 0 failures, 0 errors, 0 skipped.
 
 Fresh full Android unit command:
 Push-Location android; .\gradlew.bat :app:testDebugUnitTest --rerun-tasks --no-daemon --console=plain; Pop-Location
 
-Fresh full unit result: exit 0; 14 suites, 89 tests, 0 failures, 0 errors, 0 skipped.
+Fresh full unit result: exit 0; 14 suites, 90 tests, 0 failures, 0 errors, 0 skipped.
 
 Build command:
 Push-Location android; .\gradlew.bat :app:assembleDebug :app:assembleRelease --no-daemon --console=plain; Pop-Location
 
 Build result: exit 0.
-- debug APK SHA-256: A9EEFFB271785F9387CDD87795E9E40F88670B2EFE0C0DEAA0A5308E0C211A3B
-- release unsigned APK SHA-256: B1036C8CA94AD897ABCC34AC4919707DFEEFCA7DFF4A501060F2EDC03FEF8F8B
+- debug APK SHA-256: 275D99CA1F5DBDD45E8FCE8756A38D94689B02EC98AEF45AD12F9F3DB409E11B
+- release unsigned APK SHA-256: C891D3308C3869EABFFFF489C27FB7AF6D09841FB258223D953BBCCE36170466
+
+Review-boundary verification:
+- A present empty-string or JSON-null local snapshot recipeKind is rejected.
+- Only a genuinely absent legacy snapshot recipeKind defaults to Meal.
 
 Invariance:
 - Room v1 before/after SHA-256: 89CD3EB32A260D928E4C8EB45224D6BF52E0BB0B3BD42DABBFA25F88EE4BB52E
