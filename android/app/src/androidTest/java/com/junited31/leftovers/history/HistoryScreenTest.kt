@@ -168,6 +168,7 @@ class HistoryScreenTest {
         assertEquals(path, runBlocking { database.mealLogDao().get("missing") }
             ?.recipeSnapshot?.feedback?.finalPhotoPath)
         capture("task-9-missing-photo.xml", xml = true)
+        capture("failure-missing.xml", xml = true)
     }
 
     @Test

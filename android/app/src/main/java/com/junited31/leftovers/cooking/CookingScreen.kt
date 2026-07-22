@@ -1,6 +1,7 @@
 package com.junited31.leftovers.cooking
 
 import android.net.Uri
+import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,11 +10,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.foundation.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -28,6 +31,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -78,6 +83,7 @@ fun CookingScreen(
     pantry: List<PantryItemEntity>,
     completionStore: MealCompletionStore,
     pickerFixture: () -> Uri?,
+    cameraFixture: (Uri) -> Boolean?,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -91,6 +97,7 @@ fun CookingScreen(
     var adviceCall by remember { mutableStateOf<PhotoAdviceCall?>(null) }
     var showCompletion by rememberSaveable { mutableStateOf(false) }
     var completedMealId by rememberSaveable { mutableStateOf<String?>(null) }
+    var completedPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     fun changeStep(load: suspend () -> ActiveCookingSession?) {
         photoEpoch.invalidate()
@@ -185,6 +192,9 @@ fun CookingScreen(
 
     val current = active
     completedMealId?.let {
+        val bitmap = remember(completedPhotoPath) {
+            completedPhotoPath?.let(BitmapFactory::decodeFile)?.asImageBitmap()
+        }
         Column(
             modifier.fillMaxSize().padding(20.dp)
                 .semantics { liveRegion = LiveRegionMode.Polite }
@@ -196,6 +206,14 @@ fun CookingScreen(
                 modifier = Modifier.semantics { heading() }.testTag("completion-success-title"),
             )
             Text(stringResource(R.string.cooking_complete_body))
+            bitmap?.let {
+                Image(
+                    bitmap = it,
+                    contentDescription = stringResource(R.string.final_photo_ready),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(200.dp).testTag("completion-success-photo"),
+                )
+            }
         }
         return
     }
@@ -213,8 +231,12 @@ fun CookingScreen(
             store = completionStore,
             photos = photos,
             pickerFixture = pickerFixture,
+            cameraFixture = cameraFixture,
             onCancel = { showCompletion = false },
-            onSuccess = { completedMealId = it },
+            onSuccess = {
+                completedMealId = it.mealLogId
+                completedPhotoPath = it.retainedPhotoPath
+            },
             modifier = modifier,
         )
         return

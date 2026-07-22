@@ -156,6 +156,8 @@
     <string name="meal_notes">식사 메모 (기기에만 저장)</string>
     <string name="final_photo_preparing">사진 준비 중…</string>
     <string name="choose_final_photo">완성 사진 선택 (선택)</string>
+    <string name="replace_final_photo">완성 사진 바꾸기</string>
+    <string name="remove_final_photo">완성 사진 삭제</string>
     <string name="final_photo_ready">완성 사진이 준비됐어요.</string>
     <string name="back">돌아가기</string>
     <string name="completion_error_input">사용량과 다음 추천량을 올바르게 입력해 주세요.</string>

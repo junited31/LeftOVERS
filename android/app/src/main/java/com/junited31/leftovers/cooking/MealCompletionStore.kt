@@ -4,6 +4,11 @@ import com.junited31.leftovers.data.CompleteCookSessionCommand
 import com.junited31.leftovers.data.CompletionResult
 import com.junited31.leftovers.data.InventoryCompletionDao
 import com.junited31.leftovers.photo.PhotoLifecycle
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 
 class MealCompletionStore(
     private val completion: InventoryCompletionDao,
@@ -13,20 +18,32 @@ class MealCompletionStore(
         command: CompleteCookSessionCommand,
         finalPhoto: PhotoLifecycle.ManagedPhoto?,
     ): CompletionResult {
-        var retainedPath: String? = null
         return try {
-            retainedPath = finalPhoto?.let { photos.retainFinal(it, command.mealLogId) }
-            val result = completion.complete(
-                command.copy(feedback = command.feedback.copy(finalPhotoPath = retainedPath)),
-            )
-            if (result !is CompletionResult.Success && retainedPath != null) {
-                photos.discardRetained(retainedPath)
+            currentCoroutineContext().ensureActive()
+            withContext(NonCancellable) {
+                var retainedPath: String? = null
+                try {
+                    retainedPath = finalPhoto?.let { photos.retainFinal(it, command.mealLogId) }
+                    when (val result = completion.complete(
+                        command.copy(feedback = command.feedback.copy(finalPhotoPath = retainedPath)),
+                    )) {
+                        is CompletionResult.Success -> {
+                            retainedPath?.let { check(photos.retainedExists(it)) }
+                            result.copy(retainedPhotoPath = retainedPath)
+                        }
+                        else -> {
+                            retainedPath?.let(photos::discardRetained)
+                            result
+                        }
+                    }
+                } catch (error: Exception) {
+                    retainedPath?.let(photos::discardRetained) ?: finalPhoto?.let(photos::discard)
+                    throw error
+                }
             }
-            result
-        } catch (error: Exception) {
-            if (retainedPath != null) photos.discardRetained(retainedPath)
+        } catch (cancelled: CancellationException) {
             finalPhoto?.let(photos::discard)
-            throw error
+            throw cancelled
         }
     }
 }

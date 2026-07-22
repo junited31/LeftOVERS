@@ -20,4 +20,6 @@ open class LeftoversApplication : Application() {
     )
 
     open fun consumePhotoPickerFixture(): Uri? = null
+
+    open fun captureCompletionPhotoFixture(output: Uri): Boolean? = null
 }

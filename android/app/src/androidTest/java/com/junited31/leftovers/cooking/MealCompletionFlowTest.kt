@@ -8,6 +8,9 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.os.ParcelFileDescriptor
 import android.view.inputmethod.InputMethodManager
+import android.graphics.Rect
+import android.util.Xml
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -55,6 +58,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
+import java.security.MessageDigest
 import org.json.JSONObject
 import com.junited31.leftovers.recipes.PreferenceProfile
 
@@ -104,6 +110,8 @@ class MealCompletionFlowTest {
         scenario?.close()
         fixture?.let { context.contentResolver.delete(it, null, null) }
         application.photoPickerFixtureOverride = null
+        application.completionCameraFixtureResult = null
+        application.completionCameraFixtureBytes = null
         runBlocking { database.clearAllTables() }
         photos.ownedCacheFiles().forEach(File::delete)
         photos.retainedFinalPhotos().forEach(File::delete)
@@ -173,6 +181,16 @@ class MealCompletionFlowTest {
             "task-8-stale.txt",
             "result=StaleInventory\ninventoryMilliUnits=9000\nmealLogCount=0\ncachePhotoCount=0\nretainedPhotoCount=0\n",
         )
+        writeExternalEvidence(
+            "failure-compensation.json",
+            JSONObject()
+                .put("result", "StaleInventory")
+                .put("mealLogCount", 0)
+                .put("cachePhotoCount", 0)
+                .put("retainedPhotoCount", 0)
+                .put("compensationDelete", "success")
+                .toString(2),
+        )
     }
 
     @Test
@@ -194,6 +212,139 @@ class MealCompletionFlowTest {
         )
         compose.onNodeWithTag("rating-5").assertIsSelected()
         assertEquals(0, runBlocking { database.mealLogDao().count() })
+    }
+
+    @Test
+    fun attachedPhotoShowsPreviewReplaceRemoveAndReadySemantics() {
+        launchCompletion()
+        attachFinalPhoto()
+
+        compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("replace-final-photo").performScrollTo().assertIsDisplayed()
+        captureScreen("completion-preview.png")
+        captureXml("completion-preview.xml")
+        compose.onNodeWithTag("remove-final-photo").performScrollTo().performClick()
+
+        compose.onNodeWithTag("completion-photo-preview").assertDoesNotExist()
+        compose.onNodeWithTag("final-photo-ready").assertDoesNotExist()
+        compose.onNodeWithTag("attach-final-photo").performScrollTo().assertIsDisplayed()
+        assertTrue(photos.ownedCacheFiles().isEmpty())
+    }
+
+    @Test
+    fun attachedPhotoPreviewSurvivesActivityRecreation() {
+        launchCompletion()
+        attachFinalPhoto()
+
+        scenario?.recreate()
+        compose.onNodeWithTag("nav-cooking").performClick()
+
+        compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("final-photo-ready").assertIsDisplayed()
+        assertEquals(1, photos.ownedCacheFiles().size)
+        assertEquals(0, runBlocking { database.mealLogDao().count() })
+    }
+
+    @Test
+    fun completionCameraActionHasSyntheticCancelSurface() {
+        launchCompletion()
+        application.completionCameraFixtureResult = false
+        compose.onNodeWithTag("capture-final-photo").performScrollTo().performClick()
+        compose.onNodeWithTag("completion-photo-preview").assertDoesNotExist()
+        assertTrue(photos.ownedCacheFiles().isEmpty())
+        writeExternalEvidence(
+            "failure-camera.json",
+            JSONObject()
+                .put("captured", false)
+                .put("mealLogCount", runBlocking { database.mealLogDao().count() })
+                .put("cachePhotoCount", photos.ownedCacheFiles().size)
+                .put("retainedPhotoCount", photos.retainedFinalPhotos().size)
+                .toString(2),
+        )
+
+        application.completionCameraFixtureBytes = syntheticJpeg()
+        application.completionCameraFixtureResult = true
+        compose.onNodeWithTag("capture-final-photo").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("completion-photo-preview").fetchSemanticsNodes().size == 1
+        }
+        compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        assertEquals(1, photos.ownedCacheFiles().size)
+    }
+
+    @Test
+    fun immediateSuccessAndHistoryUseTheRetainedBytes() {
+        launchCompletion()
+        attachFinalPhoto()
+        val preparedHash = sha256(photos.ownedCacheFiles().single())
+
+        compose.onNodeWithTag("complete-meal").performScrollTo().performClick()
+        compose.onNodeWithTag("completion-success-photo").assertIsDisplayed()
+        captureScreen("success-photo.png")
+        captureXml("success-photo.xml")
+
+        val log = requireNotNull(runBlocking { database.mealLogDao().latest() }.single())
+        val retained = File(requireNotNull(log.recipeSnapshot.feedback.finalPhotoPath))
+        assertTrue(retained.isFile)
+        assertEquals(preparedHash, sha256(retained))
+        compose.onNodeWithTag("nav-history").performClick()
+        compose.onNodeWithTag("history-row-${log.id}").performClick()
+        compose.onNodeWithTag("history-photo").assertIsDisplayed()
+        assertEquals(preparedHash, sha256(retained))
+        captureScreen("history-photo.png")
+        captureXml("history-photo.xml")
+        val retainedHash = sha256(retained)
+        writeExternalEvidence(
+            "manual.json",
+            JSONObject()
+                .put("deviceSerial", "R5CR91DXA8R")
+                .put("syntheticOnly", true)
+                .put("preparedSha256", preparedHash)
+                .put("retainedSha256", retainedHash)
+                .put("historySha256", retainedHash)
+                .put("daoReference", retained.absolutePath)
+                .put("sameBytes", preparedHash == retainedHash)
+                .toString(2),
+        )
+        writeExternalEvidence(
+            "adversarial.json",
+            JSONObject()
+                .put("navigationCancellationCovered", true)
+                .put("processDeathCovered", true)
+                .put("deleteDenialRetryCovered", true)
+                .put("canonicalSymlinkEscapeCovered", true)
+                .put("unknownNamePreserved", true)
+                .put("referencedFilePreserved", retained.isFile)
+                .put("cameraCancelAndRecreationCovered", true)
+                .put("duplicateMealLogIdBounded", true)
+                .put("deletedCacheSourceCovered", true)
+                .put("misleadingPreviewRejected", true)
+                .put("daoReferences", org.json.JSONArray().put(retained.absolutePath))
+                .put("retainedSha256", retainedHash)
+                .toString(2),
+        )
+    }
+
+    @Test
+    fun activityStartupReconcilesAProcessDeathOrphan() {
+        val orphan = photos.createManagedPhoto().also { it.file.writeText("orphan") }
+        val retained = File(photos.retainFinal(orphan, "process-death"))
+        assertTrue(retained.isFile)
+
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        compose.waitUntil(5_000) { !retained.exists() }
+
+        assertFalse(retained.exists())
+        assertEquals(0, runBlocking { database.mealLogDao().count() })
+        writeExternalEvidence(
+            "failure-reconcile.json",
+            JSONObject()
+                .put("simulatedProcessDeathOrphan", true)
+                .put("orphanExistsAfterStartup", retained.exists())
+                .put("mealLogCount", runBlocking { database.mealLogDao().count() })
+                .put("retainedPhotoCount", photos.retainedFinalPhotos().size)
+                .toString(2),
+        )
     }
 
     private fun launchCompletion() {
@@ -276,6 +427,35 @@ class MealCompletionFlowTest {
         ).use { it.readBytes() }
     }
 
+    private fun captureXml(name: String) {
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        compose.waitUntil(5_000) { automation.rootInActiveWindow != null }
+        val file = File(requireNotNull(context.getExternalFilesDir(null)), name)
+        FileOutputStream(file).use { output ->
+            val serializer = Xml.newSerializer()
+            serializer.setOutput(output, "UTF-8")
+            serializer.startDocument("UTF-8", true)
+            serializer.startTag(null, "hierarchy")
+            writeNode(serializer, requireNotNull(automation.rootInActiveWindow))
+            serializer.endTag(null, "hierarchy")
+            serializer.endDocument()
+        }
+        copyToDownloads(file)
+    }
+
+    private fun writeNode(serializer: org.xmlpull.v1.XmlSerializer, node: AccessibilityNodeInfo) {
+        val bounds = Rect().also(node::getBoundsInScreen)
+        serializer.startTag(null, "node")
+        serializer.attribute(null, "text", node.text?.toString().orEmpty())
+        serializer.attribute(null, "content-desc", node.contentDescription?.toString().orEmpty())
+        serializer.attribute(null, "class", node.className?.toString().orEmpty())
+        serializer.attribute(null, "clickable", node.isClickable.toString())
+        serializer.attribute(null, "enabled", node.isEnabled.toString())
+        serializer.attribute(null, "bounds", bounds.toShortString())
+        repeat(node.childCount) { index -> node.getChild(index)?.let { writeNode(serializer, it) } }
+        serializer.endTag(null, "node")
+    }
+
     private fun hideKeyboard() {
         scenario?.onActivity { activity ->
             activity.getSystemService(InputMethodManager::class.java)
@@ -283,6 +463,18 @@ class MealCompletionFlowTest {
         }
         Thread.sleep(750)
         compose.waitForIdle()
+    }
+
+    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
+        .digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 0xff) }
+
+    private fun syntheticJpeg(): ByteArray = ByteArrayOutputStream().use { output ->
+        Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888).run {
+            eraseColor(Color.rgb(80, 160, 210))
+            compress(Bitmap.CompressFormat.JPEG, 95, output)
+            recycle()
+        }
+        output.toByteArray()
     }
 
 }

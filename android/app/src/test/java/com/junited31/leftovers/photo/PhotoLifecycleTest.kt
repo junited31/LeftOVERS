@@ -22,10 +22,80 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.lang.reflect.Modifier
+import java.nio.file.Files
 import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 class PhotoLifecycleTest {
+    @Test
+    fun retainedPhotoReconciliationSurfaceExists() {
+        assertTrue(
+            PhotoLifecycle::class.java.methods.any {
+                it.name == "reconcileRetained" && it.parameterCount == 1
+            },
+        )
+    }
+
+    @Test
+    fun retainedDeleteCanBeMadeDeterministicallyRetryable() {
+        assertTrue(
+            PhotoLifecycle::class.java.declaredConstructors.any { constructor ->
+                constructor.parameterTypes.size == 2 &&
+                    kotlin.jvm.functions.Function1::class.java.isAssignableFrom(constructor.parameterTypes[1])
+            },
+        )
+    }
+
+    @Test
+    fun startupReconciliationDeletesOnlyUnreferencedExactManagedChildren() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val referenced = retained(lifecycle, "referenced")
+        val orphan = retained(lifecycle, "orphan")
+        val unknown = File(orphan.parentFile, "leftovers-final-unknown.jpg").apply { writeText("keep") }
+        val outside = File(context.filesDir, "leftovers-final-outside.jpg").apply { writeText("outside") }
+
+        val deleted = reconcile(lifecycle, listOf(referenced.absolutePath, outside.absolutePath))
+
+        assertEquals(1, deleted)
+        assertTrue(referenced.exists())
+        assertFalse(orphan.exists())
+        assertTrue(unknown.exists())
+        assertTrue(outside.exists())
+        referenced.delete()
+        unknown.delete()
+        outside.delete()
+    }
+
+    @Test
+    fun startupReconciliationPreservesCanonicalEscapeSymlink() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val lifecycle = PhotoLifecycle(context)
+        val directory = retained(lifecycle, "directory").also(File::delete).parentFile
+        val outside = File(context.filesDir, "outside-target.jpg").apply { writeText("outside") }
+        val link = File(directory, "leftovers-final-${"a".repeat(64)}.jpg")
+        val linked = runCatching { Files.createSymbolicLink(link.toPath(), outside.toPath()) }.isSuccess
+
+        reconcile(lifecycle, emptyList())
+
+        assertTrue(outside.exists())
+        if (linked) assertTrue(Files.isSymbolicLink(link.toPath()))
+        Files.deleteIfExists(link.toPath())
+        outside.delete()
+    }
+
+    @Test
+    fun failedOrphanDeleteRemainsForNextStartupRetry() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val orphan = retained(PhotoLifecycle(context), "retry")
+        val denied = lifecycleWithDelete(context) { false }
+
+        assertEquals(0, reconcile(denied, emptyList()))
+        assertTrue(orphan.exists())
+        assertEquals(1, reconcile(PhotoLifecycle(context), emptyList()))
+        assertFalse(orphan.exists())
+    }
+
     @Test
     fun camera_compression_surface_never_deletes_foreign_file() {
         // Given
@@ -270,6 +340,30 @@ class PhotoLifecycleTest {
         }
     }
 
+}
+
+private fun retained(lifecycle: PhotoLifecycle, id: String): File {
+    val photo = lifecycle.createManagedPhoto().also { it.file.writeText(id) }
+    return File(lifecycle.retainFinal(photo, id))
+}
+
+private fun reconcile(lifecycle: PhotoLifecycle, references: Collection<String>): Int {
+    val method = PhotoLifecycle::class.java.methods.singleOrNull {
+        it.name == "reconcileRetained" && it.parameterCount == 1
+    } ?: throw AssertionError("PhotoLifecycle.reconcileRetained is missing")
+    return method.invoke(lifecycle, references) as Int
+}
+
+private fun lifecycleWithDelete(
+    context: android.content.Context,
+    delete: (File) -> Boolean,
+): PhotoLifecycle {
+    val constructor = PhotoLifecycle::class.java.declaredConstructors.singleOrNull {
+        it.parameterTypes.size == 2 &&
+            kotlin.jvm.functions.Function1::class.java.isAssignableFrom(it.parameterTypes[1])
+    } ?: throw AssertionError("PhotoLifecycle retained-delete seam is missing")
+    constructor.isAccessible = true
+    return constructor.newInstance(context, delete) as PhotoLifecycle
 }
 
 private class UnknownLengthProvider(private val source: File) : ContentProvider() {

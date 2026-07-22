@@ -85,6 +85,8 @@ import com.junited31.leftovers.history.HistoryScreen
 import com.junited31.leftovers.recipes.RecipeScreen
 import com.junited31.leftovers.photo.PhotoLifecycle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.lifecycleScope
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
@@ -96,6 +98,12 @@ class MainActivity : AppCompatActivity() {
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
         }
         val database = LeftoversDatabase.get(applicationContext)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val references = database.mealLogDao().latest().mapNotNull {
+                it.recipeSnapshot.feedback.finalPhotoPath
+            }
+            PhotoLifecycle(applicationContext).reconcileRetained(references)
+        }
         val recipeApiProvider = { (application as LeftoversApplication).createRecipeApi() }
         setContent {
             LeftoversApp(
@@ -108,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                 applicationContext.leftoversDataStore,
                 recipeApiProvider,
                 (application as LeftoversApplication)::consumePhotoPickerFixture,
+                (application as LeftoversApplication)::captureCompletionPhotoFixture,
             )
         }
     }
@@ -141,6 +150,7 @@ private fun LeftoversApp(
     dataStore: DataStore<Preferences>,
     recipeApiProvider: () -> com.junited31.leftovers.network.LeftoversApi,
     pickerFixture: () -> android.net.Uri?,
+    cameraFixture: (android.net.Uri) -> Boolean?,
 ) {
     val pantryItems by pantryDao.observeAll().collectAsState(initial = emptyList())
     val preferences by dataStore.data.collectAsState(initial = null)
@@ -306,6 +316,7 @@ private fun LeftoversApp(
                         pantry = pantryItems,
                         completionStore = remember(photos) { MealCompletionStore(completionDao, photos) },
                         pickerFixture = pickerFixture,
+                        cameraFixture = cameraFixture,
                         modifier = Modifier.padding(padding),
                     )
                 }

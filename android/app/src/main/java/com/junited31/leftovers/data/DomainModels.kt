@@ -113,7 +113,7 @@ data class CompleteCookSessionCommand(
 )
 
 sealed interface CompletionResult {
-    data class Success(val mealLogId: String) : CompletionResult
+    data class Success(val mealLogId: String, val retainedPhotoPath: String? = null) : CompletionResult
     data class DuplicateInventoryId(val pantryItemId: PantryItemId) : CompletionResult
     data class UnknownInventory(val pantryItemId: PantryItemId) : CompletionResult
     data class InventoryNotBound(val pantryItemId: PantryItemId) : CompletionResult

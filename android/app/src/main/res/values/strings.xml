@@ -156,6 +156,8 @@
     <string name="meal_notes">Meal notes (saved only on this device)</string>
     <string name="final_photo_preparing">Preparing photo…</string>
     <string name="choose_final_photo">Choose final photo (optional)</string>
+    <string name="replace_final_photo">Replace final photo</string>
+    <string name="remove_final_photo">Remove final photo</string>
     <string name="final_photo_ready">Final photo ready.</string>
     <string name="back">Back</string>
     <string name="completion_error_input">Enter the used and recommended amounts correctly.</string>

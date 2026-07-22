@@ -13,6 +13,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.time.Duration
 import java.security.MessageDigest
+import java.nio.file.Files
 import java.util.Locale
 
 object PhotoContracts {
@@ -20,7 +21,10 @@ object PhotoContracts {
     val takePicture = ActivityResultContracts.TakePicture()
 }
 
-class PhotoLifecycle(private val context: Context) {
+class PhotoLifecycle internal constructor(
+    private val context: Context,
+    private val deleteRetainedFile: (File) -> Boolean = File::delete,
+) {
     private val cacheDirectory = File(context.cacheDir, CACHE_DIRECTORY).apply { mkdirs() }
     private val finalPhotoDirectory = File(context.filesDir, FINAL_DIRECTORY).apply { mkdirs() }
 
@@ -45,10 +49,17 @@ class PhotoLifecycle(private val context: Context) {
                 File.createTempFile(CACHE_PREFIX, ".jpg", lifecycle.cacheDirectory),
                 lifecycle.cacheDirectory,
             )
+
+            fun restore(lifecycle: PhotoLifecycle, file: File): ManagedPhoto =
+                ManagedPhoto(file, lifecycle.cacheDirectory)
         }
     }
 
     fun createManagedPhoto(): ManagedPhoto = ManagedPhoto.create(this)
+
+    fun restoreManagedPhoto(path: String): ManagedPhoto? = ownedFile(File(path))?.let {
+        ManagedPhoto.restore(this, it)
+    }
 
     fun discard(photo: ManagedPhoto) = photo.delete()
 
@@ -66,10 +77,29 @@ class PhotoLifecycle(private val context: Context) {
     }
 
     fun discardRetained(path: String) {
-        ownedFinalFile(File(path))?.delete()
+        ownedFinalFile(File(path))?.let(deleteRetainedFile)
     }
 
     fun retainedFinalPhotos(): List<File> = finalPhotoDirectory.listFiles()?.mapNotNull(::ownedFinalFile).orEmpty()
+
+    fun retainedExists(path: String): Boolean = ownedFinalFile(File(path)) != null
+
+    fun reconcileRetained(referencePaths: Collection<String>): Int {
+        val references = referencePaths.mapNotNull { path ->
+            runCatching { File(path).canonicalFile }.getOrNull()
+        }.toSet()
+        val directory = finalPhotoDirectory.canonicalFile
+        return directory.listFiles().orEmpty().count { file ->
+            val candidate = runCatching { file.canonicalFile }.getOrNull()
+            candidate != null &&
+                !Files.isSymbolicLink(file.toPath()) &&
+                candidate.isFile &&
+                candidate.parentFile == directory &&
+                FINAL_NAME.matches(candidate.name) &&
+                candidate !in references &&
+                deleteRetainedFile(candidate)
+        }
+    }
 
     fun fileProviderUri(photo: ManagedPhoto): Uri = FileProvider.getUriForFile(
         context,
@@ -163,9 +193,10 @@ class PhotoLifecycle(private val context: Context) {
     private fun ownedFinalFile(file: File): File? {
         val candidate = file.canonicalFile
         return candidate.takeIf {
+            !Files.isSymbolicLink(file.toPath()) &&
             candidate.isFile &&
                 candidate.parentFile == finalPhotoDirectory.canonicalFile &&
-                candidate.name.startsWith(FINAL_PREFIX)
+                FINAL_NAME.matches(candidate.name)
         }
     }
 
@@ -243,6 +274,7 @@ class PhotoLifecycle(private val context: Context) {
         private const val CACHE_DIRECTORY = "leftovers-photos"
         private const val FINAL_DIRECTORY = "leftovers-final-photos"
         private const val FINAL_PREFIX = "leftovers-final-"
+        private val FINAL_NAME = Regex("${FINAL_PREFIX}[0-9a-f]{64}\\.jpg")
         private val MAX_CACHE_AGE = Duration.ofHours(24)
     }
 }

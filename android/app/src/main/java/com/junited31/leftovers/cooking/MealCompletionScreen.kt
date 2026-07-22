@@ -1,6 +1,7 @@
 package com.junited31.leftovers.cooking
 
 import android.net.Uri
+import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -18,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -33,6 +36,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -57,6 +62,7 @@ import com.junited31.leftovers.photo.PhotoContracts
 import com.junited31.leftovers.photo.PhotoLifecycle
 import com.junited31.leftovers.photo.PhotoTooLargeException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
@@ -69,8 +75,9 @@ internal fun MealCompletionForm(
     store: MealCompletionStore,
     photos: PhotoLifecycle,
     pickerFixture: () -> Uri?,
+    cameraFixture: (Uri) -> Boolean?,
     onCancel: () -> Unit,
-    onSuccess: (String) -> Unit,
+    onSuccess: (CompletionResult.Success) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val bindings = active.recipe.pantryBindings.values
@@ -84,7 +91,8 @@ internal fun MealCompletionForm(
     var rating by rememberSaveable(active.session.id) { mutableStateOf(3) }
     var notes by rememberSaveable(active.session.id) { mutableStateOf("") }
     var recommendAgain by rememberSaveable(active.session.id) { mutableStateOf(true) }
-    var finalPhoto by remember(active.session.id) { mutableStateOf<PhotoLifecycle.ManagedPhoto?>(null) }
+    var finalPhotoPath by rememberSaveable(active.session.id) { mutableStateOf<String?>(null) }
+    var cameraInputPath by rememberSaveable(active.session.id) { mutableStateOf<String?>(null) }
     var photoPreparing by remember(active.session.id) { mutableStateOf(false) }
     var submitting by remember(active.session.id) { mutableStateOf(false) }
     var error by remember(active.session.id) { mutableStateOf<Int?>(null) }
@@ -95,8 +103,8 @@ internal fun MealCompletionForm(
         scope.launch {
             try {
                 val prepared = withContext(Dispatchers.IO) { photos.compress(uri) }
-                finalPhoto?.let(photos::discard)
-                finalPhoto = prepared
+                finalPhotoPath?.let(photos::restoreManagedPhoto)?.let(photos::discard)
+                finalPhotoPath = prepared.file.absolutePath
             } catch (_: InvalidPhotoException) {
                 error = R.string.error_photo_read
             } catch (_: PhotoTooLargeException) {
@@ -108,8 +116,33 @@ internal fun MealCompletionForm(
     }
 
     val picker = rememberLauncherForActivityResult(PhotoContracts.pick) { uri -> uri?.let(::attach) }
-    DisposableEffect(Unit) {
-        onDispose { finalPhoto?.let(photos::discard) }
+    fun cameraResult(captured: Boolean) {
+        val input = cameraInputPath?.let(photos::restoreManagedPhoto)
+        cameraInputPath = null
+        if (!captured || input == null) {
+            input?.let(photos::discard)
+            return
+        }
+        photoPreparing = true
+        error = null
+        scope.launch {
+            try {
+                val prepared = withContext(Dispatchers.IO) { photos.compressCamera(input) }
+                finalPhotoPath?.let(photos::restoreManagedPhoto)?.let(photos::discard)
+                finalPhotoPath = prepared.file.absolutePath
+            } catch (_: InvalidPhotoException) {
+                error = R.string.error_photo_read
+            } catch (_: PhotoTooLargeException) {
+                error = R.string.error_photo_large
+            } finally {
+                photoPreparing = false
+            }
+        }
+    }
+    val camera = rememberLauncherForActivityResult(PhotoContracts.takePicture, ::cameraResult)
+    val finalPhoto = finalPhotoPath?.let(photos::restoreManagedPhoto)
+    val preview = remember(finalPhotoPath) {
+        finalPhoto?.file?.path?.let(BitmapFactory::decodeFile)?.asImageBitmap()
     }
 
     Column(
@@ -196,11 +229,43 @@ internal fun MealCompletionForm(
                 )
             },
             enabled = !photoPreparing && !submitting,
-            modifier = Modifier.fillMaxWidth().testTag("attach-final-photo"),
+            modifier = Modifier.fillMaxWidth().testTag(
+                if (finalPhoto == null) "attach-final-photo" else "replace-final-photo",
+            ),
         ) {
-            Text(stringResource(if (photoPreparing) R.string.final_photo_preparing else R.string.choose_final_photo))
+            Text(stringResource(when {
+                photoPreparing -> R.string.final_photo_preparing
+                finalPhoto != null -> R.string.replace_final_photo
+                else -> R.string.choose_final_photo
+            }))
         }
-        if (finalPhoto != null) Text(stringResource(R.string.final_photo_ready), modifier = Modifier.testTag("final-photo-ready"))
+        OutlinedButton(
+            onClick = {
+                val input = photos.createManagedPhoto()
+                cameraInputPath = input.file.absolutePath
+                val uri = photos.fileProviderUri(input)
+                cameraFixture(uri)?.let(::cameraResult) ?: camera.launch(uri)
+            },
+            enabled = !photoPreparing && !submitting,
+            modifier = Modifier.fillMaxWidth().testTag("capture-final-photo"),
+        ) { Text(stringResource(R.string.camera)) }
+        if (preview != null) {
+            Image(
+                bitmap = preview,
+                contentDescription = stringResource(R.string.final_photo_ready),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().height(200.dp).testTag("completion-photo-preview"),
+            )
+            Text(stringResource(R.string.final_photo_ready), modifier = Modifier.testTag("final-photo-ready"))
+            OutlinedButton(
+                onClick = {
+                    finalPhoto?.let(photos::discard)
+                    finalPhotoPath = null
+                },
+                enabled = !submitting,
+                modifier = Modifier.fillMaxWidth().testTag("remove-final-photo"),
+            ) { Text(stringResource(R.string.remove_final_photo)) }
+        }
         error?.let {
             Text(
                 stringResource(it),
@@ -210,7 +275,13 @@ internal fun MealCompletionForm(
             )
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onCancel, enabled = !submitting, modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = {
+                finalPhoto?.let(photos::discard)
+                cameraInputPath?.let(photos::restoreManagedPhoto)?.let(photos::discard)
+                finalPhotoPath = null
+                cameraInputPath = null
+                onCancel()
+            }, enabled = !submitting, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.back))
             }
             Button(
@@ -268,17 +339,19 @@ internal fun MealCompletionForm(
                     )
                     submitting = true
                     error = null
+                    val submittedPhoto = finalPhoto
+                    finalPhotoPath = null
                     scope.launch {
                         try {
-                            val result = withContext(Dispatchers.IO) { store.complete(command, finalPhoto) }
-                            finalPhoto = null
+                            val result = withContext(Dispatchers.IO) { store.complete(command, submittedPhoto) }
                             if (result is CompletionResult.Success) {
-                                onSuccess(result.mealLogId)
+                                onSuccess(result)
                             } else {
                                 error = result.messageRes()
                             }
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
                         } catch (_: Exception) {
-                            finalPhoto = null
                             error = R.string.completion_error_save
                         } finally {
                             submitting = false
