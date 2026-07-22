@@ -1,0 +1,8 @@
+Task 8 GREEN
+implementation_base=287e0909bff3b1533b052715e6c8cb8fecb5e370
+command=backend/.venv/Scripts/python.exe -m unittest scripts.tests.test_verify_submission scripts.tests.test_media_probe
+exit_code=0
+result=Ran 44 tests; OK
+fixture=complete strict schema-v2 source, 11-state visual, and canonical artifact matrix
+production_command=covered by disposable Git repository; source/visual/artifact issues 0; lowercase digest returned
+secrets_or_user_data=none

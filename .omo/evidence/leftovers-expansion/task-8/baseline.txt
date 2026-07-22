@@ -1,0 +1,10 @@
+Task 8 baseline
+source_checkpoint=287e0909bff3b1533b052715e6c8cb8fecb5e370
+command=backend/.venv/Scripts/python.exe -m unittest scripts.tests.test_verify_submission scripts.tests.test_media_probe
+exit_code=0
+result=Ran 22 tests; OK
+
+command=backend/.venv/Scripts/python.exe scripts/verify_submission.py --record scripts/tests/fixtures/submission_draft.json
+exit_code=1
+result=13 expected pending-publication issues; no traceback
+characterization=SubmissionRecord was a dataclass without schema_version/publication_source_sha; ReleaseProof and MediaEvidence accepted only schema v1; no expansion visual or artifact validator existed.

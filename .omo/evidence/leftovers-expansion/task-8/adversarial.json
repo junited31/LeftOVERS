@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "classes": {
+    "sha_self_reference": "source commit precedes strict records and source drift is fail-closed",
+    "artifact_self_reference": "self-entry and self-digest rejected",
+    "schema_downgrade_and_coercion": "v1 missing extra integer bytes and boolean inputs rejected",
+    "ancestry_and_drift": "nonancestor dirty forbidden and allowed-prefix confusion rejected",
+    "path_escape": "traversal absolute drive UNC backslash symlink and case-fold reuse rejected",
+    "visual_laundering": "state capture binding device locale run timestamp PNG XML dimensions and hashes rejected",
+    "stale_artifacts": "pre-window capture and changed APK media-like evidence rejected",
+    "canonical_record": "closure order bytes newline and self-reference rejected",
+    "privacy_overclaim": "active docs distinguish application non-persistence from provider controls and store=false",
+    "identifier_leakage": "no secret billing credit user-data request-body or absolute-user path recorded"
+  },
+  "historical_evidence_selected_as_active": false
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "disposable_temp_repositories_remaining": 0,
+  "task_processes_remaining": 0,
+  "device_or_cloud_operations_run": 0,
+  "historical_evidence_deleted_or_modified": 0,
+  "parent_worktree_opened_scanned_or_staged": false,
+  "absolute_local_user_paths_recorded": false
+}

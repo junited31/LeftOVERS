@@ -1,0 +1,8 @@
+Task 8 RED
+source_checkpoint=287e0909bff3b1533b052715e6c8cb8fecb5e370
+command=backend/.venv/Scripts/python.exe -m unittest scripts.tests.test_verify_submission scripts.tests.test_media_probe
+exit_code=1
+result=Ran 40 tests; FAILED (errors=69)
+expected_failure_reasons=SubmissionRecord has no model_validate strict-v2 surface; ReleaseProof and MediaEvidence reject v2; validate_publication_source is absent; validate_expansion_visual_evidence is absent; validate_expansion_artifact_manifest is absent.
+matrix=missing/v1/extra/coerced records; missing/nonexistent/nonancestor/mismatched source; dirty/source drift/exact allowlist; 11-state and step-4 structure; path/PNG/XML/binding/time safety; artifact closure/order/hash/canonical bytes/self-entry/self-digest.
+secrets_or_user_data=none

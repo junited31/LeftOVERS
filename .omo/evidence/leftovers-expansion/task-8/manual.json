@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "implementation_base": "287e0909bff3b1533b052715e6c8cb8fecb5e370",
+  "status": "PASS",
+  "documents_read_end_to_end": [
+    "README.md",
+    "docs/privacy.md",
+    "docs/submission.md",
+    "docs/demo-script.md",
+    "docs/asset-provenance.md"
+  ],
+  "section_sha256": {
+    "README.md": "a4559c82c2d88b3329af11cb83bd5bbacb9ee6eba76172eecaab0a1b3e4f3c3f",
+    "docs/privacy.md": "46fab02bb2fb8190aa174a466cc1be967e6bdae857bd152af8b4e433c0f723e0",
+    "docs/submission.md": "c38ae0d26e09d943d04b2e7038fb3310bc90ca9c9fe6891f845af506835b0a13",
+    "docs/demo-script.md": "a1127cc40562ebfc55fd95684e0fa8daa2ccb71607b80eae488c8e2722474ffb",
+    "docs/asset-provenance.md": "340694235b88e2d1018c05fa8bcbe977fb280cd72502e073fd99ea5f6d292a18"
+  },
+  "synthetic_fixture": {
+    "visual_issues": 0,
+    "artifact_issues": 0,
+    "artifact_record_digest": "de875bf56c387060613d9ee3815115478a87520e1048fd92003c00df90d7f323"
+  },
+  "sensitive_text_copied": false
+}

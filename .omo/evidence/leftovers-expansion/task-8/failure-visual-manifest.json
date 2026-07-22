@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "expected_rejections": [
+    "missing extra reordered or duplicate state",
+    "step-4 missing reversed extra or duplicate subcapture",
+    "absolute drive UNC backslash empty dot parent case-fold duplicate and symlink path",
+    "missing PNG or XML",
+    "PNG signature IHDR width height hash and reused hash",
+    "XML malformed empty wrong-state hash and reused hash",
+    "source APK device locale run state and timestamp mismatch",
+    "pre-window stale and decreasing timestamp"
+  ],
+  "complete_fixture": "11 ordered states and 12 capture pairs accepted",
+  "fixture_uses_real_png_ihdr_and_parseable_xml": true
+}
