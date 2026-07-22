@@ -1,0 +1,6 @@
+Task 7 targeted RED
+Command: rtk proxy backend\.venv\Scripts\python.exe -m pytest -q backend\tests\test_gemini_client.py
+Result: exit 1; 24 failed in 0.82s
+Expected cause: Gemini adapter/request budget/lifespan seam and google-genai pin do not exist yet.
+Representative failures: ImportError app.gemini_client; missing cached_ai_adapter; missing google-genai==2.12.1.
+Network/provider/cloud calls: 0 (failures occurred before any transport could be constructed).

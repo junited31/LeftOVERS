@@ -1,0 +1,25 @@
+{
+  "commandResult": "19 passed, 12 deselected",
+  "transport": "injected fake only",
+  "outboundDnsHttp": 0,
+  "transient": {
+    "classes": ["httpx.TimeoutException", "httpx.ConnectError", "APIError:429", "APIError:500", "APIError:503"],
+    "delaysSeconds": [0.25, 0.5],
+    "thirdTransientUsesFallbackOnce": true
+  },
+  "nonTransient": {
+    "classes": ["APIError:400", "APIError:401", "APIError:403", "APIError:404", "config", "safety"],
+    "fallbackCalls": 0,
+    "typedHttpStatus": 502
+  },
+  "schemaAndDomain": {
+    "threeInvalidPrimaryOutputs": {"primaryCalls": 3, "fallbackCalls": 0, "typedHttpStatus": 422},
+    "fallbackInvalidThenPrimaryRepair": {"models": ["primary", "primary-retry", "primary-retry", "fallback", "primary"], "fallbackCalls": 1},
+    "fallbackInvalidThenTwoInvalidPrimary": {"ordinaryPrimaryCalls": 3, "extraPrimaryCalls": 2, "fallbackCalls": 1, "providerCalls": 6, "typedHttpStatus": 422}
+  },
+  "terminal": {
+    "fallbackTransportErrorMakesFurtherCalls": 0,
+    "cancellationReraised": true
+  },
+  "quotaPerAdmittedHttpRequest": 1
+}

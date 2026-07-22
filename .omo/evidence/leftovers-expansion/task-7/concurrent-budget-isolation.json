@@ -1,0 +1,20 @@
+{
+  "commandResult": "2 passed, 29 deselected",
+  "requests": "byte-identical",
+  "forcedInterleaving": true,
+  "outboundDnsHttp": 0,
+  "requestA": {
+    "delaysSeconds": [0.25, 0.5],
+    "primaryCalls": 3,
+    "fallbackCalls": 1
+  },
+  "requestB": {
+    "delaysSeconds": [0.25, 0.5],
+    "primaryCalls": 3,
+    "fallbackCalls": 0
+  },
+  "distinctImmutableBudgetLineages": true,
+  "cancelledRequestChangedSurvivorCounters": false,
+  "adapterBudgetAttributes": 0,
+  "transportBudgetAttributes": 0
+}

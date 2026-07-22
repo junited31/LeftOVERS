@@ -1,0 +1,34 @@
+{
+  "commandResult": "3 passed, 28 deselected",
+  "transport": "injected fake only",
+  "outboundDnsHttp": 0,
+  "cases": [
+    {
+      "route": "recipes",
+      "locale": "en",
+      "recipeKind": "meal",
+      "httpStatus": 200,
+      "primaryCalls": 1,
+      "fallbackCalls": 0,
+      "quotaCalls": 1
+    },
+    {
+      "route": "recipes",
+      "locale": "ko",
+      "recipeKind": "dessert",
+      "httpStatus": 200,
+      "primaryCalls": 1,
+      "fallbackCalls": 0,
+      "quotaCalls": 1
+    },
+    {
+      "route": "advice",
+      "mimeType": "image/png",
+      "syntheticBytesForwarded": true,
+      "httpStatus": 200,
+      "primaryCalls": 1,
+      "fallbackCalls": 0,
+      "quotaCalls": 1
+    }
+  ]
+}

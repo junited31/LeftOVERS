@@ -1,0 +1,5 @@
+Task 7 redacted logging check
+Command result: 2 passed, 35 deselected
+Observed application log shape: request_completed method=<method> path=<route> status=<code>
+Bearer, request JSON, image bytes, pantry/user data, provider error text: absent
+Outbound DNS/HTTP: 0

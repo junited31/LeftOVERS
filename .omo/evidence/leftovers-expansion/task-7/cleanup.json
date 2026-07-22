@@ -1,0 +1,13 @@
+{
+  "testClientsClosed": true,
+  "lifespanClosedAsyncClient": true,
+  "lifespanClosedSyncClient": true,
+  "dependencyOverridesCleared": true,
+  "capturedLogsReleasedByPytest": true,
+  "uvicornProcessesStarted": 0,
+  "syntheticTempImagesCreated": 0,
+  "portsAllocated": 0,
+  "outboundDnsHttp": 0,
+  "cloudCommands": 0,
+  "userPhotosTouched": 0
+}

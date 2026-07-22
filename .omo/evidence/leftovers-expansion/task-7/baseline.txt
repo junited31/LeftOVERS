@@ -1,0 +1,4 @@
+Task 7 backend baseline
+Command: rtk proxy backend\.venv\Scripts\python.exe -m pytest -q backend\tests
+Result: exit 0; 75 passed in 1.48s
+Network/provider/cloud calls: 0 (local suite only)

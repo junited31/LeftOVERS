@@ -1,0 +1,33 @@
+{
+  "commandResult": "8 passed, 23 deselected",
+  "sourceInspection": {
+    "mutableGlobalBudget": false,
+    "closureBudget": false,
+    "contextVarBudget": false,
+    "threadLocalBudget": false,
+    "requestBodyBudgetKey": false
+  },
+  "caps": {
+    "schemaSlots": 3,
+    "ordinaryPrimary": 3,
+    "extraTransientPrimary": 2,
+    "primaryTotal": 5,
+    "fallback": 1,
+    "providerTotal": 6
+  },
+  "sdk": {
+    "vertexai": true,
+    "project": "leftovers-019f706b",
+    "location": "global",
+    "apiKeyArgument": false,
+    "apiVersion": "v1",
+    "sdkAttempts": 1,
+    "responseMimeType": "application/json",
+    "aliasSchema": true,
+    "bytePart": true,
+    "asyncAndSyncClose": true
+  },
+  "fallbackOnSafety": false,
+  "moreThanSixProviderCallsPossible": false,
+  "outboundDnsHttp": 0
+}
