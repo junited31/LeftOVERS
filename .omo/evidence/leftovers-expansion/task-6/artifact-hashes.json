@@ -23,9 +23,10 @@
       "sha256": "2da937073f2de78590ebfa40c403b4baf28236abb14d93926d49a5f87a20ea45"
     }
   },
-  "acceptanceXml": {
-    "CompleteMealFlowTest": {"tests": 19, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f07bb6f5c998058dd922ab764381b16d86aa0ecf1319fdb2372934503f3624f4"},
-    "PhotoLifecycleTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f31ea37f1408eee7e45cfea0d478e5104b83e5bf56d33e6fba698c5e96d37f44"},
+  "acceptanceRunRecordedXml": {
+    "provenance": "Hashes captured immediately after the exact acceptance run and retained in acceptance.txt; later full-unit runs overwrite mutable build-result XML.",
+    "CompleteMealFlowTest": {"tests": 19, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f2fed9c8530786acfed7169ccfed319f3df49070b0743d83ccd9384f381fd99a"},
+    "PhotoLifecycleTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f62ecde7f07cf034d19af81a8a016d0cba2a280d8258bb975d85aad21d4d0a6f"},
     "connected": {"MealCompletionFlowTest": 8, "HistoryScreenTest": 6, "tests": 14, "failures": 0, "errors": 0, "skipped": 0, "sha256": "ca5530ef662e6125e72f74ef25d878797c3adb87c9a57fb76a52ab1844ce0cf1"}
   },
   "captures": {
