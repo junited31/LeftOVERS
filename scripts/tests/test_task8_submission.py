@@ -440,6 +440,19 @@ class Task8RecordAndSourceTest(unittest.TestCase):
                 self.assertIn(f"publication_source_sha.{relative}", fields)
         self.assertNotIn(f"publication_source_sha.{allowed}", fields)
 
+    def test_rename_from_forbidden_source_into_allowed_evidence_cannot_hide_deletion(self) -> None:
+        temp, root, source = self._repo()
+        self.addCleanup(temp.cleanup)
+        allowed = root / ".omo/evidence/leftovers-expansion/task-8/renamed-readme.md"
+        allowed.parent.mkdir(parents=True)
+        (root / "README.md").rename(allowed)
+        git(root, "add", "README.md", ".omo/evidence/leftovers-expansion/task-8/renamed-readme.md")
+        git(root, "commit", "--quiet", "-m", "rename attack")
+
+        issues = validation.validate_publication_source(self._records(source), root)
+
+        self.assertIn("publication_source_sha.README.md", {issue.field for issue in issues})
+
 
 @final
 class Task8DocsContractTest(unittest.TestCase):

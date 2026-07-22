@@ -304,7 +304,7 @@ def validate_publication_source(
     if ancestor.returncode != 0:
         issues.append(Issue("publication_source_sha", "commit must be an ancestor of current HEAD"))
         return tuple(issues)
-    changed = _git(root, "diff", "--name-only", "-z", source_sha, "HEAD", "--")
+    changed = _git(root, "diff", "--no-renames", "--name-only", "-z", source_sha, "HEAD", "--")
     if changed.returncode != 0:
         issues.append(Issue("publication_source_sha", "could not compare source bytes with current HEAD"))
         return tuple(issues)

@@ -14,7 +14,8 @@
     "Android and backend source drift",
     "README and verifier drift",
     "expansion plan draft and test-fixture drift",
-    "unnamed or lookalike .omo and dist drift"
+    "unnamed or lookalike .omo and dist drift",
+    "rename of forbidden source bytes into an allowed evidence path"
   ],
   "simultaneous_allowed_evidence_and_source_drift": "forbidden source path was still named",
   "allowed_evidence_masked_failure": false,
