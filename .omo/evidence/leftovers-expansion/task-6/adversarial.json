@@ -1,0 +1,16 @@
+{
+  "navigationCancellationCovered": true,
+  "processDeathCovered": true,
+  "deleteDenialRetryCovered": true,
+  "canonicalSymlinkEscapeCovered": true,
+  "unknownNamePreserved": true,
+  "referencedFilePreserved": true,
+  "cameraCancelAndRecreationCovered": true,
+  "duplicateMealLogIdBounded": true,
+  "deletedCacheSourceCovered": true,
+  "misleadingPreviewRejected": true,
+  "daoReferences": [
+    "\/data\/user\/0\/com.junited31.leftovers\/files\/leftovers-final-photos\/leftovers-final-bbc57cbd5e8f3fc01a4b2b7c25e19a74b48eea252b8e95a6b12546dc62d6c4c7.jpg"
+  ],
+  "retainedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0"
+}
