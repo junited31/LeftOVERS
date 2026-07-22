@@ -36,5 +36,11 @@
   },
   "fallbackOnSafety": false,
   "moreThanSixProviderCallsPossible": false,
+  "repoRootImport": {
+    "literalCommandPassed": true,
+    "pythonPathOverride": false,
+    "conftestSysPathInjection": false,
+    "backendCodeMovedOrDuplicated": false
+  },
   "outboundDnsHttp": 0
 }

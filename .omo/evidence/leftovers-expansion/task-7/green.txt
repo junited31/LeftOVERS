@@ -1,7 +1,7 @@
 Task 7 GREEN
-Targeted: 36 passed in 1.12s
-Full backend: 111 passed in 1.61s
-App import: exit 0 with PYTHONPATH=backend; create_app().title == "LeftOVERS API"
+Targeted Task 7 plus root import: 37 passed in 2.28s
+Full backend: 112 passed in 2.58s
+Literal repo-root app import: exit 0 without PYTHONPATH/cwd override; create_app().title == "LeftOVERS API"
 Outbound DNS/HTTP: 0; Task 7 tests monkeypatch socket resolution/connection to fail.
 Provider/Google Cloud/API-enable/IAM/deploy commands: 0
 Known warning: google-genai 2.12.1 references deprecated Python 3.14 _UnionGenericAlias.
