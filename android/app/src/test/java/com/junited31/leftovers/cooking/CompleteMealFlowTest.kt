@@ -21,6 +21,7 @@ import com.junited31.leftovers.data.RecipePreferenceMetadata
 import com.junited31.leftovers.data.RecipeSnapshotEntity
 import com.junited31.leftovers.data.RecipeSteps
 import com.junited31.leftovers.photo.PhotoLifecycle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -400,6 +401,50 @@ class CompleteMealFlowTest {
         assertEquals("synthetic Room failure", failure?.message)
     }
 
+    @Test
+    fun throwingCacheCleanupNeverReplacesRetainFailure() = runTest {
+        val source = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(49, 50, 51)) }
+        val throwingFile = SequencedCanonicalFile(
+            source.file,
+            mapOf(
+                1 to java.io.IOException("retain canonical failure"),
+                2 to java.io.IOException("cleanup canonical failure"),
+            ),
+        )
+        val photo = PhotoLifecycle.ManagedPhoto.restore(photos, throwingFile)
+
+        val failure = runCatching {
+            MealCompletionStore(
+                ResultCompletionDao(CompletionResult.InvalidFeedback),
+                photos,
+            ).complete(command(mealId = "retain-canonical"), photo)
+        }.exceptionOrNull()
+
+        assertEquals("retain canonical failure", failure?.message)
+        assertEquals(2, throwingFile.canonicalCalls)
+    }
+
+    @Test
+    fun throwingCacheCleanupNeverReplacesCancellationException() = runTest {
+        val source = photos.createManagedPhoto().also { it.file.writeBytes(byteArrayOf(52, 53, 54)) }
+        val throwingFile = SequencedCanonicalFile(
+            source.file,
+            mapOf(2 to java.io.IOException("cleanup canonical failure")),
+        )
+        val photo = PhotoLifecycle.ManagedPhoto.restore(photos, throwingFile)
+
+        val failure = runCatching {
+            MealCompletionStore(
+                FailingCompletionDao(CancellationException("original cancellation")),
+                photos,
+            ).complete(command(mealId = "cancel-canonical"), photo)
+        }.exceptionOrNull()
+
+        assertTrue(failure is CancellationException)
+        assertEquals("original cancellation", failure?.message)
+        assertEquals(2, throwingFile.canonicalCalls)
+    }
+
     private suspend fun givenSession(version: Int, quantity: Long) {
         database.pantryDao().insertAll(
             listOf(PantryItemEntity(riceId, "Rice", quantity, PantryUnit.GRAM, null, version)),
@@ -465,11 +510,12 @@ private class BarrierCompletionDao(
 }
 
 private class FailingCompletionDao(
+    private val failure: Exception = IllegalStateException("synthetic Room failure"),
     private val beforeThrow: () -> Unit = {},
 ) : InventoryCompletionDao() {
     override suspend fun complete(command: CompleteCookSessionCommand): CompletionResult {
         beforeThrow()
-        throw IllegalStateException("synthetic Room failure")
+        throw failure
     }
 
     override suspend fun session(id: String): CookSessionEntity? = null
@@ -478,6 +524,20 @@ private class FailingCompletionDao(
     override suspend fun updatePantry(rows: List<PantryItemEntity>) = Unit
     override suspend fun updateSession(session: CookSessionEntity) = Unit
     override suspend fun insertMealLog(mealLog: com.junited31.leftovers.data.MealLogEntity) = Unit
+}
+
+private class SequencedCanonicalFile(
+    private val delegate: File,
+    private val failures: Map<Int, java.io.IOException>,
+) : File(delegate.absolutePath) {
+    var canonicalCalls = 0
+        private set
+
+    override fun getCanonicalFile(): File {
+        canonicalCalls += 1
+        failures[canonicalCalls]?.let { throw it }
+        return delegate.canonicalFile
+    }
 }
 
 private class ResultCompletionDao(

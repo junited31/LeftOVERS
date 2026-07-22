@@ -37,12 +37,13 @@ class MealCompletionStore(
                         }
                     }
                 } catch (error: Exception) {
-                    retainedPath?.let(photos::discardRetained) ?: finalPhoto?.let(photos::discard)
+                    retainedPath?.let(photos::discardRetained)
+                        ?: runCatching { finalPhoto?.let(photos::discard) }
                     throw error
                 }
             }
         } catch (cancelled: CancellationException) {
-            finalPhoto?.let(photos::discard)
+            runCatching { finalPhoto?.let(photos::discard) }
             throw cancelled
         }
     }

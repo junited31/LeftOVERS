@@ -434,7 +434,7 @@ class MealCompletionFlowTest {
         Thread.sleep(1_500)
         ParcelFileDescriptor.AutoCloseInputStream(
             InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(
-                "screencap -p /sdcard/Download/$name",
+                "screencap -p /sdcard/Download/leftovers-expansion-task-6-$name",
             ),
         ).use { it.readBytes() }
     }
@@ -442,7 +442,7 @@ class MealCompletionFlowTest {
     private fun copyToDownloads(file: File) {
         ParcelFileDescriptor.AutoCloseInputStream(
             InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(
-                "cp ${file.absolutePath} /sdcard/Download/${file.name}",
+                "cp ${file.absolutePath} /sdcard/Download/leftovers-expansion-task-6-${file.name}",
             ),
         ).use { it.readBytes() }
     }

@@ -322,9 +322,9 @@ class HistoryScreenTest {
                 serializer.endTag(null, "hierarchy")
                 serializer.endDocument()
             }
-            shell("cp ${file.absolutePath} /sdcard/Download/$name")
+            shell("cp ${file.absolutePath} /sdcard/Download/leftovers-expansion-task-6-$name")
         } else {
-            shell("screencap -p /sdcard/Download/$name")
+            shell("screencap -p /sdcard/Download/leftovers-expansion-task-6-$name")
         }
     }
 
