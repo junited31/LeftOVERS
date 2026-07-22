@@ -225,6 +225,14 @@ class MealCompletionFlowTest {
         compose.onNodeWithTag("replace-final-photo").performScrollTo().assertIsDisplayed()
         captureScreen("completion-preview.png")
         captureXml("completion-preview.xml")
+        val firstCachePath = photos.ownedCacheFiles().single().absolutePath
+        application.photoPickerFixtureOverride = fixture
+        compose.onNodeWithTag("replace-final-photo").performClick()
+        compose.waitUntil(10_000) {
+            photos.ownedCacheFiles().singleOrNull()?.absolutePath?.let { it != firstCachePath } == true
+        }
+        compose.onNodeWithTag("completion-photo-preview").performScrollTo().assertIsDisplayed()
+        assertEquals(1, photos.ownedCacheFiles().size)
         compose.onNodeWithTag("remove-final-photo").performScrollTo().performClick()
 
         compose.onNodeWithTag("completion-photo-preview").assertDoesNotExist()
