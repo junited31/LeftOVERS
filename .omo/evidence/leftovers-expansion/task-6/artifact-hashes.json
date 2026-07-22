@@ -1,48 +1,56 @@
 {
-  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
-  "codeTree": "64f5d91f46b17df03f2e308a3478f355991b131e",
+  "codeHead": "bab8b876fd89f3dd7bfe4b8bac4c383f195e2597",
+  "codeTree": "d0157fcf8933409deaf4a135bebc595c0c23d534",
   "buildCommand": "Push-Location android; .\\gradlew.bat :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest --no-daemon --console=plain; Pop-Location",
   "buildExitCode": 0,
   "deviceSerial": "R5CR91DXA8R",
   "deviceModel": "SM-F711N",
   "deviceAndroid": 15,
-  "captureRunFinishedAt": "2026-07-22T12:12:02+09:00",
   "apks": {
     "debug": {
       "path": "android/app/build/outputs/apk/debug/app-debug.apk",
       "bytes": 64137994,
-      "sha256": "83d18862d28fe67cf76c90cf67a7afc0fe063789ed3529d455e707b8a5cc4756"
+      "sha256": "3f3331a309518b938bdfea2588a812c83c6615bb40b9b13abc9109d4e7ead5ba"
     },
     "releaseUnsigned": {
       "path": "android/app/build/outputs/apk/release/app-release-unsigned.apk",
       "bytes": 48584613,
-      "sha256": "90999c1ead218726afeb7b23eb75fa343505b4cfe69458b4338f0f600f8adb76"
+      "sha256": "35ed9aa8298146cc7a8e108aa72a762d5d4ff0f4c3924b3c07a577d3ea732ce2"
     },
     "androidTestDebug": {
       "path": "android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
-      "bytes": 3019107,
-      "sha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b"
+      "bytes": 3019163,
+      "sha256": "2da937073f2de78590ebfa40c403b4baf28236abb14d93926d49a5f87a20ea45"
     }
   },
   "acceptanceXml": {
-    "CompleteMealFlowTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "96c4664b679b658388eeba60a63f44fb7b0945a61a690a4420f909982027eac7"},
-    "PhotoLifecycleTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "51505c692ee2737efb894833e50ba6a332106f2e8d4fd7a6668796704bba9646"},
-    "connected": {"MealCompletionFlowTest": 8, "HistoryScreenTest": 6, "tests": 14, "failures": 0, "errors": 0, "skipped": 0, "sha256": "5d28fc86d99f16316e43774e50c2b927dbe34d55487309501b9acfa8df3f36b7"}
+    "CompleteMealFlowTest": {"tests": 19, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f07bb6f5c998058dd922ab764381b16d86aa0ecf1319fdb2372934503f3624f4"},
+    "PhotoLifecycleTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "f31ea37f1408eee7e45cfea0d478e5104b83e5bf56d33e6fba698c5e96d37f44"},
+    "connected": {"MealCompletionFlowTest": 8, "HistoryScreenTest": 6, "tests": 14, "failures": 0, "errors": 0, "skipped": 0, "sha256": "ca5530ef662e6125e72f74ef25d878797c3adb87c9a57fb76a52ab1844ce0cf1"}
   },
   "captures": {
-    "completion-preview.png": {"bytes": 163641, "sha256": "ec2a9f8b02180302149fea00f3963570a8c5f63890dec9b66d6f868d69b62478"},
+    "completion-preview.png": {"bytes": 164821, "sha256": "a6549276c64a5a5e7c4a9eda56dbeee2d3bfcab4ebe0f10306e06f6975acacaa"},
     "completion-preview.xml": {"bytes": 9195, "sha256": "f38730170563e98cd5a8dc31d965e3aa0336b569ee65c15ccdb57a8e7b0573cc"},
-    "success-photo.png": {"bytes": 120375, "sha256": "df05129fc4b028d64dbf0d4d3ba52397e704851aa28db957c07b4d295d186f1b"},
+    "success-photo.png": {"bytes": 121205, "sha256": "a9236e6e70ee88be691e4e77417c73a1436c71401ca2c3d3ae26ec59b062f3a3"},
     "success-photo.xml": {"bytes": 5510, "sha256": "b5970fe1f83ca8fe53e4dafead0693c90194499d85ca23e2b0d3b9c189136b9e"},
-    "history-photo.png": {"bytes": 153525, "sha256": "dcfbe829ea8b318549b702ba7f60474a1a52151802798b501a46e1f05caea33e"},
-    "history-photo.xml": {"bytes": 7061, "sha256": "40f3f50a378e753e34f6c75d56a6130790eb0e2e2aa0fee5413d676b53ee0510"},
+    "history-photo.png": {"bytes": 156080, "sha256": "477401054f1d469f8e70874848824dcd1809aa4597ba10750037d79843ae0bc4"},
+    "history-photo.xml": {"bytes": 7061, "sha256": "4ef90ce45fd526ec369ba8d0f82cfc464b4471d444574cee94393f36e50ff01a"},
     "failure-missing.xml": {"bytes": 7684, "sha256": "0219507ac3c4d3e437dfdfe54ec8964b460e08ee8c7a1c295fe873780ee51f73"}
   },
   "verification": {
     "baseline.txt": "e266b490628bdaf0e03eaf34ea1f8805f46791a33536646aa13d0052e8280e8d",
     "red.txt": "c37d54d04fab947ff98f7858797afccf792958a8a76cd24b8ed0867bed9b78c3",
     "review-red.txt": "61cbffbaae388b5ba1fb52066267e638fcbbcbcdb682e4ebb539e7ac17d2e3ad",
-    "acceptance.txt": "421ccde73578fc3230502a3b74b7aad472175687f52a65eb9f965b16f8c55937",
-    "full-unit.txt": "69f46a64b23a5ac64c45acad7ec05f93420d4ef0c5a34b1f982745421a4cb410"
+    "acceptance.txt": "9086da5091322f5425772db085fa738ad1463357dd87622ccad0e4a132b9722e",
+    "full-unit.txt": "31ddfdca2f323f2138e2b5a4fca12d404992d17f87a18f319876f881acea4be0",
+    "review-fix-red.txt": "1b714535142010136554f7ca9dafbdc3c1415f010f50836be55ebbdb3ddeb12b"
+  },
+  "canonicalEvidence": {
+    "manual.json": "a6347688c18cbdc88ee6f86f75831523cb17f46994e3e6e88c2180c5c001b688",
+    "adversarial.json": "fd331f26774542568587890491d4645f43338303dc84f110a81746332b8b71c2",
+    "failure-camera.json": "45d83b35825d58ea69cb04db7dc0549f60cacb876296c49d10254fa175aa544f",
+    "failure-compensation.json": "338ade4fde8e7e6ef5762b9d23c9f4fe2ca53eb6f687ce5904166666f93c0044",
+    "failure-reconcile.json": "d2476e5818d1b2f8af9a1e2fcaf2386ee1c03189029024f3e23b85a72609cf29",
+    "cleanup.json": "703ca03927d92cfa38d77f25745d419f1dc7b18a016e5b9b08dba70e81e11d11"
   }
 }

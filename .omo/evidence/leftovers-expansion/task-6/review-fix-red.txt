@@ -1,0 +1,10 @@
+COMMAND=.\gradlew.bat :app:testDebugUnitTest --tests '*CompleteMealFlowTest.throwingCacheCleanupNeverReplacesRetainFailure' --tests '*CompleteMealFlowTest.throwingCacheCleanupNeverReplacesCancellationException' --no-daemon --console=plain
+RED_EXIT_CODE=1
+RED_TESTS=2
+RED_FAILURES=2
+RED_1=throwingCacheCleanupNeverReplacesRetainFailure ComparisonFailure at CompleteMealFlowTest.kt:405; cleanup canonicalization replaced retain canonicalization failure
+RED_2=throwingCacheCleanupNeverReplacesCancellationException AssertionError at CompleteMealFlowTest.kt:428; cleanup canonicalization replaced CancellationException
+GREEN_EXIT_CODE=0
+GREEN_TESTS=2
+GREEN_FAILURES=0
+GREEN_RESULT=BUILD SUCCESSFUL in 14s

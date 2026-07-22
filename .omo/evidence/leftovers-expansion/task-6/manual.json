@@ -1,13 +1,13 @@
 {
-  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
-  "codeTree": "64f5d91f46b17df03f2e308a3478f355991b131e",
+  "codeHead": "bab8b876fd89f3dd7bfe4b8bac4c383f195e2597",
+  "codeTree": "d0157fcf8933409deaf4a135bebc595c0c23d534",
   "command": "exact Task 6 acceptance command from the brief",
   "exitCode": 0,
   "executionSurface": "physical-device instrumentation with synthetic gallery fixture",
   "testCase": "immediateSuccessAndHistoryUseTheRetainedBytes",
   "deviceSerial": "R5CR91DXA8R",
   "deviceModel": "SM-F711N",
-  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "androidTestApkSha256": "2da937073f2de78590ebfa40c403b4baf28236abb14d93926d49a5f87a20ea45",
   "syntheticOnly": true,
   "actualUserPhotosUsed": false,
   "before": {
@@ -20,7 +20,7 @@
     "cachePhotoCount": 0,
     "retainedPhotoCount": 1,
     "daoReferences": [
-      "/data/data/com.junited31.leftovers/files/leftovers-final-photos/leftovers-final-45c067c673755a74f230bcef90dfca2b64792c14acd5137fffc58cb19c245cb8.jpg"
+      "/data/data/com.junited31.leftovers/files/leftovers-final-photos/leftovers-final-0fc45900692363aa1cab4efa579667e6af0078cfeb110a71fd015772b3477dee.jpg"
     ]
   },
   "preparedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0",
@@ -29,8 +29,8 @@
   "sameBytes": true,
   "retryAttempts": 0,
   "captureSha256": {
-    "completion-preview.png": "ec2a9f8b02180302149fea00f3963570a8c5f63890dec9b66d6f868d69b62478",
-    "success-photo.png": "df05129fc4b028d64dbf0d4d3ba52397e704851aa28db957c07b4d295d186f1b",
-    "history-photo.png": "dcfbe829ea8b318549b702ba7f60474a1a52151802798b501a46e1f05caea33e"
+    "completion-preview.png": "a6549276c64a5a5e7c4a9eda56dbeee2d3bfcab4ebe0f10306e06f6975acacaa",
+    "success-photo.png": "a9236e6e70ee88be691e4e77417c73a1436c71401ca2c3d3ae26ec59b062f3a3",
+    "history-photo.png": "477401054f1d469f8e70874848824dcd1809aa4597ba10750037d79843ae0bc4"
   }
 }

@@ -1,8 +1,8 @@
 {
-  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "codeHead": "bab8b876fd89f3dd7bfe4b8bac4c383f195e2597",
   "command": "exact Task 6 acceptance plus CompleteMealFlowTest Robolectric acceptance",
   "exitCode": 0,
-  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "androidTestApkSha256": "2da937073f2de78590ebfa40c403b4baf28236abb14d93926d49a5f87a20ea45",
   "cases": [
     {
       "executionSurface": "physical-device instrumentation",
