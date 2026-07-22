@@ -20,12 +20,12 @@ import tempfile
 import subprocess
 import sys
 import unittest
-from dataclasses import replace
 from pathlib import Path
 from typing import final, override
 
 from scripts.submission_validation import MediaFacts, MediaProbeError, ProbeResponse, PublicUrl, SubmissionRecord
 from scripts.verify_submission import parse_record, verify_submission
+from scripts.tests.test_task8_submission import Task8DocsContractTest, Task8RecordAndSourceTest, Task8VisualAndArtifactTest
 
 
 REQUIRED_MARKERS = (
@@ -100,7 +100,8 @@ class VerifySubmissionTest(unittest.TestCase):
         _ = (self.root / "app-debug.apk.sha256").write_text(f"{digest}  app-debug.apk\n", encoding="utf-8")
         release_digest = hashlib.sha256(release.read_bytes()).hexdigest()
         _ = (self.root / "proof.txt").write_text(json.dumps({
-            "schema_version": 1,
+            "schema_version": 2,
+            "publication_source_sha": "0" * 40,
             "release_apk_sha256": release_digest,
             "manifest_debug_hook_matches": 0,
             "dex_debug_hook_matches": 0,
@@ -112,7 +113,8 @@ class VerifySubmissionTest(unittest.TestCase):
         media = self.root / "demo.mp4"
         _ = media.write_bytes(b"local narrated demo fixture")
         _ = (self.root / "demo-media.json").write_text(json.dumps({
-            "schema_version": 1,
+            "schema_version": 2,
+            "publication_source_sha": "0" * 40,
             "media_sha256": hashlib.sha256(media.read_bytes()).hexdigest(),
             "duration_seconds": 179.0,
             "audio_stream_count": 1,
@@ -121,24 +123,23 @@ class VerifySubmissionTest(unittest.TestCase):
 
     def _complete_record(self) -> SubmissionRecord:
         draft = parse_record(Path("scripts/tests/fixtures/submission_draft.json"))
-        return replace(
-            draft,
-            status="Submitted",
-            devpost_url="https://openai.devpost.com/software/leftovers-fixture",
-            submitted_at_utc="2026-07-20T12:00:00Z",
-            repository_url="https://github.com/junited31/LeftOVERS",
-            release_url="https://github.com/junited31/LeftOVERS/releases/tag/v0.1.0-demo",
-            apk_url="https://github.com/junited31/LeftOVERS/releases/download/v0.1.0-demo/app-debug.apk",
-            checksum_url="https://github.com/junited31/LeftOVERS/releases/download/v0.1.0-demo/app-debug.apk.sha256",
-            youtube_url="https://www.youtube.com/watch?v=fixtureVideo1",
-            session_id="019f706b-b713-7780-a456-f63ab18b173a",
-            apk_path="app-debug.apk",
-            checksum_path="app-debug.apk.sha256",
-            release_apk_path="app-release.apk",
-            release_debug_hook_proof_path="proof.txt",
-            demo_media_path="demo.mp4",
-            demo_media_evidence_path="demo-media.json",
-        )
+        return draft.model_copy(update={
+            "status": "Submitted",
+            "devpost_url": "https://openai.devpost.com/software/leftovers-fixture",
+            "submitted_at_utc": "2026-07-20T12:00:00Z",
+            "repository_url": "https://github.com/junited31/LeftOVERS",
+            "release_url": "https://github.com/junited31/LeftOVERS/releases/tag/v0.1.0-demo",
+            "apk_url": "https://github.com/junited31/LeftOVERS/releases/download/v0.1.0-demo/app-debug.apk",
+            "checksum_url": "https://github.com/junited31/LeftOVERS/releases/download/v0.1.0-demo/app-debug.apk.sha256",
+            "youtube_url": "https://www.youtube.com/watch?v=fixtureVideo1",
+            "session_id": "019f706b-b713-7780-a456-f63ab18b173a",
+            "apk_path": "app-debug.apk",
+            "checksum_path": "app-debug.apk.sha256",
+            "release_apk_path": "app-release.apk",
+            "release_debug_hook_proof_path": "proof.txt",
+            "demo_media_path": "demo.mp4",
+            "demo_media_evidence_path": "demo-media.json",
+        })
 
     def test_draft_reports_exact_required_field_names(self) -> None:
         record = parse_record(Path("scripts/tests/fixtures/submission_draft.json"))
@@ -167,17 +168,16 @@ class VerifySubmissionTest(unittest.TestCase):
         self.assertEqual((), issues)
 
     def test_private_or_example_url_is_rejected(self) -> None:
-        record = replace(self._complete_record(), repository_url="https://127.0.0.1/project")
+        record = self._complete_record().model_copy(update={"repository_url": "https://127.0.0.1/project"})
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
         self.assertIn("repository_url", {issue.field for issue in issues})
 
     def test_github_artifact_urls_must_share_repository_owner_and_name(self) -> None:
-        record = replace(
-            self._complete_record(),
-            release_url="https://github.com/other-owner/other-repo/releases/tag/v0.1.0-demo",
-        )
+        record = self._complete_record().model_copy(update={
+            "release_url": "https://github.com/other-owner/other-repo/releases/tag/v0.1.0-demo",
+        })
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
@@ -194,7 +194,8 @@ class VerifySubmissionTest(unittest.TestCase):
         record = self._complete_record()
         evidence = self.root / "demo-media.json"
         _ = evidence.write_text(json.dumps({
-            "schema_version": 1,
+            "schema_version": 2,
+            "publication_source_sha": "0" * 40,
             "media_sha256": hashlib.sha256((self.root / "demo.mp4").read_bytes()).hexdigest(),
             "duration_seconds": 180.0,
             "audio_stream_count": 0,
@@ -206,11 +207,10 @@ class VerifySubmissionTest(unittest.TestCase):
         self.assertIn("demo_media_evidence_path", {issue.field for issue in issues})
 
     def test_demo_requires_sha_bound_media_evidence(self) -> None:
-        record = replace(
-            self._complete_record(),
-            demo_media_path="missing-demo.mp4",
-            demo_media_evidence_path="missing-demo-media.json",
-        )
+        record = self._complete_record().model_copy(update={
+            "demo_media_path": "missing-demo.mp4",
+            "demo_media_evidence_path": "missing-demo-media.json",
+        })
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
@@ -235,19 +235,18 @@ class VerifySubmissionTest(unittest.TestCase):
                 self.assertIn("demo_media_evidence_path", {issue.field for issue in issues})
 
     def test_impossible_utc_timestamp_is_rejected(self) -> None:
-        record = replace(self._complete_record(), submitted_at_utc="2026-99-99T99:99:99Z")
+        record = self._complete_record().model_copy(update={"submitted_at_utc": "2026-99-99T99:99:99Z"})
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
         self.assertIn("submitted_at_utc", {issue.field for issue in issues})
 
     def test_missing_apk_checksum_and_release_proof_are_rejected(self) -> None:
-        record = replace(
-            self._complete_record(),
-            apk_path="missing.apk",
-            checksum_path="missing.sha256",
-            release_debug_hook_proof_path="missing-proof.txt",
-        )
+        record = self._complete_record().model_copy(update={
+            "apk_path": "missing.apk",
+            "checksum_path": "missing.sha256",
+            "release_debug_hook_proof_path": "missing-proof.txt",
+        })
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
@@ -267,7 +266,7 @@ class VerifySubmissionTest(unittest.TestCase):
         self.assertIn("backend_health_url", {issue.field for issue in issues})
 
     def test_internal_backend_health_host_is_rejected(self) -> None:
-        record = replace(self._complete_record(), backend_health_url="https://leftovers-api.internal/health")
+        record = self._complete_record().model_copy(update={"backend_health_url": "https://leftovers-api.internal/health"})
 
         issues = verify_submission(record, self.root, FixtureProbe())
 
@@ -284,7 +283,8 @@ class VerifySubmissionTest(unittest.TestCase):
     def test_strict_zero_count_release_proof_is_accepted(self) -> None:
         digest = hashlib.sha256((self.root / "app-release.apk").read_bytes()).hexdigest()
         _ = (self.root / "proof.txt").write_text(json.dumps({
-            "schema_version": 1,
+            "schema_version": 2,
+            "publication_source_sha": "0" * 40,
             "release_apk_sha256": digest,
             "manifest_debug_hook_matches": 0,
             "dex_debug_hook_matches": 0,

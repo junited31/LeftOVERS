@@ -1,6 +1,10 @@
 # Narrated demo script
 
-The final local judge demo is 103.366667 seconds and edits exactly three fresh physical-device capture runs. Run 1 contains only local-fixture pantry and equipment states. Run 2 is the real-cloud recipe-card capture. Run 3 is one new real-cloud cooking, full-advice, completion, success, and offline-history E2E recording. Exactly Runs 2 and 3 exercised the deployed real cloud. The edit is not presented as one continuous run, and no continuous-run claim is made.
+The 103.366667-second GPT-5.6 demo described below is retained as historical evidence only. It predates the Vertex runtime and bilingual expansion and must not be copied, recut, or cited as current publication proof.
+
+The active publication demo must be created after the strict source-bound 11-state English/Korean capture passes. It must visibly cover equipment onboarding, suggested pantry, Onion quarter-to-half persistence, Korean settings and recipe type, exactly three matching recipes, synthetic cooking-photo advice, local final-photo completion/history, and the English restart. It must disclose edits between runs and identify which sections exercised the deployed Vertex service.
+
+## Historical script (not active publication proof)
 
 | Final time | Device action | Narration / disclosure |
 |---|---|---|
@@ -18,9 +22,9 @@ The final local judge demo is 103.366667 seconds and edits exactly three fresh p
 
 The post-transition portion contains only the new Run 3 recording; no Run 1 pixels occur after 55.333333 seconds. Only waiting intervals in Run 3 were shortened. All 60 opening frames and every one of the 225 linearly decoded frames n1485-n1709 were manually inspected at original detail, including exact boundaries n1501/1502, n1659/1660, and n1679/1680. An entire-video alternating/slice/blank scan over all 3101 decoded frames supplemented rather than replaced semantic inspection.
 
-## Final evidence map
+## Historical evidence map
 
-- Final media: `.omo/evidence/leftovers/task-12-demo.mp4`
+- Historical media: `.omo/evidence/leftovers/task-12-demo.mp4`
 - Media validation: `.omo/evidence/leftovers/task-12-demo-media.json`
 - Run and state provenance: `.omo/evidence/leftovers/task-12-demo-capture.json`
 - Exact per-run segment and real-cloud provenance: `.omo/evidence/leftovers/task-12-demo-runs.json`
@@ -28,12 +32,13 @@ The post-transition portion contains only the new Run 3 recording; no Run 1 pixe
 - Eleven logical state bindings: `.omo/evidence/leftovers/task-12-demo-states/`
 - Exact opening and transition checks: `.omo/evidence/leftovers/task-12-final-opening-*.png` and `.omo/evidence/leftovers/task-12-final-transition.png`
 
-## Publication checklist
+## Active publication checklist
 
 - Use only project UI and the synthetic cooking fixture; do not show personal photos, notifications, credentials, or unrelated device content.
-- Preserve the transition card and its narration when making any publication copy. Do not describe the result as a continuous run.
+- Use only captures accepted by `.omo/evidence/leftovers-expansion/task-12/artifact-manifest.json`; never use the historical media or screenshots as active proof.
+- If separate runs are edited, disclose each transition in narration and on screen. Do not describe an edited result as continuous.
 - Watch the exact publication file end to end and keep it below 180 seconds with intelligible audio.
-- Run `ffprobe` against the exact publication file. Bind its observed duration, audio stream count, and SHA-256 in `dist/leftovers-demo-media.json`; do not infer values from an editor timeline.
+- Run `ffprobe` against the exact publication file. Bind its observed duration, audio stream count, SHA-256, strict schema version 2, and the same `publication_source_sha` in `dist/leftovers-demo-media.json`; do not infer values from an editor timeline.
 - Upload as Public and verify the YouTube URL in a signed-out browser before recording it in `docs/submission.md`.
 
-The local T12 evidence is not publication proof. The strict schema-1 evidence in `dist/leftovers-demo-media.json`, the bound `dist/leftovers-demo.mp4`, and the public URL remain separate fail-closed gates.
+The expansion visual record is not by itself publication proof. The strict schema-v2 record in `dist/leftovers-demo-media.json`, the bound `dist/leftovers-demo.mp4`, and the signed-out public URL remain separate fail-closed gates. Vertex inference is billable and best effort; do not claim continuous availability, provider Zero Data Retention, or food-safety certainty.

@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 import sys
@@ -35,6 +36,9 @@ from scripts.submission_validation import (
     PublicUrl,
     SubmissionProbe,
     SubmissionRecord,
+    validate_expansion_artifact_manifest,
+    validate_expansion_visual_evidence,
+    validate_publication_source,
     validate_submission,
 )
 
@@ -150,18 +154,56 @@ def parse_record(path: Path) -> SubmissionRecord:
 
 
 def verify_submission(record: SubmissionRecord, root: Path, probe: SubmissionProbe) -> tuple[Issue, ...]:
-    issues = list(validate_submission(record, root, probe))
-    if (root / ".git").exists():
-        worktree = subprocess.run(("git", "status", "--porcelain"), cwd=root, check=False, capture_output=True, text=True)
-        if worktree.returncode != 0 or worktree.stdout.strip():
-            issues.append(Issue("git_worktree", "must be clean at the publication commit"))
-    return tuple(issues)
+    return validate_submission(record, root, probe)
+
+
+def _expansion_command(args: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Validate canonical LeftOVERS expansion publication evidence")
+    parser.add_argument("--expansion-evidence", required=True)
+    parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--apk-sha", required=True)
+    parser.add_argument("--device-serial", required=True)
+    parser.add_argument("--device-model", required=True)
+    parser.add_argument("--run-start", required=True)
+    parser.add_argument("--run-end", required=True)
+    parsed = parser.parse_args(args)
+    root = Path.cwd()
+    evidence_root = root / parsed.expansion_evidence
+    issues = list(
+        validate_expansion_visual_evidence(
+            root,
+            evidence_root,
+            approved_source_sha=parsed.source_sha,
+            apk_sha256=parsed.apk_sha,
+            device_serial=parsed.device_serial,
+            device_model=parsed.device_model,
+            run_started_at_utc=parsed.run_start,
+            run_finished_at_utc=parsed.run_end,
+        )
+    )
+    try:
+        record = SubmissionRecord.model_validate_json((evidence_root / "submission-draft.json").read_bytes())
+    except (OSError, ValidationError) as error:
+        issues.append(Issue("submission-draft", f"must be a strict v2 SubmissionRecord: {error}"))
+    else:
+        issues.extend(validate_publication_source((record,), root))
+    artifact = validate_expansion_artifact_manifest(root, evidence_root, parsed.source_sha)
+    issues.extend(artifact.issues)
+    if issues:
+        for issue in issues:
+            print(f"[FAIL] {issue.field}: {issue.message}")
+        print(f"Expansion evidence verification failed with {len(issues)} issue(s).")
+        return 1
+    print(f"Expansion evidence verification passed: artifact_record_digest={artifact.artifact_record_digest}")
+    return 0
 
 
 def main() -> int:
     args = sys.argv[1:]
+    if "--expansion-evidence" in args:
+        return _expansion_command(args)
     if args and (len(args) != 2 or args[0] != "--record"):
-        print("Usage: python scripts/verify_submission.py [--record PATH]")
+        print("Usage: python scripts/verify_submission.py [--record PATH] | --expansion-evidence PATH --source-sha SHA --apk-sha SHA --device-serial SERIAL --device-model MODEL --run-start UTC --run-end UTC")
         return 2
     path = Path(args[1]) if args else Path("docs/submission.md")
     try:
