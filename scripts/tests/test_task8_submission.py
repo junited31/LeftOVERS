@@ -684,6 +684,7 @@ class Task8VisualAndArtifactTest(unittest.TestCase):
         rows = (
             ("malformed", b"<hierarchy>", "xml_path", True),
             ("empty", b"<hierarchy />\n", "xml_path", True),
+            ("doctype", b'<!DOCTYPE hierarchy [<!ENTITY x "marker">]><hierarchy><node text="&x;" /></hierarchy>\n', "xml_path", True),
             ("wrong-state", b'<hierarchy><node text="Completed meals | Final photo" /></hierarchy>\n', "xml_path", True),
             ("hash", original + b"x", "xml_sha256", False),
         )

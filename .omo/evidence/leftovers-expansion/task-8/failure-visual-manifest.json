@@ -7,7 +7,7 @@
     "absolute drive UNC backslash empty dot parent case-fold duplicate and symlink path",
     "missing PNG or XML",
     "PNG signature IHDR width height hash and reused hash",
-    "XML malformed empty wrong-state hash and reused hash",
+    "XML malformed empty DTD entity wrong-state hash and reused hash",
     "source APK device locale run state and timestamp mismatch",
     "pre-window stale and decreasing timestamp"
   ],

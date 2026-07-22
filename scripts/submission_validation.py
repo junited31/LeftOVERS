@@ -439,6 +439,9 @@ def _png_dimensions(data: bytes) -> tuple[int, int] | None:
 
 
 def _xml_text(data: bytes) -> str | None:
+    upper = data.upper()
+    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+        return None
     try:
         root = ElementTree.fromstring(data)
     except ElementTree.ParseError:
