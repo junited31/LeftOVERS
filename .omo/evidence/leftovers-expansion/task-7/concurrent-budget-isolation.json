@@ -1,5 +1,5 @@
 {
-  "commandResult": "2 passed, 29 deselected",
+  "commandResult": "4 passed, 31 deselected",
   "requests": "byte-identical",
   "forcedInterleaving": true,
   "outboundDnsHttp": 0,
@@ -12,6 +12,16 @@
     "delaysSeconds": [0.25, 0.5],
     "primaryCalls": 3,
     "fallbackCalls": 0
+  },
+  "schemaInterleave": {
+    "exhaustedRequest": {"schemaSlots": 3, "primaryCalls": 5, "fallbackCalls": 1, "providerCalls": 6},
+    "repairedRequest": {"schemaSlots": 2, "primaryCalls": 3, "fallbackCalls": 0},
+    "sharedParseModelOutput": true
+  },
+  "coldStart": {
+    "simultaneousDependencies": 8,
+    "adapterInstances": 1,
+    "transportClientInstances": 1
   },
   "distinctImmutableBudgetLineages": true,
   "cancelledRequestChangedSurvivorCounters": false,

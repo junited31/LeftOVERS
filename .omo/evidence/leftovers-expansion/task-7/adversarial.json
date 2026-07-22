@@ -27,6 +27,11 @@
     "bytePart": true,
     "asyncAndSyncClose": true
   },
+  "configuration": {
+    "projectRequired": true,
+    "legacyOpenAiSecretReferenceRetained": true,
+    "legacyOpenAiSecretRequiredByGemini": false
+  },
   "fallbackOnSafety": false,
   "moreThanSixProviderCallsPossible": false,
   "outboundDnsHttp": 0

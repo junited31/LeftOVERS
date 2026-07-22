@@ -1,6 +1,6 @@
 Task 7 GREEN
-Targeted: 31 passed in 1.04s
-Full backend: 106 passed in 1.40s
+Targeted: 35 passed in 1.06s
+Full backend: 110 passed in 1.41s
 App import: exit 0 with PYTHONPATH=backend; create_app().title == "LeftOVERS API"
 Outbound DNS/HTTP: 0; Task 7 tests monkeypatch socket resolution/connection to fail.
 Provider/Google Cloud/API-enable/IAM/deploy commands: 0

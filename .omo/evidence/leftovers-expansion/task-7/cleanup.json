@@ -2,6 +2,7 @@
   "testClientsClosed": true,
   "lifespanClosedAsyncClient": true,
   "lifespanClosedSyncClient": true,
+  "cachedClientInstancesAfterColdStart": 1,
   "dependencyOverridesCleared": true,
   "capturedLogsReleasedByPytest": true,
   "uvicornProcessesStarted": 0,
