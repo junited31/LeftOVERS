@@ -1,6 +1,34 @@
 {
-  "simulatedProcessDeathOrphan": true,
-  "orphanExistsAfterStartup": false,
-  "mealLogCount": 0,
-  "retainedPhotoCount": 0
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "command": "exact Task 6 acceptance plus PhotoLifecycleTest Robolectric acceptance",
+  "exitCode": 0,
+  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "cases": [
+    {
+      "executionSurface": "physical-device instrumentation with simulated retained-orphan state",
+      "testCase": "activityStartupReconcilesAProcessDeathOrphan",
+      "realOsKillAtInstructionBoundary": false,
+      "before": {"mealLogCount": 0, "retainedPhotoCount": 1},
+      "afterStartup": {"mealLogCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "reconciliationAttempts": 1
+    },
+    {
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "orphanDeleteRetriesUntilTheThirdStartup",
+      "attempts": [
+        {"attempt": 1, "deletedCount": 0, "orphanExists": true},
+        {"attempt": 2, "deletedCount": 0, "orphanExists": true},
+        {"attempt": 3, "deletedCount": 1, "orphanExists": false}
+      ],
+      "totalDeleteAttempts": 3
+    },
+    {
+      "executionSurface": "Robolectric deterministic JVM on Windows junction-capable filesystem",
+      "testCases": ["startupReconciliationDeletesOnlyUnreferencedExactManagedChildren", "startupReconciliationPreservesCanonicalEscapeSymlink", "symlinkedRetainedDirectoryNeverOwnsOrDeletesOutsideFiles"],
+      "before": {"referencedManaged": 1, "orphanManaged": 1, "unknownName": 1, "outside": 1, "junctionOutsideManaged": 1},
+      "after": {"referencedManaged": 1, "orphanManaged": 0, "unknownName": 1, "outside": 1, "junctionOutsideManaged": 1},
+      "deletedCount": 1,
+      "junctionDeleteCount": 0
+    }
+  ]
 }

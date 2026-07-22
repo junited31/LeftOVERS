@@ -1,16 +1,121 @@
 {
-  "navigationCancellationCovered": true,
-  "processDeathCovered": true,
-  "deleteDenialRetryCovered": true,
-  "canonicalSymlinkEscapeCovered": true,
-  "unknownNamePreserved": true,
-  "referencedFilePreserved": true,
-  "cameraCancelAndRecreationCovered": true,
-  "duplicateMealLogIdBounded": true,
-  "deletedCacheSourceCovered": true,
-  "misleadingPreviewRejected": true,
-  "daoReferences": [
-    "\/data\/user\/0\/com.junited31.leftovers\/files\/leftovers-final-photos\/leftovers-final-bbc57cbd5e8f3fc01a4b2b7c25e19a74b48eea252b8e95a6b12546dc62d6c4c7.jpg"
-  ],
-  "retainedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0"
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "codeTree": "64f5d91f46b17df03f2e308a3478f355991b131e",
+  "command": "exact Task 6 acceptance command from the brief",
+  "exitCode": 0,
+  "unitXml": {"tests": 34, "failures": 0, "errors": 0, "skipped": 0},
+  "connectedXml": {"tests": 14, "failures": 0, "errors": 0, "skipped": 0},
+  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "physicalDevice": {"serial": "R5CR91DXA8R", "model": "SM-F711N"},
+  "cases": [
+    {
+      "class": "navigation/coroutine cancellation during commit",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCases": ["cancellationBeforeOwnershipEntryLeavesNoLogOrPhoto", "cancellationDuringRoomWorkWaitsForCommittedPhotoState", "cancellationImmediatelyAfterRoomCommitPreservesReferencedPhoto"],
+      "beforeEntryAfter": {"mealLogCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "duringOrAfterCommitAfter": {"mealLogCount": 1, "retainedPhotoCount": 1, "referencedPathExists": true},
+      "retryAttempts": 0
+    },
+    {
+      "class": "startup reference load overlaps ownership transfer",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "startupReconciliationCannotDeleteRetainedPhotoBeforeRoomCommit",
+      "beforeRelease": {"retainedPhotoCount": 1, "referenceLoadStarted": false},
+      "after": {"mealLogCount": 1, "retainedPhotoCount": 1, "resultPathEqualsDaoPath": true, "referencedPathExists": true},
+      "retryAttempts": 0
+    },
+    {
+      "class": "process death",
+      "executionSurface": "physical-device instrumentation with simulated retained-orphan state",
+      "testCase": "activityStartupReconcilesAProcessDeathOrphan",
+      "realOsKillAtInstructionBoundary": false,
+      "before": {"mealLogCount": 0, "retainedPhotoCount": 1},
+      "afterStartup": {"mealLogCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "retryAttempts": 1
+    },
+    {
+      "class": "delete denial and retry",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "orphanDeleteRetriesUntilTheThirdStartup",
+      "before": {"orphanCount": 1},
+      "attempts": [{"attempt": 1, "deleted": 0, "orphanCount": 1}, {"attempt": 2, "deleted": 0, "orphanCount": 1}, {"attempt": 3, "deleted": 1, "orphanCount": 0}],
+      "retryAttempts": 3
+    },
+    {
+      "class": "canonical path, symlink, and directory junction escape",
+      "executionSurface": "Robolectric deterministic JVM on Windows junction-capable filesystem",
+      "testCases": ["startupReconciliationPreservesCanonicalEscapeSymlink", "symlinkedRetainedDirectoryNeverOwnsOrDeletesOutsideFiles"],
+      "before": {"outsideLeafCount": 1, "outsideDirectoryManagedCount": 1},
+      "after": {"outsideLeafCount": 1, "outsideDirectoryManagedCount": 1, "deletedCount": 0, "retainEscaped": false},
+      "retryAttempts": 0
+    },
+    {
+      "class": "unknown managed-directory name and referenced file",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "startupReconciliationDeletesOnlyUnreferencedExactManagedChildren",
+      "before": {"referencedManaged": 1, "orphanManaged": 1, "unknownName": 1, "outside": 1},
+      "after": {"referencedManaged": 1, "orphanManaged": 0, "unknownName": 1, "outside": 1, "deletedCount": 1},
+      "retryAttempts": 1
+    },
+    {
+      "class": "rapid replace/remove and misleading preview",
+      "executionSurface": "physical-device instrumentation with synthetic gallery fixture",
+      "testCase": "attachedPhotoShowsPreviewReplaceRemoveAndReadySemantics",
+      "before": {"cachePhotoCount": 1, "previewDisplayed": true},
+      "afterReplace": {"cachePhotoCount": 1, "pathChanged": true, "previewDisplayed": true},
+      "afterRemove": {"cachePhotoCount": 0, "previewDisplayed": false, "readyDisplayed": false, "paths": []},
+      "retryAttempts": 0
+    },
+    {
+      "class": "camera cancel and recreation",
+      "executionSurface": "physical-device instrumentation with synthetic camera fixture",
+      "testCase": "completionCameraActionHasSyntheticCancelSurface",
+      "afterCancel": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "afterSyntheticCaptureRecreation": {"cachePhotoCount": 1, "previewDisplayed": true},
+      "retryAttempts": 0
+    },
+    {
+      "class": "duplicate meal-log ID",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "duplicateMealLogIdKeepsTheSingleCommittedLogAndPhoto",
+      "beforeSecondAttempt": {"mealLogCount": 1, "retainedPhotoCount": 1},
+      "afterSecondAttempt": {"mealLogCount": 1, "retainedPhotoCount": 1, "cachePhotoCount": 0, "originalReferencedPathExists": true},
+      "retryAttempts": 0
+    },
+    {
+      "class": "deleted cache source",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "deletedCacheSourceCreatesNoLogOrRetainedPhoto",
+      "before": {"sourceExists": false, "mealLogCount": 0, "retainedPhotoCount": 0},
+      "after": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "retryAttempts": 0
+    },
+    {
+      "class": "throwing compensation or canonicalization",
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCases": ["throwingCompensationNeverReplacesTypedFailure", "throwingCompensationNeverReplacesRoomException", "throwingCanonicalizationNeverReplacesTypedFailureOrRoomException"],
+      "before": {"mealLogCount": 0, "retainedPhotoCount": 0},
+      "after": {"mealLogCount": 0, "retainedPhotoCountAfterDeleteThrow": 1, "originalResultPreserved": true, "originalExceptionPreserved": true},
+      "retryAttempts": 0
+    },
+    {
+      "class": "externally missing referenced photo fallback",
+      "executionSurface": "physical-device instrumentation",
+      "testCase": "deletedPhotoShowsFallbackWithoutChangingStoredSnapshot",
+      "before": {"mealLogCount": 1, "daoReferenceCount": 1, "referencedPathExists": false},
+      "after": {"mealLogCount": 1, "daoReferenceCount": 1, "fallbackDisplayed": true, "dbRewriteCount": 0},
+      "failureXmlSha256": "0219507ac3c4d3e437dfdfe54ec8964b460e08ee8c7a1c295fe873780ee51f73",
+      "retryAttempts": 0
+    },
+    {
+      "class": "happy retained bytes and DAO reference",
+      "executionSurface": "physical-device instrumentation with synthetic gallery fixture",
+      "testCase": "immediateSuccessAndHistoryUseTheRetainedBytes",
+      "before": {"mealLogCount": 0, "cachePhotoCount": 1, "retainedPhotoCount": 0},
+      "after": {"mealLogCount": 1, "cachePhotoCount": 0, "retainedPhotoCount": 1, "referencedFileExists": true},
+      "daoReferences": ["/data/data/com.junited31.leftovers/files/leftovers-final-photos/leftovers-final-45c067c673755a74f230bcef90dfca2b64792c14acd5137fffc58cb19c245cb8.jpg"],
+      "retainedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0",
+      "retryAttempts": 0
+    }
+  ]
 }

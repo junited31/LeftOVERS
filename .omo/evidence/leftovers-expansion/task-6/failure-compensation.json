@@ -1,7 +1,43 @@
 {
-  "result": "StaleInventory",
-  "mealLogCount": 0,
-  "cachePhotoCount": 0,
-  "retainedPhotoCount": 0,
-  "compensationDelete": "success"
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "command": "exact Task 6 acceptance plus CompleteMealFlowTest Robolectric acceptance",
+  "exitCode": 0,
+  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "cases": [
+    {
+      "executionSurface": "physical-device instrumentation",
+      "testCase": "competingQuantityEditShowsStaleAndRollsBackLogAndFinalPhoto",
+      "result": "StaleInventory",
+      "before": {"mealLogCount": 0, "cachePhotoCount": 1, "retainedPhotoCount": 0},
+      "after": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "compensationDeleteAttempts": 1,
+      "compensationDeleteResult": "success"
+    },
+    {
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "roomFailureDeletesUnreferencedRetainedPhoto",
+      "result": "original Room exception",
+      "before": {"mealLogCount": 0, "cachePhotoCount": 1, "retainedPhotoCount": 0},
+      "after": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "compensationDeleteAttempts": 1,
+      "compensationDeleteResult": "success"
+    },
+    {
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCase": "failedCompensationLeavesOneManagedOrphanForRetry",
+      "result": "original Room exception",
+      "afterDeniedDelete": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 1},
+      "afterNextStartup": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+      "compensationDeleteAttempts": 1,
+      "reconciliationAttempts": 1
+    },
+    {
+      "executionSurface": "Robolectric deterministic JVM",
+      "testCases": ["throwingCompensationNeverReplacesTypedFailure", "throwingCompensationNeverReplacesRoomException", "throwingCanonicalizationNeverReplacesTypedFailureOrRoomException"],
+      "result": "original typed failure or original Room exception preserved",
+      "afterThrowingDelete": {"mealLogCount": 0, "retainedPhotoCount": 1},
+      "deleteAttempts": 1,
+      "canonicalizationFailureReplacedOriginal": false
+    }
+  ]
 }

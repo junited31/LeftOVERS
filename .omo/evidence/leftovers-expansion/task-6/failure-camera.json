@@ -1,6 +1,22 @@
 {
-  "captured": false,
-  "mealLogCount": 0,
-  "cachePhotoCount": 0,
-  "retainedPhotoCount": 0
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "command": "exact Task 6 acceptance command from the brief",
+  "exitCode": 0,
+  "executionSurface": "physical-device instrumentation with synthetic camera fixture",
+  "testCase": "completionCameraActionHasSyntheticCancelSurface",
+  "deviceSerial": "R5CR91DXA8R",
+  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
+  "cancel": {
+    "result": false,
+    "before": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+    "after": {"mealLogCount": 0, "cachePhotoCount": 0, "retainedPhotoCount": 0, "paths": []},
+    "retryAttempts": 0
+  },
+  "syntheticCaptureAfterCancel": {
+    "result": true,
+    "beforeRecreation": {"cachePhotoCount": 1},
+    "afterRecreation": {"cachePhotoCount": 1, "previewDisplayed": true},
+    "pathExported": false,
+    "retryAttempts": 0
+  }
 }

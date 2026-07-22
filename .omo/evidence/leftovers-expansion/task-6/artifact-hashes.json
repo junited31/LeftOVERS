@@ -1,34 +1,48 @@
 {
-  "codeHead": "d89dda1d77de561d711e858f7d104e89c49da40a",
-  "codeTree": "6df79fdf9871b50e18e6dbc266f7c6030d947292",
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "codeTree": "64f5d91f46b17df03f2e308a3478f355991b131e",
+  "buildCommand": "Push-Location android; .\\gradlew.bat :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest --no-daemon --console=plain; Pop-Location",
+  "buildExitCode": 0,
   "deviceSerial": "R5CR91DXA8R",
+  "deviceModel": "SM-F711N",
+  "deviceAndroid": 15,
+  "captureRunFinishedAt": "2026-07-22T12:12:02+09:00",
   "apks": {
     "debug": {
+      "path": "android/app/build/outputs/apk/debug/app-debug.apk",
       "bytes": 64137994,
-      "sha256": "631c52e3d034497e4e1b4968e9fc34e3f4c58e7ddd7cef8cf244cfa717f8e05d"
+      "sha256": "83d18862d28fe67cf76c90cf67a7afc0fe063789ed3529d455e707b8a5cc4756"
     },
     "releaseUnsigned": {
+      "path": "android/app/build/outputs/apk/release/app-release-unsigned.apk",
       "bytes": 48584613,
-      "sha256": "78a944ffe40972f9da9d5345b84ad595eafc0da3f29c91ebc381cf7cd65ee342"
+      "sha256": "90999c1ead218726afeb7b23eb75fa343505b4cfe69458b4338f0f600f8adb76"
     },
     "androidTestDebug": {
-      "bytes": 3017531,
-      "sha256": "20df077c4f578bf3880a84d03cb198d10e1a9a77bd440f5de652fee54afc766d"
+      "path": "android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 3019107,
+      "sha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b"
     }
   },
+  "acceptanceXml": {
+    "CompleteMealFlowTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "96c4664b679b658388eeba60a63f44fb7b0945a61a690a4420f909982027eac7"},
+    "PhotoLifecycleTest": {"tests": 17, "failures": 0, "errors": 0, "skipped": 0, "sha256": "51505c692ee2737efb894833e50ba6a332106f2e8d4fd7a6668796704bba9646"},
+    "connected": {"MealCompletionFlowTest": 8, "HistoryScreenTest": 6, "tests": 14, "failures": 0, "errors": 0, "skipped": 0, "sha256": "5d28fc86d99f16316e43774e50c2b927dbe34d55487309501b9acfa8df3f36b7"}
+  },
   "captures": {
-    "completion-preview.png": "086dfa263b8ad302d893f1de78f1498065f4b760bf6f6efe97b116f109caa526",
-    "completion-preview.xml": "f38730170563e98cd5a8dc31d965e3aa0336b569ee65c15ccdb57a8e7b0573cc",
-    "success-photo.png": "d67737be1ce1d124b2b15b9098cba65d34f0f3b811349219fdfb37e92b60ce79",
-    "success-photo.xml": "b5970fe1f83ca8fe53e4dafead0693c90194499d85ca23e2b0d3b9c189136b9e",
-    "history-photo.png": "9614bbd1f16a188fcb6c7c0c6e297c17d45834b9f0a0fc8d1a34a3133f5ec221",
-    "history-photo.xml": "798eac5ec8cca5e2fe052835f1f882c23913eeb3545b6d0ce17ff09d9ee264ee",
-    "failure-missing.xml": "0219507ac3c4d3e437dfdfe54ec8964b460e08ee8c7a1c295fe873780ee51f73"
+    "completion-preview.png": {"bytes": 163641, "sha256": "ec2a9f8b02180302149fea00f3963570a8c5f63890dec9b66d6f868d69b62478"},
+    "completion-preview.xml": {"bytes": 9195, "sha256": "f38730170563e98cd5a8dc31d965e3aa0336b569ee65c15ccdb57a8e7b0573cc"},
+    "success-photo.png": {"bytes": 120375, "sha256": "df05129fc4b028d64dbf0d4d3ba52397e704851aa28db957c07b4d295d186f1b"},
+    "success-photo.xml": {"bytes": 5510, "sha256": "b5970fe1f83ca8fe53e4dafead0693c90194499d85ca23e2b0d3b9c189136b9e"},
+    "history-photo.png": {"bytes": 153525, "sha256": "dcfbe829ea8b318549b702ba7f60474a1a52151802798b501a46e1f05caea33e"},
+    "history-photo.xml": {"bytes": 7061, "sha256": "40f3f50a378e753e34f6c75d56a6130790eb0e2e2aa0fee5413d676b53ee0510"},
+    "failure-missing.xml": {"bytes": 7684, "sha256": "0219507ac3c4d3e437dfdfe54ec8964b460e08ee8c7a1c295fe873780ee51f73"}
   },
   "verification": {
     "baseline.txt": "e266b490628bdaf0e03eaf34ea1f8805f46791a33536646aa13d0052e8280e8d",
     "red.txt": "c37d54d04fab947ff98f7858797afccf792958a8a76cd24b8ed0867bed9b78c3",
-    "acceptance.txt": "84ace000a141ab245884ff4a3ce510e51291edef3a33a9c936d6b41eac91e4d6",
-    "full-unit.txt": "4499f66ee3f5dc10e9c3797ab971dfaf6015d858eeb59140b2a477be1d8491e4"
+    "review-red.txt": "61cbffbaae388b5ba1fb52066267e638fcbbcbcdb682e4ebb539e7ac17d2e3ad",
+    "acceptance.txt": "421ccde73578fc3230502a3b74b7aad472175687f52a65eb9f965b16f8c55937",
+    "full-unit.txt": "69f46a64b23a5ac64c45acad7ec05f93420d4ef0c5a34b1f982745421a4cb410"
   }
 }

@@ -1,9 +1,36 @@
 {
+  "codeHead": "d4f523abdb3ba4c743207a265183ad23b12cecf9",
+  "codeTree": "64f5d91f46b17df03f2e308a3478f355991b131e",
+  "command": "exact Task 6 acceptance command from the brief",
+  "exitCode": 0,
+  "executionSurface": "physical-device instrumentation with synthetic gallery fixture",
+  "testCase": "immediateSuccessAndHistoryUseTheRetainedBytes",
   "deviceSerial": "R5CR91DXA8R",
+  "deviceModel": "SM-F711N",
+  "androidTestApkSha256": "be51ba701e17d168694b556ce0f2222a704d6a0fb263b745d39203a9ce69f59b",
   "syntheticOnly": true,
+  "actualUserPhotosUsed": false,
+  "before": {
+    "mealLogCount": 0,
+    "cachePhotoCount": 1,
+    "retainedPhotoCount": 0
+  },
+  "afterCommit": {
+    "mealLogCount": 1,
+    "cachePhotoCount": 0,
+    "retainedPhotoCount": 1,
+    "daoReferences": [
+      "/data/data/com.junited31.leftovers/files/leftovers-final-photos/leftovers-final-45c067c673755a74f230bcef90dfca2b64792c14acd5137fffc58cb19c245cb8.jpg"
+    ]
+  },
   "preparedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0",
   "retainedSha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0",
   "historySha256": "4a3343f0ccb48ea34abf857ac5d118d22979f2a88a167ff19f9cbc79cb8266c0",
-  "daoReference": "\/data\/user\/0\/com.junited31.leftovers\/files\/leftovers-final-photos\/leftovers-final-bbc57cbd5e8f3fc01a4b2b7c25e19a74b48eea252b8e95a6b12546dc62d6c4c7.jpg",
-  "sameBytes": true
+  "sameBytes": true,
+  "retryAttempts": 0,
+  "captureSha256": {
+    "completion-preview.png": "ec2a9f8b02180302149fea00f3963570a8c5f63890dec9b66d6f868d69b62478",
+    "success-photo.png": "df05129fc4b028d64dbf0d4d3ba52397e704851aa28db957c07b4d295d186f1b",
+    "history-photo.png": "dcfbe829ea8b318549b702ba7f60474a1a52151802798b501a46e1f05caea33e"
+  }
 }
