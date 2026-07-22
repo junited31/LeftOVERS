@@ -79,8 +79,8 @@ async def test_upstream_failure_returns_typed_502_without_retry() -> None:
     from app.openai_client import OpenAIUpstreamError
 
     class FailingAI(FakeAI):
-        async def generate_recipes(self, request_json: str, attempt: int) -> str:
-            del request_json, attempt
+        async def generate_recipes(self, request_json: str, budget):
+            del request_json, budget
             self.recipe_calls += 1
             raise OpenAIUpstreamError
 

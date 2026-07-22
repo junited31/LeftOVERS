@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Annotated, Protocol
 
@@ -16,6 +17,12 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .auth import FirebaseTokenVerifier, InvalidBearerToken, TokenVerifier
 from .config import get_settings
+from .gemini_client import (
+    AIUpstreamError,
+    GeminiAdapter,
+    RequestBudget,
+    VertexGeminiTransport,
+)
 from .models import (
     AdviceContext,
     CookingAdviceResponse,
@@ -27,11 +34,7 @@ from .models import (
     RecipeGenerateResponse,
     validate_recipe_bindings,
 )
-from .openai_client import (
-    GPT56Adapter,
-    OpenAIResponsesTransport,
-    OpenAIUpstreamError,
-)
+from .openai_client import OpenAIUpstreamError
 from .quota import FirestoreCounterBackend, QuotaExceeded, QuotaService
 
 JSON_LIMIT = 256 * 1024
@@ -42,15 +45,17 @@ BEARER = HTTPBearer(auto_error=False)
 
 
 class AIAdapter(Protocol):
-    async def generate_recipes(self, request_json: str, attempt: int) -> str: ...
+    async def generate_recipes(
+        self, request_json: str, budget: RequestBudget
+    ) -> tuple[str, RequestBudget]: ...
 
     async def cooking_advice(
         self,
         request_json: str,
         photo: bytes,
         content_type: str,
-        attempt: int,
-    ) -> str: ...
+        budget: RequestBudget,
+    ) -> tuple[str, RequestBudget]: ...
 
 
 class PayloadTooLarge(Exception):
@@ -58,7 +63,8 @@ class PayloadTooLarge(Exception):
 
 
 class ModelValidationFailed(Exception):
-    pass
+    def __init__(self, budget: RequestBudget | None = None) -> None:
+        self.budget = budget
 
 
 def error_response(
@@ -163,10 +169,28 @@ def get_quota_store() -> QuotaService:
 
 
 @lru_cache
-def get_ai_adapter() -> AIAdapter:
+def cached_ai_adapter() -> GeminiAdapter:
     settings = get_settings()
-    transport = OpenAIResponsesTransport(settings.openai_api_key.get_secret_value())
-    return GPT56Adapter(transport)
+    return GeminiAdapter(VertexGeminiTransport(settings.google_cloud_project))
+
+
+def get_ai_adapter() -> AIAdapter:
+    try:
+        return cached_ai_adapter()
+    except Exception as error:
+        raise AIUpstreamError from error
+
+
+@asynccontextmanager
+async def ai_lifespan(_: FastAPI) -> AsyncIterator[None]:
+    try:
+        yield
+    finally:
+        if cached_ai_adapter.cache_info().currsize:
+            try:
+                await cached_ai_adapter().aclose()
+            finally:
+                cached_ai_adapter.cache_clear()
 
 
 async def current_uid(
@@ -179,22 +203,23 @@ async def current_uid(
 
 
 async def parse_model_output(
-    operation: Callable[[int], Awaitable[str]],
+    operation: Callable[[RequestBudget], Awaitable[tuple[str, RequestBudget]]],
     response_model: type[RecipeGenerateResponse] | type[CookingAdviceResponse],
+    budget: RequestBudget,
     request: RecipeGenerateRequest | None = None,
-) -> RecipeGenerateResponse | CookingAdviceResponse:
-    for attempt in range(3):
-        raw = await operation(attempt)
+) -> tuple[RecipeGenerateResponse | CookingAdviceResponse, RequestBudget]:
+    while budget.schema_slots_used < 3:
+        raw, budget = await operation(budget)
         try:
             parsed = response_model.model_validate_json(raw)
             if isinstance(parsed, RecipeGenerateResponse):
                 if request is None:
                     raise ModelContractError
                 validate_recipe_bindings(parsed, request)
-            return parsed
+            return parsed, budget.record_schema_slot()
         except (ValidationError, ModelContractError):
-            continue
-    raise ModelValidationFailed
+            budget = budget.record_schema_slot()
+    raise ModelValidationFailed(budget)
 
 
 async def read_photo(upload: UploadFile) -> bytes:
@@ -207,7 +232,7 @@ async def read_photo(upload: UploadFile) -> bytes:
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(title="LeftOVERS API")
+    application = FastAPI(title="LeftOVERS API", lifespan=ai_lifespan)
     application.add_middleware(MetadataLogMiddleware)
     application.add_middleware(JsonLimitMiddleware)
 
@@ -228,6 +253,7 @@ def create_app() -> FastAPI:
         return error_response(422, "model_validation_failed", "Model response failed validation")
 
     @application.exception_handler(OpenAIUpstreamError)
+    @application.exception_handler(AIUpstreamError)
     async def upstream_handler(_: Request, __: OpenAIUpstreamError) -> JSONResponse:
         return error_response(502, "upstream_error", "AI service unavailable")
 
@@ -252,9 +278,12 @@ def create_app() -> FastAPI:
         ai: Annotated[AIAdapter, Depends(get_ai_adapter)],
     ) -> RecipeGenerateResponse:
         await quota.consume(uid, "recipes")
-        result = await parse_model_output(
-            lambda attempt: ai.generate_recipes(payload.model_dump_json(by_alias=True), attempt),
+        result, _ = await parse_model_output(
+            lambda budget: ai.generate_recipes(
+                payload.model_dump_json(by_alias=True), budget
+            ),
             RecipeGenerateResponse,
+            RequestBudget(),
             payload,
         )
         if not isinstance(result, RecipeGenerateResponse):
@@ -276,14 +305,15 @@ def create_app() -> FastAPI:
                 raise RequestValidationError([])
             photo_bytes = await read_photo(photo)
             await quota.consume(uid, "advice")
-            result = await parse_model_output(
-                lambda attempt: ai.cooking_advice(
+            result, _ = await parse_model_output(
+                lambda budget: ai.cooking_advice(
                     parsed_context.model_dump_json(by_alias=True),
                     photo_bytes,
                     content_type,
-                    attempt,
+                    budget,
                 ),
                 CookingAdviceResponse,
+                RequestBudget(),
             )
             if not isinstance(result, CookingAdviceResponse):
                 raise ModelValidationFailed

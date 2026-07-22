@@ -57,24 +57,24 @@ class FakeAI:
         self.advice_calls = 0
         self.photo_bytes: list[bytes] = []
 
-    async def generate_recipes(self, request_json: str, attempt: int) -> str:
-        index = min(attempt, len(self.recipe_outputs) - 1)
+    async def generate_recipes(self, request_json: str, budget):
+        index = min(budget.schema_slots_used, len(self.recipe_outputs) - 1)
         self.recipe_calls += 1
         self.recipe_request_jsons.append(request_json)
-        return self.recipe_outputs[index]
+        return self.recipe_outputs[index], budget.record_primary(retry=False)
 
     async def cooking_advice(
         self,
         request_json: str,
         photo: bytes,
         content_type: str,
-        attempt: int,
-    ) -> str:
+        budget,
+    ):
         del request_json, content_type
-        index = min(attempt, len(self.advice_outputs) - 1)
+        index = min(budget.schema_slots_used, len(self.advice_outputs) - 1)
         self.advice_calls += 1
         self.photo_bytes.append(photo)
-        return self.advice_outputs[index]
+        return self.advice_outputs[index], budget.record_primary(retry=False)
 
 
 def recipe_request(

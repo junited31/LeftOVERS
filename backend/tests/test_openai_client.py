@@ -74,6 +74,7 @@ class RecordingTransport:
 
 @pytest.mark.anyio
 async def test_gpt_adapter_always_uses_gpt_5_6_and_store_false() -> None:
+    from app.gemini_client import RequestBudget
     from app.models import RecipeGenerateRequest
     from app.openai_client import GPT56Adapter
 
@@ -83,7 +84,7 @@ async def test_gpt_adapter_always_uses_gpt_5_6_and_store_false() -> None:
     request = RecipeGenerateRequest.model_validate(recipe_request())
 
     # When: a recipe call is prepared.
-    await adapter.generate_recipes(request.model_dump_json(by_alias=True), attempt=0)
+    await adapter.generate_recipes(request.model_dump_json(by_alias=True), RequestBudget())
 
     # Then: provider storage is disabled on the exact approved model.
     outbound = transport.requests[0]
@@ -93,6 +94,7 @@ async def test_gpt_adapter_always_uses_gpt_5_6_and_store_false() -> None:
 
 @pytest.mark.anyio
 async def test_prompt_injection_remains_user_data_without_instruction_authority() -> None:
+    from app.gemini_client import RequestBudget
     from app.models import RecipeGenerateRequest
     from app.openai_client import GPT56Adapter
 
@@ -124,7 +126,7 @@ async def test_prompt_injection_remains_user_data_without_instruction_authority(
     # When: the adapter builds the provider request.
     await adapter.generate_recipes(
         RecipeGenerateRequest.model_validate(payload).model_dump_json(by_alias=True),
-        attempt=0,
+        RequestBudget(),
     )
 
     # Then: untrusted text stays in the user-data envelope and cannot mutate controls.
@@ -140,6 +142,7 @@ async def test_transport_translates_structured_validation_to_canonical_invalid_r
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.models import RecipeGenerateRequest
+    from app.gemini_client import RequestBudget
     from app.openai_client import GPT56Adapter
 
     # Given: the real production transport seam receives the SDK's Pydantic error shape.
@@ -148,7 +151,9 @@ async def test_transport_translates_structured_validation_to_canonical_invalid_r
     request = RecipeGenerateRequest.model_validate(recipe_request())
 
     # When: the SDK rejects its parsed structured output before returning a response.
-    raw = await adapter.generate_recipes(request.model_dump_json(by_alias=True), attempt=0)
+    raw, _ = await adapter.generate_recipes(
+        request.model_dump_json(by_alias=True), RequestBudget()
+    )
 
     # Then: the transport emits the canonical invalid result for the app retry boundary.
     assert raw == "{}"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from openai import APIError, AsyncOpenAI
 from pydantic import BaseModel, ValidationError
@@ -14,6 +14,9 @@ from .prompts import (
     ADVICE_INSTRUCTIONS,
     RECIPE_INSTRUCTIONS,
 )
+
+if TYPE_CHECKING:
+    from .gemini_client import RequestBudget
 
 MODEL: Literal["gpt-5.6"] = "gpt-5.6"
 
@@ -82,9 +85,11 @@ class GPT56Adapter:
     def __init__(self, transport: ResponsesTransport) -> None:
         self._transport = transport
 
-    async def generate_recipes(self, request_json: str, attempt: int) -> str:
-        del attempt
-        return await self._transport.execute(
+    async def generate_recipes(
+        self, request_json: str, budget: RequestBudget
+    ) -> tuple[str, RequestBudget]:
+        updated = budget.record_primary(retry=False)
+        raw = await self._transport.execute(
             OpenAIRequest(
                 model=MODEL,
                 store=False,
@@ -94,16 +99,17 @@ class GPT56Adapter:
                 response_model=RecipeGenerateResponse,
             )
         )
+        return raw, updated
 
     async def cooking_advice(
         self,
         request_json: str,
         photo: bytes,
         content_type: str,
-        attempt: int,
-    ) -> str:
-        del attempt
-        return await self._transport.execute(
+        budget: RequestBudget,
+    ) -> tuple[str, RequestBudget]:
+        updated = budget.record_primary(retry=False)
+        raw = await self._transport.execute(
             OpenAIRequest(
                 model=MODEL,
                 store=False,
@@ -115,3 +121,4 @@ class GPT56Adapter:
                 image_content_type=content_type,
             )
         )
+        return raw, updated
