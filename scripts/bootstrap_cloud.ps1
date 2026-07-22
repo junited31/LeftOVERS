@@ -13,6 +13,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$useLegacyOpenAi = -not [string]::IsNullOrWhiteSpace($OpenAiApiKeyFile)
 $repositoryRoot = @(& git rev-parse --show-toplevel 2>$null)[0]
 if ([string]::IsNullOrWhiteSpace($repositoryRoot)) { throw 'Run this script inside the LeftOVERS Git worktree.' }
 $repositoryRoot = $repositoryRoot.Trim()
@@ -95,7 +96,7 @@ $quotaVersion = if ($quotaSecret.Success) { Invoke-Status $GcloudExecutable @('s
 $openAiVersion.Success = $openAiVersion.Success -and -not [string]::IsNullOrWhiteSpace($openAiVersion.Output)
 $quotaVersion.Success = $quotaVersion.Success -and -not [string]::IsNullOrWhiteSpace($quotaVersion.Output)
 if ($Execute) {
-    if (-not $openAiVersion.Success -and -not (Test-Path -LiteralPath $OpenAiApiKeyFile -PathType Leaf)) {
+    if ($useLegacyOpenAi -and -not $openAiVersion.Success -and -not (Test-Path -LiteralPath $OpenAiApiKeyFile -PathType Leaf)) {
         throw 'OPENAI_API_KEY has no enabled version; supply -OpenAiApiKeyFile with a local secret file.'
     }
     if (-not $quotaVersion.Success -and -not (Test-Path -LiteralPath $QuotaHashKeyFile -PathType Leaf)) {
@@ -167,10 +168,13 @@ if (-not $firestore.Success) {
     Invoke-Checked $GcloudExecutable @('firestore', 'databases', 'create', '--database=(default)', '--location=asia-northeast3', "--project=$ProjectId", '--quiet') | Out-Null
 }
 
-foreach ($secret in @(
-    @{ Name = 'OPENAI_API_KEY'; Exists = $openAiSecret.Success; VersionExists = $openAiVersion.Success; File = $OpenAiApiKeyFile },
+$secrets = @(
     @{ Name = 'QUOTA_HASH_KEY'; Exists = $quotaSecret.Success; VersionExists = $quotaVersion.Success; File = $QuotaHashKeyFile }
-)) {
+)
+if ($useLegacyOpenAi) {
+    $secrets += @{ Name = 'OPENAI_API_KEY'; Exists = $openAiSecret.Success; VersionExists = $openAiVersion.Success; File = $OpenAiApiKeyFile }
+}
+foreach ($secret in $secrets) {
     if (-not $secret.Exists) {
         if (-not $Execute) { throw "Secret $($secret.Name) is missing." }
         Invoke-Checked $GcloudExecutable @('secrets', 'create', $secret.Name, '--replication-policy=automatic', "--project=$ProjectId", '--quiet') | Out-Null

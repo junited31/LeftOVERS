@@ -786,7 +786,21 @@ def test_deploy_contract_sets_vertex_project_and_retains_openai_secret_reference
     ).read_text(encoding="utf-8")
 
     assert '"--set-env-vars=GOOGLE_CLOUD_PROJECT=$ProjectId"' in script
+    assert "[switch]$BindLegacyOpenAiSecret" in script
+    assert "$secretBindings = 'QUOTA_HASH_KEY=QUOTA_HASH_KEY:latest'" in script
+    assert "if ($BindLegacyOpenAiSecret)" in script
     assert "OPENAI_API_KEY=OPENAI_API_KEY:latest" in script
+
+
+def test_bootstrap_contract_keeps_legacy_openai_secret_opt_in() -> None:
+    script = (
+        Path(__file__).resolve().parents[2] / "scripts/bootstrap_cloud.ps1"
+    ).read_text(encoding="utf-8")
+
+    assert "$useLegacyOpenAi = -not [string]::IsNullOrWhiteSpace($OpenAiApiKeyFile)" in script
+    assert "if ($useLegacyOpenAi -and -not $openAiVersion.Success" in script
+    assert "if ($useLegacyOpenAi) {" in script
+    assert "Name = 'OPENAI_API_KEY'" in script
 
 
 def test_adapter_protocol_passes_budget_explicitly() -> None:

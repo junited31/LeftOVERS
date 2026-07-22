@@ -10,6 +10,7 @@ param(
     [string]$GcloudExecutable = 'gcloud',
     [string]$CurlExecutable = 'curl.exe',
     [string]$PythonExecutable,
+    [switch]$BindLegacyOpenAiSecret,
     [switch]$Execute
 )
 
@@ -104,13 +105,17 @@ if ($describedProject.Trim() -cne $ProjectId) { throw "Target project $ProjectId
 $billing = Invoke-Checked $GcloudExecutable @('billing', 'projects', 'describe', $ProjectId, '--format=value(billingEnabled)')
 Assert-BillingEnabled -Value $billing -ProjectId $ProjectId
 
+$secretBindings = 'QUOTA_HASH_KEY=QUOTA_HASH_KEY:latest'
+if ($BindLegacyOpenAiSecret) {
+    $secretBindings = "OPENAI_API_KEY=OPENAI_API_KEY:latest,$secretBindings"
+}
 Invoke-Checked $GcloudExecutable @(
     'run', 'deploy', $ServiceName,
     "--source=$(Join-Path $repositoryRoot 'backend')",
     "--region=$Region", "--project=$ProjectId",
     '--allow-unauthenticated',
     "--set-env-vars=GOOGLE_CLOUD_PROJECT=$ProjectId",
-    '--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,QUOTA_HASH_KEY=QUOTA_HASH_KEY:latest',
+    "--set-secrets=$secretBindings",
     '--quiet'
 ) | Out-Null
 $serviceUrl = Invoke-Checked $GcloudExecutable @(
