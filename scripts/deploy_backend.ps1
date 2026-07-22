@@ -109,6 +109,7 @@ Invoke-Checked $GcloudExecutable @(
     "--source=$(Join-Path $repositoryRoot 'backend')",
     "--region=$Region", "--project=$ProjectId",
     '--allow-unauthenticated',
+    "--set-env-vars=GOOGLE_CLOUD_PROJECT=$ProjectId",
     '--set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest,QUOTA_HASH_KEY=QUOTA_HASH_KEY:latest',
     '--quiet'
 ) | Out-Null

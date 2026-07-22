@@ -419,6 +419,83 @@ async def test_identical_concurrent_requests_have_independent_budget_lineages() 
 
 
 @pytest.mark.anyio
+async def test_interleaved_logical_requests_keep_schema_and_fallback_slots_independent() -> None:
+    gemini = gemini_module()
+    from app.main import ModelValidationFailed, parse_model_output
+    from app.models import RecipeGenerateRequest, RecipeGenerateResponse
+
+    class Transport:
+        def __init__(self) -> None:
+            self.requests: dict[str, list[object]] = {"exhausted": [], "repaired": []}
+            self.outcomes: dict[str, list[object]] = {
+                "exhausted": [
+                    "{}",
+                    httpx.TimeoutException("one"),
+                    httpx.ConnectError("two"),
+                    api_error(503),
+                    "{}",
+                    "{}",
+                ],
+                "repaired": ["{}", httpx.TimeoutException("one"), valid_recipe_json()],
+            }
+            self.barrier = asyncio.Barrier(2)
+
+        async def execute(self, request):
+            name = asyncio.current_task().get_name()
+            self.requests[name].append(request)
+            if len(self.requests[name]) <= 3:
+                await self.barrier.wait()
+            outcome = self.outcomes[name].pop(0)
+            if isinstance(outcome, BaseException):
+                raise outcome
+            return gemini.GeminiResponse(text=outcome)
+
+        async def aclose(self) -> None:
+            pass
+
+    sleeps: dict[str, list[float]] = {"exhausted": [], "repaired": []}
+
+    async def sleep(delay: float) -> None:
+        sleeps[asyncio.current_task().get_name()].append(delay)
+        await asyncio.sleep(0)
+
+    transport = Transport()
+    adapter = gemini.GeminiAdapter(transport, sleep)
+    request = RecipeGenerateRequest.model_validate(recipe_request())
+    request_json = request.model_dump_json(by_alias=True)
+
+    async def logical_request():
+        return await parse_model_output(
+            lambda current: adapter.generate_recipes(request_json, current),
+            RecipeGenerateResponse,
+            gemini.RequestBudget(),
+            request,
+        )
+
+    exhausted = asyncio.create_task(logical_request(), name="exhausted")
+    repaired = asyncio.create_task(logical_request(), name="repaired")
+    exhausted_result, repaired_result = await asyncio.gather(
+        exhausted, repaired, return_exceptions=True
+    )
+
+    assert isinstance(exhausted_result, ModelValidationFailed)
+    exhausted_budget = exhausted_result.budget
+    assert exhausted_budget.schema_slots_used == 3
+    assert exhausted_budget.primary_calls == 5
+    assert exhausted_budget.fallback_calls == 1
+    assert exhausted_budget.provider_calls == 6
+    repaired_response, repaired_budget = repaired_result
+    assert len(repaired_response.recipes) == 3
+    assert repaired_budget.schema_slots_used == 2
+    assert repaired_budget.primary_calls == 3
+    assert repaired_budget.fallback_calls == 0
+    assert sleeps == {"exhausted": [0.25, 0.5], "repaired": [0.25]}
+    assert transport.requests["exhausted"][0].budget_before is not (
+        transport.requests["repaired"][0].budget_before
+    )
+
+
+@pytest.mark.anyio
 async def test_cancelling_one_sleep_does_not_change_other_request() -> None:
     gemini = gemini_module()
 
@@ -634,19 +711,45 @@ async def test_lifespan_closes_cached_adapter(monkeypatch: pytest.MonkeyPatch) -
         async def aclose(self) -> None:
             self.closed += 1
 
-    adapter = ClosableAdapter()
-    def cached_adapter():
-        return adapter
-
-    cached_adapter.cache_info = lambda: SimpleNamespace(currsize=1)
-    cached_adapter.cache_clear = lambda: None
-    monkeypatch.setattr(main, "cached_ai_adapter", cached_adapter)
     app = main.create_app()
+    adapter = ClosableAdapter()
+    app.state.ai_adapter = adapter
 
     async with app.router.lifespan_context(app):
         pass
 
     assert adapter.closed == 1
+
+
+@pytest.mark.anyio
+async def test_concurrent_dependency_cold_start_constructs_one_cached_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app import main
+
+    transports: list[object] = []
+
+    class Transport:
+        def __init__(self, project: str) -> None:
+            assert project == "leftovers-019f706b"
+            transports.append(self)
+
+        async def aclose(self) -> None:
+            pass
+
+    monkeypatch.setattr(main, "VertexGeminiTransport", Transport)
+    monkeypatch.setattr(
+        main,
+        "get_settings",
+        lambda: SimpleNamespace(google_cloud_project="leftovers-019f706b"),
+    )
+    app = main.create_app()
+    request = SimpleNamespace(app=app)
+
+    adapters = await asyncio.gather(*(main.get_ai_adapter(request) for _ in range(8)))
+
+    assert len({id(adapter) for adapter in adapters}) == 1
+    assert len(transports) == 1
 
 
 def test_google_genai_is_exactly_pinned_and_openai_is_retained() -> None:
@@ -657,6 +760,33 @@ def test_google_genai_is_exactly_pinned_and_openai_is_retained() -> None:
     assert "google-genai==2.12.1" in requirements
     assert "openai==2.46.0" in requirements
     assert (Path(__file__).resolve().parents[1] / "app/openai_client.py").is_file()
+
+
+def test_vertex_project_is_required_while_legacy_openai_secret_stays_optional(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pydantic import ValidationError
+    from app.config import Settings
+
+    monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
+    settings = Settings(
+        _env_file=None,
+        quota_hash_key="synthetic-hash-key",
+        google_cloud_project="leftovers-019f706b",
+    )
+    assert settings.openai_api_key is None
+    assert settings.google_cloud_project == "leftovers-019f706b"
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, quota_hash_key="synthetic-hash-key")
+
+
+def test_deploy_contract_sets_vertex_project_and_retains_openai_secret_reference() -> None:
+    script = (
+        Path(__file__).resolve().parents[2] / "scripts/deploy_backend.ps1"
+    ).read_text(encoding="utf-8")
+
+    assert '"--set-env-vars=GOOGLE_CLOUD_PROJECT=$ProjectId"' in script
+    assert "OPENAI_API_KEY=OPENAI_API_KEY:latest" in script
 
 
 def test_adapter_protocol_passes_budget_explicitly() -> None:
@@ -761,7 +891,7 @@ async def test_invalid_provider_config_is_typed_without_model_or_quota_call(
     quota = FakeQuota()
     app.dependency_overrides[main.get_token_verifier] = lambda: FakeVerifier()
     app.dependency_overrides[main.get_quota_store] = lambda: quota
-    monkeypatch.setattr(main, "cached_ai_adapter", invalid_config)
+    monkeypatch.setattr(main, "get_settings", invalid_config)
     try:
         response = await post_json(app, recipe_request())
     finally:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -168,29 +169,33 @@ def get_quota_store() -> QuotaService:
     )
 
 
-@lru_cache
-def cached_ai_adapter() -> GeminiAdapter:
-    settings = get_settings()
-    return GeminiAdapter(VertexGeminiTransport(settings.google_cloud_project))
-
-
-def get_ai_adapter() -> AIAdapter:
+async def get_ai_adapter(request: Request) -> AIAdapter:
+    cached = getattr(request.app.state, "ai_adapter", None)
+    if cached is not None:
+        return cached
     try:
-        return cached_ai_adapter()
+        async with request.app.state.ai_adapter_lock:
+            cached = getattr(request.app.state, "ai_adapter", None)
+            if cached is None:
+                settings = get_settings()
+                cached = GeminiAdapter(VertexGeminiTransport(settings.google_cloud_project))
+                request.app.state.ai_adapter = cached
+            return cached
     except Exception as error:
         raise AIUpstreamError from error
 
 
 @asynccontextmanager
-async def ai_lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def ai_lifespan(application: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        if cached_ai_adapter.cache_info().currsize:
+        cached = getattr(application.state, "ai_adapter", None)
+        if cached is not None:
             try:
-                await cached_ai_adapter().aclose()
+                await cached.aclose()
             finally:
-                cached_ai_adapter.cache_clear()
+                del application.state.ai_adapter
 
 
 async def current_uid(
@@ -233,6 +238,7 @@ async def read_photo(upload: UploadFile) -> bytes:
 
 def create_app() -> FastAPI:
     application = FastAPI(title="LeftOVERS API", lifespan=ai_lifespan)
+    application.state.ai_adapter_lock = asyncio.Lock()
     application.add_middleware(MetadataLogMiddleware)
     application.add_middleware(JsonLimitMiddleware)
 

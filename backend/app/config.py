@@ -9,9 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    openai_api_key: SecretStr
+    openai_api_key: SecretStr | None = None
     quota_hash_key: SecretStr
-    google_cloud_project: str = Field(default="leftovers-019f706b", min_length=1)
+    google_cloud_project: str = Field(min_length=1)
 
 
 @lru_cache
