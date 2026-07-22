@@ -4,10 +4,10 @@
   "expected_rejections": [
     "missing extra reordered or duplicate state",
     "step-4 missing reversed extra or duplicate subcapture",
-    "absolute drive UNC backslash empty dot parent case-fold duplicate and symlink path",
+    "absolute drive UNC backslash empty dot parent case-fold duplicate symlink and Windows junction path",
     "missing PNG or XML",
-    "PNG signature IHDR width height hash and reused hash",
-    "XML malformed empty DTD entity wrong-state hash and reused hash",
+    "PNG signature IHDR forged Adam7 width height hash and reused hash",
+    "XML malformed empty UTF-8 or UTF-16 DTD entity wrong-state hash and reused hash",
     "source APK device locale run state and timestamp mismatch",
     "pre-window stale and decreasing timestamp"
   ],

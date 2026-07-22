@@ -75,6 +75,14 @@ def png(width: int, height: int, value: int) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(row * height)) + chunk(b"IEND", b"")
 
 
+def forged_interlaced_png(width: int, height: int) -> bytes:
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 1)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(b"\0")) + chunk(b"IEND", b"")
+
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(("git", *args), cwd=root, check=True, capture_output=True, text=True, encoding="utf-8")
     return result.stdout.strip()
@@ -312,7 +320,7 @@ class ExpansionFixture:
         return validation.validate_expansion_visual_evidence(self.root, self.task_root, **values)
 
     def artifact_result(self) -> Any:
-        return validation.validate_expansion_artifact_manifest(self.root, self.task_root, SOURCE_SHA)
+        return validation.validate_expansion_artifact_manifest(self.root, self.task_root, self.source_sha, self.apk_sha)
 
 
 @final
@@ -330,6 +338,7 @@ class Task8RecordAndSourceTest(unittest.TestCase):
                 ("missing-version", lambda value: value.pop("schema_version")),
                 ("missing-source-sha", lambda value: value.pop("publication_source_sha")),
                 ("v1", lambda value: value.update(schema_version=1)),
+                ("float-version", lambda value: value.update(schema_version=2.0)),
                 ("extra", lambda value: value.update(unexpected="no")),
                 ("noncanonical-sha", lambda value: value.update(publication_source_sha="A" * 40)),
             ):
@@ -337,6 +346,17 @@ class Task8RecordAndSourceTest(unittest.TestCase):
                 mutate(candidate)
                 with self.subTest(model=model.__name__, row=row), self.assertRaises(ValidationError):
                     model.model_validate(candidate)
+        proof = release_record()
+        for field in (
+            "manifest_debug_hook_matches",
+            "dex_debug_hook_matches",
+            "resource_debug_hook_matches",
+            "archive_debug_hook_matches",
+        ):
+            candidate = copy.deepcopy(proof)
+            candidate[field] = False
+            with self.subTest(model="ReleaseProof", row="boolean-zero", field=field), self.assertRaises(ValidationError):
+                validation.ReleaseProof.model_validate(candidate)
             for scalar in (123, b"1" * 40, True):
                 candidate = copy.deepcopy(valid)
                 candidate["publication_source_sha"] = scalar
@@ -641,6 +661,24 @@ class Task8VisualAndArtifactTest(unittest.TestCase):
         self.fixture.write_visual()
         self.assertVisualField("visual-manifest.states[1].captures[1].png_path")
 
+    def test_windows_junction_inside_evidence_root_is_still_forbidden(self) -> None:
+        capture = self.fixture.manifest["states"][0]["captures"][0]
+        target = self.fixture.task_root / "junction-target"
+        target.mkdir()
+        target_asset = target / "asset.png"
+        target_asset.write_bytes(png(1, 1, 101))
+        link = self.fixture.task_root / "junction-link"
+        if os.name == "nt":
+            result = subprocess.run(("cmd", "/c", "mklink", "/J", str(link), str(target)), check=False, capture_output=True)
+            self.assertEqual(0, result.returncode)
+        else:
+            os.symlink(target, link, target_is_directory=True)
+        capture["png_path"] = f"{TASK_RELATIVE}/junction-link/asset.png"
+        capture["png_sha256"] = sha256(target_asset.read_bytes())
+        self.fixture.write_visual()
+
+        self.assertVisualField("visual-manifest.states[1].captures[1].png_path")
+
     def test_absent_png_and_xml_each_fail_at_typed_path(self) -> None:
         capture = self.fixture.manifest["states"][0]["captures"][0]
         for field in ("png_path", "xml_path"):
@@ -658,6 +696,7 @@ class Task8VisualAndArtifactTest(unittest.TestCase):
         rows = (
             ("signature", b"not-png", "png_path"),
             ("ihdr", original[:12] + b"BAD!" + original[16:], "png_path"),
+            ("forged-adam7", forged_interlaced_png(100, 100), "png_path"),
             ("dimensions", png(2, 1, 1), "png_width"),
             ("hash", original + b"x", "png_sha256"),
         )
@@ -685,6 +724,7 @@ class Task8VisualAndArtifactTest(unittest.TestCase):
             ("malformed", b"<hierarchy>", "xml_path", True),
             ("empty", b"<hierarchy />\n", "xml_path", True),
             ("doctype", b'<!DOCTYPE hierarchy [<!ENTITY x "marker">]><hierarchy><node text="&x;" /></hierarchy>\n', "xml_path", True),
+            ("utf16-doctype", ('<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE hierarchy [<!ENTITY x "Select the equipment in your kitchen">]><hierarchy><node text="&x;" /></hierarchy>').encode("utf-16"), "xml_path", True),
             ("wrong-state", b'<hierarchy><node text="Completed meals | Final photo" /></hierarchy>\n', "xml_path", True),
             ("hash", original + b"x", "xml_sha256", False),
         )
@@ -790,6 +830,19 @@ class Task8VisualAndArtifactTest(unittest.TestCase):
                 self.fixture.write_artifact()
                 result = self.fixture.artifact_result()
                 self.assertIn(field, {issue.field for issue in result.issues})
+
+    def test_apk_reference_cannot_be_self_consistent_but_drift_from_visual_apk(self) -> None:
+        apk = self.root / "android/app/build/outputs/apk/debug/app-debug.apk"
+        apk.write_bytes(b"different but self-consistent APK")
+        reference_path = self.fixture.task_root / "apk-reference.json"
+        reference = json.loads(reference_path.read_text(encoding="utf-8"))
+        reference["apk_sha256"] = sha256(apk.read_bytes())
+        reference_path.write_text(json.dumps(reference), encoding="utf-8")
+        self.fixture.write_artifact()
+
+        result = self.fixture.artifact_result()
+
+        self.assertIn("apk-reference.apk_sha256", {issue.field for issue in result.issues})
 
     def test_changing_included_bytes_changes_regenerated_record_digest(self) -> None:
         original = self.fixture.artifact_result().artifact_record_digest

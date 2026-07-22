@@ -187,7 +187,7 @@ def _expansion_command(args: list[str]) -> int:
         issues.append(Issue("submission-draft", f"must be a strict v2 SubmissionRecord: {error}"))
     else:
         issues.extend(validate_publication_source((record,), root))
-    artifact = validate_expansion_artifact_manifest(root, evidence_root, parsed.source_sha)
+    artifact = validate_expansion_artifact_manifest(root, evidence_root, parsed.source_sha, parsed.apk_sha)
     issues.extend(artifact.issues)
     if issues:
         for issue in issues:

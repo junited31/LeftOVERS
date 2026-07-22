@@ -162,10 +162,10 @@ class VerifySubmissionTest(unittest.TestCase):
         self.assertIn("[FAIL] status", result.stdout)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_complete_local_fixture_passes_without_external_claim(self) -> None:
+    def test_non_git_fixture_fails_closed_on_publication_source(self) -> None:
         issues = verify_submission(self._complete_record(), self.root, FixtureProbe())
 
-        self.assertEqual((), issues)
+        self.assertEqual({"git_repository"}, {issue.field for issue in issues})
 
     def test_private_or_example_url_is_rejected(self) -> None:
         record = self._complete_record().model_copy(update={"repository_url": "https://127.0.0.1/project"})

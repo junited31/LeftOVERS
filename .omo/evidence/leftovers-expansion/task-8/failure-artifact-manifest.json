@@ -8,7 +8,7 @@
     "artifact self-entry",
     "artifact self-digest field",
     "pretty JSON BOM missing LF and extra LF",
-    "APK reference source path hash and extra field"
+    "APK reference source path hash extra field and visual or CLI APK mismatch"
   ],
   "canonical_serializer": "json.dumps ensure_ascii=False allow_nan=False sort_keys=True separators comma-colon plus one LF",
   "included_byte_change_changes_regenerated_digest": true

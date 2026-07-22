@@ -10,11 +10,11 @@ import zlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import ClassVar, Final, Literal, NewType, Protocol, Sequence
+from typing import Annotated, ClassVar, Final, Literal, NewType, Protocol, Sequence
 from urllib.parse import urlparse
 from xml.etree import ElementTree
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
 
 PublicUrl = NewType("PublicUrl", str)
@@ -29,6 +29,16 @@ SHA256: Final = r"^[0-9a-f]{64}$"
 CAPTURE_RUN_UUID: Final = r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 EXPANSION_TASK_RELATIVE: Final = ".omo/evidence/leftovers-expansion/task-12"
 MAX_EVIDENCE_FILE_BYTES: Final = 64 * 1024 * 1024
+
+
+def _exact_integer(value: object) -> object:
+    if type(value) is not int:
+        raise ValueError("must be an exact JSON integer")
+    return value
+
+
+SchemaVersion2 = Annotated[Literal[2], BeforeValidator(_exact_integer)]
+ExactZero = Annotated[Literal[0], BeforeValidator(_exact_integer)]
 EXPANSION_STATE_IDS: Final = (
     "01-clear-app-data",
     "02-english-equipment-onboarding",
@@ -65,7 +75,7 @@ EXPANSION_UI_MARKERS: Final = {
 class SubmissionRecord(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     status: str
     devpost_url: str
@@ -121,19 +131,19 @@ class SubmissionProbe(Protocol):
 class ReleaseProof(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     release_apk_sha256: str = Field(pattern=SHA256)
-    manifest_debug_hook_matches: Literal[0]
-    dex_debug_hook_matches: Literal[0]
-    resource_debug_hook_matches: Literal[0]
-    archive_debug_hook_matches: Literal[0]
+    manifest_debug_hook_matches: ExactZero
+    dex_debug_hook_matches: ExactZero
+    resource_debug_hook_matches: ExactZero
+    archive_debug_hook_matches: ExactZero
 
 
 class MediaEvidence(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     media_sha256: str = Field(pattern=SHA256)
     duration_seconds: float = Field(gt=0, lt=180)
@@ -178,7 +188,7 @@ class VisualState(BaseModel):
 class VisualManifest(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     apk_sha256: str = Field(pattern=SHA256)
     device_serial: str = Field(min_length=1)
@@ -199,7 +209,7 @@ class ArtifactFile(BaseModel):
 class ArtifactManifest(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     files: tuple[ArtifactFile, ...]
 
@@ -207,7 +217,7 @@ class ArtifactManifest(BaseModel):
 class ApkReference(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[2]
+    schema_version: SchemaVersion2
     publication_source_sha: str = Field(pattern=SHA40)
     apk_path: str = Field(min_length=1)
     apk_sha256: str = Field(pattern=SHA256)
@@ -344,8 +354,8 @@ def _safe_path(
     current = root
     for part in parts:
         current /= part
-        if current.is_symlink():
-            return None, (Issue(field, "symlinks are forbidden in evidence paths"),)
+        if current.is_symlink() or current.is_junction():
+            return None, (Issue(field, "symlinks and junctions are forbidden in evidence paths"),)
     resolved = candidate.resolve(strict=False)
     if not resolved.is_relative_to(root_resolved):
         return None, (Issue(field, "resolved path escapes the repository"),)
@@ -404,7 +414,7 @@ def _png_dimensions(data: bytes) -> tuple[int, int] | None:
                 or bit_depth not in allowed_depths.get(color_type, set())
                 or compression != 0
                 or filter_method != 0
-                or interlace not in {0, 1}
+                or interlace != 0
             ):
                 return None
             channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color_type]
@@ -439,8 +449,12 @@ def _png_dimensions(data: bytes) -> tuple[int, int] | None:
 
 
 def _xml_text(data: bytes) -> str | None:
-    upper = data.upper()
-    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+    try:
+        decoded = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    upper = decoded.upper()
+    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
         return None
     try:
         root = ElementTree.fromstring(data)
@@ -608,10 +622,13 @@ def validate_expansion_artifact_manifest(
     root: Path,
     evidence_root: Path,
     approved_source_sha: str,
+    apk_sha256: str,
 ) -> ArtifactValidationResult:
     issues: list[Issue] = []
     visual, visual_issues = _read_visual_manifest(evidence_root / "visual-manifest.json")
     issues.extend(visual_issues)
+    if visual is not None and visual.apk_sha256 != apk_sha256:
+        issues.append(Issue("visual-manifest.apk_sha256", "must equal the expected APK SHA"))
     path = evidence_root / "artifact-manifest.json"
     try:
         raw = path.read_bytes()
@@ -685,6 +702,8 @@ def validate_expansion_artifact_manifest(
     else:
         if reference.publication_source_sha != approved_source_sha:
             issues.append(Issue("apk-reference.publication_source_sha", "must equal the approved source SHA"))
+        if reference.apk_sha256 != apk_sha256 or (visual is not None and reference.apk_sha256 != visual.apk_sha256):
+            issues.append(Issue("apk-reference.apk_sha256", "must equal the expected and visual-manifest APK SHA"))
         apk_path, apk_path_issues = _safe_path(root, reference.apk_path, "apk-reference.apk_path")
         issues.extend(apk_path_issues)
         if apk_path is None or not apk_path.is_file():
@@ -768,8 +787,7 @@ def _files(record: SubmissionRecord, root: Path, probe: SubmissionProbe) -> tupl
     license_path = resolved.get("license_path")
     if license_path is not None and "MIT License" not in license_path.read_text(encoding="utf-8"):
         issues.append(Issue("license_path", "MIT license text is missing"))
-    if (root / ".git").exists():
-        issues.extend(validate_publication_source(tuple(publication_records), root))
+    issues.extend(validate_publication_source(tuple(publication_records), root))
     return tuple(issues)
 
 
